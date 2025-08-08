@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.1.0" activate="start" name="com.kk.pde.ds.app.App">
+   <reference bind="setApi" interface="com.kk.pde.ds.api.IGreet" name="Api"/>
+   <implementation class="com.kk.pde.ds.app.App"/>
+</scr:component>

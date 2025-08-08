@@ -1,0 +1,11 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: com.kk.pde.ds.imp
+Bundle-SymbolicName: com.kk.pde.ds.imp
+Bundle-Version: 1.0.0.qualifier
+Import-Package: com.kk.pde.ds.api
+Service-Component: OSGI-INF/com.kk.pde.ds.imp.Greet.xml
+Bundle-Vendor: KK
+Automatic-Module-Name: com.kk.pde.ds.imp
+Bundle-ActivationPolicy: lazy
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
