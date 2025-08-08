@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?pde version="3.8"?>
+<target name="target">
+	<locations>
+		<location path="D:\Dev\p.osgi.ds\target\target" type="Directory"/>
+	</locations>
+</target>
