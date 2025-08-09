@@ -3,5 +3,6 @@
 <target name="target">
 	<locations>
 		<location path="D:\Dev\p.osgi.ds\target\target" type="Directory"/>
+		<location path="D:\Dev\p.osgi.ds\target\plugins" type="Directory"/>
 	</locations>
 </target>
