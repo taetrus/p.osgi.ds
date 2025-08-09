@@ -6,4 +6,4 @@ Bundle-Version: 1.0.0.qualifier
 Export-Package: com.kk.pde.ds.api
 Bundle-Vendor: KK
 Automatic-Module-Name: com.kk.pde.ds.api
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-RequiredExecutionEnvironment: JavaSE-17
