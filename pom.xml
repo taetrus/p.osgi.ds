@@ -42,44 +42,6 @@
 					<pomDependencies>consider</pomDependencies>
 				</configuration>
 			</plugin>
-			<!--			<plugin>-->
-			<!--				<groupId>org.apache.maven.plugins</groupId>-->
-			<!--				<artifactId>maven-dependency-plugin</artifactId>-->
-			<!--				<version>3.5.0</version>-->
-			<!--				<executions>-->
-			<!--					<execution>-->
-			<!--						<id>collect-bundles</id>-->
-			<!--						<phase>install</phase>-->
-			<!--						<goals>-->
-			<!--							<goal>copy</goal>-->
-			<!--						</goals>-->
-			<!--						<configuration>-->
-			<!--
-			<outputDirectory>${project.build.directory}/plugins</outputDirectory>-->
-			<!--							<artifactItems>-->
-			<!--								<artifactItem>-->
-			<!--									<groupId>com.kk.pde.ds</groupId>-->
-			<!--									<artifactId>com.kk.pde.ds.api</artifactId>-->
-			<!--									<version>${project.version}</version>-->
-			<!--									<type>jar</type>-->
-			<!--								</artifactItem>-->
-			<!--								<artifactItem>-->
-			<!--									<groupId>com.kk.pde.ds</groupId>-->
-			<!--									<artifactId>com.kk.pde.ds.imp</artifactId>-->
-			<!--									<version>${project.version}</version>-->
-			<!--									<type>jar</type>-->
-			<!--								</artifactItem>-->
-			<!--								<artifactItem>-->
-			<!--									<groupId>com.kk.pde.ds</groupId>-->
-			<!--									<artifactId>com.kk.pde.ds.app</artifactId>-->
-			<!--									<version>${project.version}</version>-->
-			<!--									<type>jar</type>-->
-			<!--								</artifactItem>-->
-			<!--							</artifactItems>-->
-			<!--						</configuration>-->
-			<!--					</execution>-->
-			<!--				</executions>-->
-			<!--			</plugin>-->
 		</plugins>
 	</build>
 
@@ -87,5 +49,6 @@
 		<module>com.kk.pde.ds.api</module>
 		<module>com.kk.pde.ds.imp</module>
 		<module>com.kk.pde.ds.app</module>
+		<module>distribution</module>
 	</modules>
 </project>

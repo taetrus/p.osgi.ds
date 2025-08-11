@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: com.kk.pde.ds.imp
 Bundle-SymbolicName: com.kk.pde.ds.imp
-Bundle-Version: 1.0.0.202508111709
+Bundle-Version: 1.0.0.202508111812
 Import-Package: com.kk.pde.ds.api,org.osgi.service.component.annotations
 Service-Component: OSGI-INF/com.kk.pde.ds.imp.Greet.xml
 Bundle-Vendor: KK
