@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: com.kk.pde.ds.app
 Bundle-SymbolicName: com.kk.pde.ds.app
-Bundle-Version: 1.0.0.202508111812
+Bundle-Version: 1.0.0.202508111817
 Import-Package: com.kk.pde.ds.api,org.osgi.service.component.annotations
  ;version="1.5.1"
 Service-Component: OSGI-INF/com.kk.pde.ds.app.App.xml
