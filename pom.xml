@@ -14,10 +14,12 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.compiler.source>17</maven.compiler.source>
 		<maven.compiler.target>17</maven.compiler.target>
+		<maven.build.timestamp.format>yyyyMMddHHmm</maven.build.timestamp.format>
 	</properties>
 
 	<build>
 		<directory>${project.basedir}/target</directory>
+    	<finalName>${project.artifactId}-${project.version}-${maven.build.timestamp}</finalName>
 		<plugins>
 			<plugin>
 				<artifactId>maven-clean-plugin</artifactId>
