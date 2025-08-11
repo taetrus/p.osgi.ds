@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<?artifactRepository version='1.1.0'?>
+<artifacts size='1'>
+  <artifact classifier='osgi.bundle' id='com.kk.pde.ds.app' version='1.0.0.202508111647'>
+    <properties size='9'>
+      <property name='artifact.size' value='3384'/>
+      <property name='download.size' value='3384'/>
+      <property name='download.checksum.sha-512' value='a570df9d3d167b133f01926cf5ee9f54eb9227a3b95f4bda997f0c5aa97a8ae8048bc652a31f8906fdb284abbfe0b83038577890a46eb3d5cc1702186c3d944c'/>
+      <property name='download.checksum.sha-1' value='5005f075b52a70d7bc2e073b46787772b81ee511'/>
+      <property name='download.checksum.sha-256' value='ef3f4720bf93cdb7ec89f8bb92872f9bef407fe2a63201448cae6abff76345a4'/>
+      <property name='maven-groupId' value='com.kk.pde.ds'/>
+      <property name='maven-artifactId' value='com.kk.pde.ds.app'/>
+      <property name='maven-version' value='1.0.0-SNAPSHOT'/>
+      <property name='maven-type' value='eclipse-plugin'/>
+    </properties>
+  </artifact>
+</artifacts>
