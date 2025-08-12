@@ -45,10 +45,11 @@
 		</plugins>
 	</build>
 
-	<modules>
-		<module>com.kk.pde.ds.api</module>
-		<module>com.kk.pde.ds.imp</module>
-		<module>com.kk.pde.ds.app</module>
-		<module>distribution</module>
-	</modules>
+        <modules>
+                <module>com.kk.pde.ds.api</module>
+                <module>com.kk.pde.ds.imp</module>
+                <module>com.kk.pde.ds.imp.tests</module>
+                <module>com.kk.pde.ds.app</module>
+                <module>distribution</module>
+        </modules>
 </project>
