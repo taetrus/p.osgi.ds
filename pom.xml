@@ -19,7 +19,9 @@
 
 	<build>
 		<directory>${project.basedir}/target</directory>
-    	<finalName>${project.artifactId}-${project.version}-${maven.build.timestamp}</finalName>
+		<!--
+		<finalName>${project.artifactId}-${project.version}-${maven.build.timestamp}</finalName>-->
+		<finalName>${project.artifactId}-${project.version}</finalName>
 		<plugins>
 			<plugin>
 				<artifactId>maven-clean-plugin</artifactId>
@@ -34,22 +36,68 @@
 				<version>${tycho.version}</version>
 				<extensions>true</extensions>
 			</plugin>
+						<plugin>
+							<groupId>org.eclipse.tycho</groupId>
+							<artifactId>target-platform-configuration</artifactId>
+							<version>${tycho.version}</version>
+							<configuration>
+								<pomDependencies>consider</pomDependencies>
+							</configuration>
+						</plugin>
+
+<!--			<plugin>-->
+<!--				<groupId>org.eclipse.tycho</groupId>-->
+<!--				<artifactId>target-platform-configuration</artifactId>-->
+<!--				<version>${tycho.version}</version>-->
+<!--				<configuration>-->
+<!--					<pomDependencies>consider</pomDependencies>-->
+<!--					<target>-->
+<!--						<artifact>-->
+<!--							<groupId>com.kk.pde.ds.target</groupId>-->
+<!--							<artifactId>target-platform</artifactId>-->
+<!--							<version>1.0.0-SNAPSHOT</version>-->
+<!--						</artifact>-->
+<!--					</target>-->
+<!--					<environments>-->
+<!--						<environment>-->
+<!--							<os>linux</os>-->
+<!--							<ws>gtk</ws>-->
+<!--							<arch>x86_64</arch>-->
+<!--						</environment>-->
+<!--						<environment>-->
+<!--							<os>win32</os>-->
+<!--							<ws>win32</ws>-->
+<!--							<arch>x86_64</arch>-->
+<!--						</environment>-->
+<!--						<environment>-->
+<!--							<os>macosx</os>-->
+<!--							<ws>cocoa</ws>-->
+<!--							<arch>x86_64</arch>-->
+<!--						</environment>-->
+<!--					</environments>-->
+<!--				</configuration>-->
+<!--			</plugin>-->
+
+
+			<!-- Compiler plugin for Java 8 -->
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
-				<artifactId>target-platform-configuration</artifactId>
+				<artifactId>tycho-compiler-plugin</artifactId>
 				<version>${tycho.version}</version>
 				<configuration>
-					<pomDependencies>consider</pomDependencies>
+					<source>1.8</source>
+					<target>1.8</target>
 				</configuration>
 			</plugin>
 		</plugins>
 	</build>
 
-        <modules>
-                <module>com.kk.pde.ds.api</module>
-                <module>com.kk.pde.ds.imp</module>
-                <module>com.kk.pde.ds.imp.tests</module>
-                <module>com.kk.pde.ds.app</module>
-                <module>distribution</module>
-        </modules>
+	<modules>
+		<module>com.kk.pde.ds.api</module>
+		<module>com.kk.pde.ds.imp</module>
+		<!--                <module>com.kk.pde.ds.imp.tests</module>-->
+		<module>com.kk.pde.ds.app</module>
+<!--		<module>target-platform</module>-->
+		<module>distribution</module>
+	</modules>
 </project>

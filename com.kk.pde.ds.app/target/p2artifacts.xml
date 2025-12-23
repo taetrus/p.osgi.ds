@@ -1,13 +1,13 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <?artifactRepository version='1.1.0'?>
 <artifacts size='1'>
-  <artifact classifier='osgi.bundle' id='com.kk.pde.ds.app' version='1.0.0.202508111817'>
+  <artifact classifier='osgi.bundle' id='com.kk.pde.ds.app' version='1.0.0.202512231729'>
     <properties size='9'>
       <property name='artifact.size' value='3383'/>
       <property name='download.size' value='3383'/>
-      <property name='download.checksum.sha-512' value='c05981e6525db03f47d08278ab144be2b5d247d2ada5e13d211b19200bd1826af3ac7fb8da245db5abc30b13925142a6eeb9ad83f3f02d726ac6c7c03f84751e'/>
-      <property name='download.checksum.sha-1' value='c30129566e6572b9cfc30b01403c902a906bc8cc'/>
-      <property name='download.checksum.sha-256' value='4bf6ce7395628c42e7f30529e1a5c22fa301a6d800634bce98bf361963b14d40'/>
+      <property name='download.checksum.sha-512' value='e03ff95b77720a98f2e44ad0a4d4f5385c85d69f57f221fc0d0c1429df51f24f4d60a25ea48ebb506bb11416f9b3ba82e6967def180c5f7473e41d7f1a24e662'/>
+      <property name='download.checksum.sha-1' value='b4a23f6fa67ccd609e84e67a3b01dcafebd00eab'/>
+      <property name='download.checksum.sha-256' value='4176a3c988271053e77f3f56a0d9e00bba37946f906baffc35c08be8bac44e92'/>
       <property name='maven-groupId' value='com.kk.pde.ds'/>
       <property name='maven-artifactId' value='com.kk.pde.ds.app'/>
       <property name='maven-version' value='1.0.0-SNAPSHOT'/>

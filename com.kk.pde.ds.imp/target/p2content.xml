@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <units size='1'>
-  <unit id='com.kk.pde.ds.imp' version='1.0.0.202508111817' singleton='false' generation='2'>
-    <update id='com.kk.pde.ds.imp' range='[0.0.0,1.0.0.202508111817)' severity='0'/>
+  <unit id='com.kk.pde.ds.imp' version='1.0.0.202512231729' singleton='false' generation='2'>
+    <update id='com.kk.pde.ds.imp' range='[0.0.0,1.0.0.202512231729)' severity='0'/>
     <properties size='6'>
       <property name='org.eclipse.equinox.p2.name' value='com.kk.pde.ds.imp'/>
       <property name='org.eclipse.equinox.p2.provider' value='KK'/>
@@ -11,9 +11,9 @@
       <property name='maven-type' value='eclipse-plugin'/>
     </properties>
     <provides size='4'>
-      <provided namespace='org.eclipse.equinox.p2.iu' name='com.kk.pde.ds.imp' version='1.0.0.202508111817'/>
-      <provided namespace='osgi.bundle' name='com.kk.pde.ds.imp' version='1.0.0.202508111817'/>
-      <provided namespace='osgi.identity' name='com.kk.pde.ds.imp' version='1.0.0.202508111817'>
+      <provided namespace='org.eclipse.equinox.p2.iu' name='com.kk.pde.ds.imp' version='1.0.0.202512231729'/>
+      <provided namespace='osgi.bundle' name='com.kk.pde.ds.imp' version='1.0.0.202512231729'/>
+      <provided namespace='osgi.identity' name='com.kk.pde.ds.imp' version='1.0.0.202512231729'>
         <properties size='1'>
           <property name='type' value='osgi.bundle'/>
         </properties>
@@ -33,20 +33,20 @@
           com.kk.pde.ds.imp
         </description>
       </requiredProperties>
-      <required namespace='org.eclipse.equinox.p2.iu' name='com.kk.pde.ds.imp.source' range='[1.0.0.202508111817,1.0.0.202508111817]' optional='true'>
+      <required namespace='org.eclipse.equinox.p2.iu' name='com.kk.pde.ds.imp.source' range='[1.0.0.202512231729,1.0.0.202512231729]' optional='true'>
         <filter>
           (org.eclipse.update.install.sources=true)
         </filter>
       </required>
     </requires>
     <artifacts size='1'>
-      <artifact classifier='osgi.bundle' id='com.kk.pde.ds.imp' version='1.0.0.202508111817'/>
+      <artifact classifier='osgi.bundle' id='com.kk.pde.ds.imp' version='1.0.0.202512231729'/>
     </artifacts>
     <touchpoint id='org.eclipse.equinox.p2.osgi' version='1.0.0'/>
     <touchpointData size='1'>
       <instructions size='1'>
         <instruction key='manifest'>
-          Bundle-SymbolicName: com.kk.pde.ds.imp&#xA;Bundle-Version: 1.0.0.202508111817&#xA;
+          Bundle-SymbolicName: com.kk.pde.ds.imp&#xA;Bundle-Version: 1.0.0.202512231729&#xA;
         </instruction>
       </instructions>
     </touchpointData>
