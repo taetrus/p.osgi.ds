@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?pde version="3.8"?>
+<target name="Running Platform">
+	<environment>
+		<arch>x86_64</arch>
+		<os>win32</os>
+		<ws>win32</ws>
+		<nl>en_US</nl>
+	</environment>
+	<locations>
+		<location path="D:\Dev\p.osgi.ds\distribution\target\plugins" type="Directory"/>
+		<location path="D:\Dev\p.osgi.ds\distribution\target\target" type="Directory"/>
+	</locations>
+</target>

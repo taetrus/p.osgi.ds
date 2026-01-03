@@ -1,1 +1,1 @@
-p2.eclipse.plugin:org.osgi.service.component.annotations:eclipse-plugin @ d:\.m2\repository\org\osgi\org.osgi.service.component.annotations\1.5.1\org.osgi.service.component.annotations-1.5.1.jar
+p2.eclipse.plugin:org.osgi.service.component.annotations:eclipse-plugin @ d:\.m2\repository\p2\osgi\bundle\org.osgi.service.component.annotations\1.5.1.202212101352\org.osgi.service.component.annotations-1.5.1.202212101352.jar
