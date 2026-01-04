@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+	<category-def name="com.kk.pde.ds" label="DS Application">
+		<description>
+			OSGi Declarative Services demonstration application
+		</description>
+	</category-def>
+
+	<feature id="com.kk.pde.ds.feature">
+		<category name="com.kk.pde.ds"/>
+	</feature>
+</site>

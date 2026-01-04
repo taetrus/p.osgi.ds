@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+	id="com.kk.pde.ds.feature"
+	label="DS Application Feature"
+	version="1.0.0.qualifier"
+	provider-name="KK">
+
+	<description>
+		OSGi Declarative Services demonstration feature containing the API, implementation, and application bundles.
+	</description>
+
+	<plugin
+		id="com.kk.pde.ds.api"
+		download-size="0"
+		install-size="0"
+		version="0.0.0"
+		unpack="false"/>
+
+	<plugin
+		id="com.kk.pde.ds.imp"
+		download-size="0"
+		install-size="0"
+		version="0.0.0"
+		unpack="false"/>
+
+	<plugin
+		id="com.kk.pde.ds.app"
+		download-size="0"
+		install-size="0"
+		version="0.0.0"
+		unpack="false"/>
+
+</feature>

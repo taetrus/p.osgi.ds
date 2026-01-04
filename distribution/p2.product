@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?pde version="3.5"?>
+
+<product uid="com.kk.pde.ds.product" version="1.0.0.qualifier" type="bundles" includeLaunchers="false" autoIncludeRequirements="true">
+
+   <configIni use="custom">
+      <win32>configuration/config.ini</win32>
+      <linux>configuration/config.ini</linux>
+      <macosx>configuration/config.ini</macosx>
+   </configIni>
+
+   <launcherArgs>
+      <programArgs>-consoleLog
+      </programArgs>
+      <vmArgs>-Declipse.ignoreApp=true -Dosgi.noShutdown=true
+      </vmArgs>
+      <vmArgsMac>-XstartOnFirstThread
+      </vmArgsMac>
+   </launcherArgs>
+
+   <plugins>
+      <plugin id="org.eclipse.osgi"/>
+      <plugin id="org.osgi.service.component"/>
+      <plugin id="org.osgi.service.component.annotations"/>
+      <plugin id="org.osgi.util.function"/>
+      <plugin id="org.osgi.util.promise"/>
+      <plugin id="org.apache.felix.scr"/>
+      <plugin id="org.apache.felix.gogo.runtime"/>
+      <plugin id="org.apache.felix.gogo.command"/>
+      <plugin id="org.apache.felix.gogo.shell"/>
+      <plugin id="org.eclipse.equinox.console"/>
+      <plugin id="com.kk.pde.ds.api"/>
+      <plugin id="com.kk.pde.ds.imp"/>
+      <plugin id="com.kk.pde.ds.app"/>
+   </plugins>
+
+   <configurations>
+      <plugin id="org.eclipse.osgi" autoStart="true" startLevel="1"/>
+      <plugin id="org.apache.felix.scr" autoStart="true" startLevel="2"/>
+      <plugin id="org.osgi.service.component" autoStart="true" startLevel="2"/>
+      <plugin id="org.osgi.service.component.annotations" autoStart="true" startLevel="2"/>
+      <plugin id="org.osgi.util.function" autoStart="true" startLevel="2"/>
+      <plugin id="org.osgi.util.promise" autoStart="true" startLevel="2"/>
+      <plugin id="org.apache.felix.gogo.runtime" autoStart="true" startLevel="3"/>
+      <plugin id="org.apache.felix.gogo.command" autoStart="true" startLevel="3"/>
+      <plugin id="org.apache.felix.gogo.shell" autoStart="true" startLevel="3"/>
+      <plugin id="org.eclipse.equinox.console" autoStart="true" startLevel="3"/>
+      <plugin id="com.kk.pde.ds.api" autoStart="true" startLevel="4"/>
+      <plugin id="com.kk.pde.ds.imp" autoStart="true" startLevel="4"/>
+      <plugin id="com.kk.pde.ds.app" autoStart="true" startLevel="4"/>
+   </configurations>
+
+</product>
