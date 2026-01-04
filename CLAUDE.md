@@ -4,71 +4,73 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is an OSGi Declarative Services (DS) demonstration project built with Maven Tycho. It showcases the service-oriented architecture pattern with a clear separation between API contracts, implementations, and consumers.
+This is an OSGi Declarative Services (DS) project built with Maven Tycho 4.0.13. It demonstrates service-oriented architecture with clear separation between API contracts, implementations, and consumers. The build produces a p2 repository and platform-specific product archives.
 
 ## Build Commands
 
 ```bash
-# Build all modules
-mvn clean package
+# Full build (recommended for CI/CD)
+mvn clean verify
 
-# Build without tests
+# Quick build without tests
 mvn clean package -DskipTests
 
-# Build a specific module
+# Build specific module
 mvn clean package -pl com.kk.pde.ds.api
 
-# Run tests (requires enabling test module first - see below)
-mvn clean test
+# Resume failed build from distribution
+mvn verify -rf :distribution
 ```
 
-**Note:** The maven-clean-plugin is disabled (`<skip>true</skip>`), so `mvn clean` alone won't delete target folders. Use `mvn clean package` or delete target directories manually if needed.
+## Build Outputs
 
-## Running Tests
+After a successful build:
+- **p2 Repository:** `distribution/target/repository/`
+- **Product Archives:**
+  - `distribution/target/products/com.kk.pde.ds.product-linux.gtk.x86_64.tar.gz`
+  - `distribution/target/products/com.kk.pde.ds.product-win32.win32.x86_64.zip`
+  - `distribution/target/products/com.kk.pde.ds.product-macosx.cocoa.x86_64.tar.gz`
 
-The test module `com.kk.pde.ds.imp.tests` is currently commented out in the root `pom.xml`. To enable:
+## Running the Application
 
-1. Uncomment `<module>com.kk.pde.ds.imp.tests</module>` in root `pom.xml` (line 98)
-2. Run `mvn clean test`
+Extract a product archive and run:
+```bash
+java -jar plugins/org.eclipse.osgi_*.jar -console -consoleLog
+```
 
-Tests use JUnit Jupiter 5.10.2 and run via tycho-surefire-plugin.
+## Module Structure
 
-## Running in Eclipse
-
-Use the Equinox launch configuration at `target/New_configuration.launch`. This starts an OSGi console with:
-- All three bundles (api, imp, app)
-- Felix SCR for declarative services
-- Felix Gogo shell for the OSGi console
-
-Required VM arguments: `-Declipse.ignoreApp=true -Dosgi.noShutdown=true`
+```
+com.kk.pde.ds.target   → Target platform definition (Eclipse 2024-12)
+com.kk.pde.ds.api      → IGreet interface (service contract)
+com.kk.pde.ds.imp      → Greet implementation (service provider)
+com.kk.pde.ds.app      → App consumer (@Reference injection)
+com.kk.pde.ds.feature  → Feature grouping all bundles
+distribution           → p2 repository + product builds
+```
 
 ## Architecture
 
-```
-com.kk.pde.ds.api     → Defines IGreet interface (service contract)
-        ↑
-com.kk.pde.ds.imp     → Implements IGreet via Greet class (service provider)
-        ↑
-com.kk.pde.ds.app     → Consumes IGreet via @Reference injection (service consumer)
-
-distribution          → Aggregates all JARs into distribution/target/plugins/
-```
-
 **Service binding flow:**
-1. `Greet` component activates and registers as `IGreet` service
+1. `Greet` component registers as `IGreet` service
 2. `App` component has `@Reference` on `setApi(IGreet)`
-3. SCR injects the `Greet` instance into `App`
-4. `App.start()` calls `api.greet()` which prints "Hello world!"
+3. Felix SCR injects `Greet` into `App`
+4. `App.start()` calls `api.greet()` → prints "Hello world!"
 
-## Key Files
+## Key Configuration Files
 
-- **Service declarations:** `*/OSGI-INF/*.xml` - Generated from DS annotations
-- **Bundle manifests:** `*/META-INF/MANIFEST.MF` - OSGi metadata (Export-Package, Import-Package)
-- **Build properties:** `*/build.properties` - PDE build configuration
+| File | Purpose |
+|------|---------|
+| `com.kk.pde.ds.target/*.target` | Target platform with p2 repository URLs |
+| `distribution/p2.product` | Product definition (bundles, start levels) |
+| `distribution/category.xml` | p2 repository category structure |
+| `*/META-INF/MANIFEST.MF` | OSGi bundle metadata |
+| `*/OSGI-INF/*.xml` | DS component declarations |
 
 ## Technology Stack
 
-- **Java 17** (bundles target 1.8 bytecode)
-- **Tycho 4.0.13** for Maven-based OSGi builds
-- **OSGi Declarative Services** via annotations (`org.osgi.service.component.annotations`)
-- **JUnit 5** for testing
+- **Java 17**
+- **Tycho 4.0.13** (Maven OSGi build)
+- **Eclipse 2024-12** target platform
+- **OSGi Declarative Services** via annotations
+- **Felix SCR** runtime

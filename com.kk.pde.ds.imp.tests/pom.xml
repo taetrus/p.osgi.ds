@@ -12,20 +12,6 @@
 	<artifactId>com.kk.pde.ds.imp.tests</artifactId>
 	<packaging>eclipse-test-plugin</packaging>
 
-	<dependencies>
-		<dependency>
-			<groupId>com.kk.pde.ds</groupId>
-			<artifactId>com.kk.pde.ds.imp</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.junit.jupiter</groupId>
-			<artifactId>junit-jupiter-engine</artifactId>
-			<version>5.10.2</version>
-			<scope>test</scope>
-		</dependency>
-	</dependencies>
-
 	<build>
 		<plugins>
 			<plugin>

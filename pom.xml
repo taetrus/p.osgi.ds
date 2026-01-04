@@ -10,94 +10,72 @@
 
 	<properties>
 		<tycho.version>4.0.13</tycho.version>
-		<osgi.annotations.version>1.5.1</osgi.annotations.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.compiler.source>17</maven.compiler.source>
 		<maven.compiler.target>17</maven.compiler.target>
-		<maven.build.timestamp.format>yyyyMMdd-HHmm</maven.build.timestamp.format>
 	</properties>
 
 	<build>
-		<directory>${project.basedir}/target</directory>
-		<!--
-		<finalName>${project.artifactId}-${project.version}-${maven.build.timestamp}</finalName>-->
-		<finalName>${project.artifactId}-${project.version}</finalName>
 		<plugins>
-			<plugin>
-				<artifactId>maven-clean-plugin</artifactId>
-				<version>3.2.0</version>
-				<configuration>
-					<skip>true</skip>
-				</configuration>
-			</plugin>
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
 				<artifactId>tycho-maven-plugin</artifactId>
 				<version>${tycho.version}</version>
 				<extensions>true</extensions>
 			</plugin>
-						<plugin>
-							<groupId>org.eclipse.tycho</groupId>
-							<artifactId>target-platform-configuration</artifactId>
-							<version>${tycho.version}</version>
-							<configuration>
-								<pomDependencies>consider</pomDependencies>
-							</configuration>
-						</plugin>
 
-<!--			<plugin>-->
-<!--				<groupId>org.eclipse.tycho</groupId>-->
-<!--				<artifactId>target-platform-configuration</artifactId>-->
-<!--				<version>${tycho.version}</version>-->
-<!--				<configuration>-->
-<!--					<pomDependencies>consider</pomDependencies>-->
-<!--					<target>-->
-<!--						<artifact>-->
-<!--							<groupId>com.kk.pde.ds.target</groupId>-->
-<!--							<artifactId>target-platform</artifactId>-->
-<!--							<version>1.0.0-SNAPSHOT</version>-->
-<!--						</artifact>-->
-<!--					</target>-->
-<!--					<environments>-->
-<!--						<environment>-->
-<!--							<os>linux</os>-->
-<!--							<ws>gtk</ws>-->
-<!--							<arch>x86_64</arch>-->
-<!--						</environment>-->
-<!--						<environment>-->
-<!--							<os>win32</os>-->
-<!--							<ws>win32</ws>-->
-<!--							<arch>x86_64</arch>-->
-<!--						</environment>-->
-<!--						<environment>-->
-<!--							<os>macosx</os>-->
-<!--							<ws>cocoa</ws>-->
-<!--							<arch>x86_64</arch>-->
-<!--						</environment>-->
-<!--					</environments>-->
-<!--				</configuration>-->
-<!--			</plugin>-->
+			<plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>target-platform-configuration</artifactId>
+				<version>${tycho.version}</version>
+				<configuration>
+					<target>
+						<artifact>
+							<groupId>com.kk.pde.ds</groupId>
+							<artifactId>com.kk.pde.ds.target</artifactId>
+							<version>${project.version}</version>
+						</artifact>
+					</target>
+					<environments>
+						<environment>
+							<os>linux</os>
+							<ws>gtk</ws>
+							<arch>x86_64</arch>
+						</environment>
+						<environment>
+							<os>win32</os>
+							<ws>win32</ws>
+							<arch>x86_64</arch>
+						</environment>
+						<environment>
+							<os>macosx</os>
+							<ws>cocoa</ws>
+							<arch>x86_64</arch>
+						</environment>
+					</environments>
+				</configuration>
+			</plugin>
 
-
-			<!-- Compiler plugin for Java 8 -->
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
 				<artifactId>tycho-compiler-plugin</artifactId>
 				<version>${tycho.version}</version>
 				<configuration>
-					<source>1.8</source>
-					<target>1.8</target>
+					<source>17</source>
+					<target>17</target>
 				</configuration>
 			</plugin>
 		</plugins>
 	</build>
 
 	<modules>
+		<module>com.kk.pde.ds.target</module>
 		<module>com.kk.pde.ds.api</module>
 		<module>com.kk.pde.ds.imp</module>
-		<!--                <module>com.kk.pde.ds.imp.tests</module>-->
+		<!-- Test module disabled until JUnit 5 bundles are added to target platform -->
+		<!-- <module>com.kk.pde.ds.imp.tests</module> -->
 		<module>com.kk.pde.ds.app</module>
-<!--		<module>target-platform</module>-->
+		<module>com.kk.pde.ds.feature</module>
 		<module>distribution</module>
 	</modules>
 </project>
