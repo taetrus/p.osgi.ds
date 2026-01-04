@@ -10,4 +10,4 @@ Service-Component: OSGI-INF/com.kk.pde.ds.app.App.xml
 Bundle-Vendor: KK
 Automatic-Module-Name: com.kk.pde.ds.app
 Bundle-ActivationPolicy: lazy
-Bundle-RequiredExecutionEnvironment: JavaSE-17
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
