@@ -2,7 +2,17 @@
   "permissions": {
     "allow": [
       "Bash(mvn:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(timeout 5 java:*)",
+      "Bash(timeout 8 java:*)",
+      "Bash(taskkill:*)",
+      "Bash(cmd //c \"rd /s /q D:\\\\Dev\\\\p.osgi.ds\\\\distribution\\\\target\")",
+      "Skill(commit-commands:commit)",
+      "Bash(ls:*)",
+      "Bash(cmd /c \"cd /d D:\\\\Dev\\\\p.osgi.ds && mvn clean verify -e\")",
+      "Bash(git -C \"D:\\\\Dev\\\\p.osgi.ds\" status)",
+      "Bash(git -C \"D:\\\\Dev\\\\p.osgi.ds\" diff)",
+      "Bash(git -C \"D:\\\\Dev\\\\p.osgi.ds\" log --oneline -5)"
     ]
   }
 }

@@ -3,10 +3,11 @@
 
 <product uid="com.kk.pde.ds.product" version="1.0.0.qualifier" type="bundles" includeLaunchers="false" autoIncludeRequirements="true">
 
-   <configIni use="custom">
-      <win32>configuration/config.ini</win32>
+   <configIni use="default">
       <linux>configuration/config.ini</linux>
       <macosx>configuration/config.ini</macosx>
+      <solaris></solaris>
+      <win32>configuration/config.ini</win32>
    </configIni>
 
    <launcherArgs>
@@ -18,36 +19,45 @@
       </vmArgsMac>
    </launcherArgs>
 
+   <launcher>
+      <win useIco="false">
+         <bmp/>
+      </win>
+   </launcher>
+
+   <vm>
+   </vm>
+
    <plugins>
+      <plugin id="com.kk.pde.ds.api"/>
+      <plugin id="com.kk.pde.ds.app"/>
+      <plugin id="com.kk.pde.ds.imp"/>
+      <plugin id="org.apache.felix.gogo.command"/>
+      <plugin id="org.apache.felix.gogo.runtime"/>
+      <plugin id="org.apache.felix.gogo.shell"/>
+      <plugin id="org.apache.felix.scr"/>
+      <plugin id="org.eclipse.equinox.console"/>
       <plugin id="org.eclipse.osgi"/>
       <plugin id="org.osgi.service.component"/>
       <plugin id="org.osgi.service.component.annotations"/>
       <plugin id="org.osgi.util.function"/>
       <plugin id="org.osgi.util.promise"/>
-      <plugin id="org.apache.felix.scr"/>
-      <plugin id="org.apache.felix.gogo.runtime"/>
-      <plugin id="org.apache.felix.gogo.command"/>
-      <plugin id="org.apache.felix.gogo.shell"/>
-      <plugin id="org.eclipse.equinox.console"/>
-      <plugin id="com.kk.pde.ds.api"/>
-      <plugin id="com.kk.pde.ds.imp"/>
-      <plugin id="com.kk.pde.ds.app"/>
    </plugins>
 
    <configurations>
-      <plugin id="org.eclipse.osgi" autoStart="true" startLevel="1"/>
-      <plugin id="org.apache.felix.scr" autoStart="true" startLevel="2"/>
-      <plugin id="org.osgi.service.component" autoStart="true" startLevel="2"/>
-      <plugin id="org.osgi.service.component.annotations" autoStart="true" startLevel="2"/>
-      <plugin id="org.osgi.util.function" autoStart="true" startLevel="2"/>
-      <plugin id="org.osgi.util.promise" autoStart="true" startLevel="2"/>
-      <plugin id="org.apache.felix.gogo.runtime" autoStart="true" startLevel="3"/>
-      <plugin id="org.apache.felix.gogo.command" autoStart="true" startLevel="3"/>
-      <plugin id="org.apache.felix.gogo.shell" autoStart="true" startLevel="3"/>
-      <plugin id="org.eclipse.equinox.console" autoStart="true" startLevel="3"/>
-      <plugin id="com.kk.pde.ds.api" autoStart="true" startLevel="4"/>
-      <plugin id="com.kk.pde.ds.imp" autoStart="true" startLevel="4"/>
-      <plugin id="com.kk.pde.ds.app" autoStart="true" startLevel="4"/>
+      <plugin id="com.kk.pde.ds.api" autoStart="true" startLevel="4" />
+      <plugin id="com.kk.pde.ds.app" autoStart="true" startLevel="4" />
+      <plugin id="com.kk.pde.ds.imp" autoStart="true" startLevel="4" />
+      <plugin id="org.apache.felix.gogo.command" autoStart="true" startLevel="3" />
+      <plugin id="org.apache.felix.gogo.runtime" autoStart="true" startLevel="3" />
+      <plugin id="org.apache.felix.gogo.shell" autoStart="true" startLevel="3" />
+      <plugin id="org.apache.felix.scr" autoStart="true" startLevel="2" />
+      <plugin id="org.eclipse.equinox.console" autoStart="true" startLevel="3" />
+      <plugin id="org.eclipse.osgi" autoStart="true" startLevel="1" />
+      <plugin id="org.osgi.service.component" autoStart="true" startLevel="2" />
+      <plugin id="org.osgi.service.component.annotations" autoStart="true" startLevel="2" />
+      <plugin id="org.osgi.util.function" autoStart="true" startLevel="2" />
+      <plugin id="org.osgi.util.promise" autoStart="true" startLevel="2" />
    </configurations>
 
 </product>

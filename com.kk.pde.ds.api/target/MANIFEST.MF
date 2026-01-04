@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: com.kk.pde.ds.api
 Bundle-SymbolicName: com.kk.pde.ds.api
-Bundle-Version: 1.0.0.202601031903
+Bundle-Version: 1.0.0.202601040946
 Export-Package: com.kk.pde.ds.api
 Bundle-Vendor: KK
 Automatic-Module-Name: com.kk.pde.ds.api
