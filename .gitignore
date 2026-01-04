@@ -8,11 +8,11 @@ target/
 
 # Eclipse / PDE
 .metadata/
-.settings/
+#.settings/
 .loadpath
 .recommenders
-.project
-.classpath
+#.project
+#.classpath
 *.launch
 local.properties
 
