@@ -3,27 +3,31 @@ package com.kk.pde.ds.app;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.kk.pde.ds.api.IGreet;
 
 @Component
 public class App {
 
+	private static Logger log = LoggerFactory.getLogger(App.class);
+
 	private IGreet greet;
 
 	public App() {
-		System.out.println("App.App()");
+		log.info("App.App()");
 	}
 
 	@Reference
 	public void setApi(IGreet greet) {
-		System.out.println("App.setApi()");
+		log.info("App.setApi()");
 		this.greet = greet;
 	}
 
 	@Activate
 	public void start() {
-		System.out.println("App.start()");
+		log.info("App.start()");
 
 		greet.greet();
 	}
