@@ -33,10 +33,12 @@ After a successful build:
 
 ## Running the Application
 
-Extract a product archive and run:
+Extract a product archive, cd into it, and run:
 ```bash
-java -jar plugins/org.eclipse.osgi_*.jar -console -consoleLog
+java -jar plugins/org.eclipse.osgi_*.jar -configuration configuration -console -consoleLog
 ```
+
+The `-configuration configuration` flag is required to point the OSGi framework to the config.ini file.
 
 ## Module Structure
 
