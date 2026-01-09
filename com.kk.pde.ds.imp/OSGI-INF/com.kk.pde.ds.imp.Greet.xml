@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.1.0" activate="start" name="com.kk.pde.ds.imp.Greet">
+   <implementation class="com.kk.pde.ds.imp.Greet"/>
    <service>
       <provide interface="com.kk.pde.ds.api.IGreet"/>
    </service>
-   <implementation class="com.kk.pde.ds.imp.Greet"/>
 </scr:component>
