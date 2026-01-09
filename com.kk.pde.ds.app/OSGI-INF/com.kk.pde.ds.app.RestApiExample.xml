@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.1.0" name="com.kk.pde.ds.app.RestApiExample">
+   <implementation class="com.kk.pde.ds.app.RestApiExample"/>
+   <service>
+      <provide interface="com.kk.pde.ds.app.RestApiExample"/>
+   </service>
+   <property name="osgi.jaxrs.resource" type="Boolean" value="true"/>
+</scr:component>

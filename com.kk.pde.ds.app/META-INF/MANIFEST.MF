@@ -4,9 +4,13 @@ Bundle-Name: com.kk.pde.ds.app
 Bundle-SymbolicName: com.kk.pde.ds.app
 Bundle-Version: 1.0.0.qualifier
 Import-Package: com.kk.pde.ds.api,
+ javax.ws.rs;version="2.1.6",
+ javax.ws.rs.core;version="2.1.6",
  org.osgi.service.component.annotations;version="1.5.1";resolution:=optional,
+ org.osgi.service.jaxrs.whiteboard;version="1.0.0",
  org.slf4j;version="1.7.32"
-Service-Component: OSGI-INF/com.kk.pde.ds.app.App.xml
+Service-Component: OSGI-INF/com.kk.pde.ds.app.App.xml,
+ OSGI-INF/com.kk.pde.ds.app.RestApiExample.xml
 Bundle-Vendor: KK
 Automatic-Module-Name: com.kk.pde.ds.app
 Bundle-ActivationPolicy: lazy
