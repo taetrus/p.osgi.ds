@@ -6,7 +6,6 @@
    <configIni use="default">
       <linux>configuration/config.ini</linux>
       <macosx>configuration/config.ini</macosx>
-      <solaris></solaris>
       <win32>configuration/config.ini</win32>
    </configIni>
 

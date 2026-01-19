@@ -35,7 +35,7 @@ After a successful build:
 
 Extract a product archive, cd into it, and run:
 ```bash
-java -jar plugins/org.eclipse.osgi_*.jar -configuration configuration -console -consoleLog
+java -jar plugins/org.eclipse.osgi_3.22.0.v20241030-2121.jar -configuration configuration -clean -console -consoleLog
 ```
 
 The `-configuration configuration` flag is required to point the OSGi framework to the config.ini file.
