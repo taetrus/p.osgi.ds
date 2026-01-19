@@ -14,6 +14,7 @@ public class App {
 	private static Logger log = LoggerFactory.getLogger(App.class);
 
 	private IGreet greet;
+	private String mcpJson;
 
 	public App() {
 		log.info("App.App()");
@@ -28,6 +29,8 @@ public class App {
 	@Activate
 	public void start() {
 		log.info("App.start()");
+
+		mcpJson = McpSettings.load(log);
 
 		greet.greet();
 	}
