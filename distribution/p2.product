@@ -12,7 +12,7 @@
    <launcherArgs>
       <programArgs>-consoleLog
       </programArgs>
-      <vmArgs>-Declipse.ignoreApp=true -Dosgi.noShutdown=true
+      <vmArgs>-Declipse.ignoreApp=true -Dosgi.noShutdown=true -Dlogback.configurationFile=configuration/logback.xml
       </vmArgs>
       <vmArgsMac>-XstartOnFirstThread
       </vmArgsMac>
@@ -40,6 +40,8 @@
       <plugin id="org.apache.felix.http.servlet-api"/>
       <plugin id="org.apache.felix.scr"/>
       <plugin id="org.apache.felix.webconsole"/>
+      <plugin id="org.apache.felix.webconsole.plugins.ds"/>
+      <plugin id="org.apache.felix.inventory"/>
       <plugin id="org.eclipse.equinox.console"/>
       <plugin id="org.eclipse.osgi"/>
       <plugin id="org.osgi.service.component"/>
@@ -59,6 +61,8 @@
       <plugin id="org.apache.felix.http.servlet-api" autoStart="true" startLevel="0" />
       <plugin id="org.apache.felix.scr" autoStart="true" startLevel="2" />
       <plugin id="org.apache.felix.webconsole" autoStart="true" startLevel="0" />
+      <plugin id="org.apache.felix.webconsole.plugins.ds" autoStart="true" startLevel="0" />
+      <plugin id="org.apache.felix.inventory" autoStart="true" startLevel="0" />
       <plugin id="org.eclipse.equinox.console" autoStart="true" startLevel="3" />
       <plugin id="org.eclipse.osgi" autoStart="true" startLevel="1" />
       <plugin id="org.osgi.service.component" autoStart="true" startLevel="2" />
