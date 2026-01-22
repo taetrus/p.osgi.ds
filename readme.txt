@@ -1,3 +1,6 @@
+java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005 -jar plugins/org.eclipse.osgi_3.22.0.v20241030-2121.jar -configuration configuration -clean -console -consoleLog
+
+
 • Added a small loader that reads settings/mcp.json
   from an override dir, the install area, or the
   working directory and wires it into startup; the

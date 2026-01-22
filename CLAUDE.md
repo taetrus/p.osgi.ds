@@ -35,6 +35,10 @@ After a successful build:
 
 Extract a product archive, cd into it, and run:
 ```bash
+java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005 -jar plugins/org.eclipse.osgi_3.22.0.v20241030-2121.jar -configuration configuration -clean -console -consoleLog
+
+or
+
 p.osgi.ds\distribution\target\products\com.kk.pde.ds.product\win32\win32\x86_64>
 java -jar plugins/org.eclipse.osgi_3.22.0.v20241030-2121.jar -configuration configuration -clean -console -consoleLog
 ```
