@@ -31,10 +31,15 @@
       <plugin id="com.kk.pde.ds.api"/>
       <plugin id="com.kk.pde.ds.app"/>
       <plugin id="com.kk.pde.ds.imp"/>
+      <plugin id="org.apache.commons.commons-fileupload"/>
+      <plugin id="org.apache.commons.commons-io"/>
       <plugin id="org.apache.felix.gogo.command"/>
       <plugin id="org.apache.felix.gogo.runtime"/>
       <plugin id="org.apache.felix.gogo.shell"/>
+      <plugin id="org.apache.felix.http.jetty"/>
+      <plugin id="org.apache.felix.http.servlet-api"/>
       <plugin id="org.apache.felix.scr"/>
+      <plugin id="org.apache.felix.webconsole"/>
       <plugin id="org.eclipse.equinox.console"/>
       <plugin id="org.eclipse.osgi"/>
       <plugin id="org.osgi.service.component"/>
@@ -50,7 +55,10 @@
       <plugin id="org.apache.felix.gogo.command" autoStart="true" startLevel="3" />
       <plugin id="org.apache.felix.gogo.runtime" autoStart="true" startLevel="3" />
       <plugin id="org.apache.felix.gogo.shell" autoStart="true" startLevel="3" />
+      <plugin id="org.apache.felix.http.jetty" autoStart="true" startLevel="0" />
+      <plugin id="org.apache.felix.http.servlet-api" autoStart="true" startLevel="0" />
       <plugin id="org.apache.felix.scr" autoStart="true" startLevel="2" />
+      <plugin id="org.apache.felix.webconsole" autoStart="true" startLevel="0" />
       <plugin id="org.eclipse.equinox.console" autoStart="true" startLevel="3" />
       <plugin id="org.eclipse.osgi" autoStart="true" startLevel="1" />
       <plugin id="org.osgi.service.component" autoStart="true" startLevel="2" />

@@ -71,6 +71,41 @@
 					<version>1.5.1</version>
 					<type>jar</type>
 				</dependency>
+				<!-- Felix WebConsole (4.3.x has fewer dependencies) -->
+				<dependency>
+					<groupId>org.apache.felix</groupId>
+					<artifactId>org.apache.felix.webconsole</artifactId>
+					<version>4.3.16</version>
+					<type>jar</type>
+				</dependency>
+				<!-- Felix HTTP Jetty (4.x compatible with WebConsole 4.x) -->
+				<dependency>
+					<groupId>org.apache.felix</groupId>
+					<artifactId>org.apache.felix.http.jetty</artifactId>
+					<version>4.2.26</version>
+					<type>jar</type>
+				</dependency>
+				<!-- Servlet API -->
+				<dependency>
+					<groupId>org.apache.felix</groupId>
+					<artifactId>org.apache.felix.http.servlet-api</artifactId>
+					<version>1.2.0</version>
+					<type>jar</type>
+				</dependency>
+				<!-- Commons FileUpload (WebConsole dependency) -->
+				<dependency>
+					<groupId>commons-fileupload</groupId>
+					<artifactId>commons-fileupload</artifactId>
+					<version>1.5</version>
+					<type>jar</type>
+				</dependency>
+				<!-- Commons IO (FileUpload dependency) -->
+				<dependency>
+					<groupId>commons-io</groupId>
+					<artifactId>commons-io</artifactId>
+					<version>2.16.1</version>
+					<type>jar</type>
+				</dependency>
 			</dependencies>
 		</location>
 		<!-- Logging -->
