@@ -29,7 +29,18 @@
       "Bash(git -C \"D:\\\\Dev\\\\p.osgi.ds\" commit -m \"$\\(cat <<''EOF''\nMigrate target platform from p2 to Maven dependencies\n\n- Replace Eclipse p2 repository references with Maven Central coordinates\n- All OSGi bundles now sourced from Maven:\n  - org.eclipse.platform:org.eclipse.osgi \\(3.22.0\\)\n  - org.eclipse.platform:org.eclipse.equinox.console \\(1.4.800\\)\n  - org.apache.felix:org.apache.felix.scr \\(2.2.12\\)\n  - org.apache.felix:org.apache.felix.gogo.* \\(command, runtime, shell\\)\n  - org.osgi:org.osgi.service.component \\(1.5.1\\)\n  - org.osgi:org.osgi.util.function/promise\n  - org.osgi:org.osgi.service.component.annotations \\(1.5.1\\)\n- Use explicit versions instead of p2 version wildcards \\(0.0.0\\)\n- Set missingManifest=error for OSGi bundles \\(all have proper manifests\\)\n- Eliminates dependency on Eclipse p2 update sites\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(git -C \"D:\\\\Dev\\\\p.osgi.ds\" checkout -- com.kk.pde.ds.target/com.kk.pde.ds.target.target distribution/p2.product)",
       "Bash(jar tf:*)",
-      "Bash(unzip:*)"
+      "Bash(unzip:*)",
+      "Bash(tree:*)",
+      "mcp__plugin_serena_serena__initial_instructions",
+      "mcp__plugin_serena_serena__check_onboarding_performed",
+      "mcp__plugin_serena_serena__list_memories",
+      "mcp__plugin_serena_serena__activate_project",
+      "mcp__plugin_serena_serena__list_dir",
+      "mcp__plugin_serena_serena__read_file",
+      "mcp__plugin_serena_serena__think_about_collected_information",
+      "WebFetch(domain:mvnrepository.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:vogella.com)"
     ]
   }
 }

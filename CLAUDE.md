@@ -72,8 +72,38 @@ com.kk.pde.ds.target   → Target platform definition (Eclipse 2024-12)
 com.kk.pde.ds.api      → IGreet interface (service contract)
 com.kk.pde.ds.imp      → Greet implementation (service provider)
 com.kk.pde.ds.app      → App consumer (@Reference injection)
+com.kk.pde.ds.rest     → REST API via HTTP Whiteboard (@Reference injection)
 com.kk.pde.ds.feature  → Feature grouping all bundles
 distribution           → p2 repository + product builds
+```
+
+## REST API
+
+The `com.kk.pde.ds.rest` module exposes the IGreet service via HTTP endpoints using OSGi HTTP Whiteboard pattern.
+
+**Endpoints:**
+
+| Method | URL | Description |
+|--------|-----|-------------|
+| GET | `/api/greet` | Returns JSON greeting |
+| GET | `/api/greet/{name}` | Returns personalized greeting |
+| POST | `/api/greet` | Echoes posted message |
+
+**Test commands:**
+```bash
+# Basic greeting
+curl http://localhost:8080/api/greet
+
+# Personalized greeting
+curl http://localhost:8080/api/greet/World
+
+# Echo message
+curl -X POST http://localhost:8080/api/greet -d '{"message":"Test"}'
+```
+
+**Response format:**
+```json
+{"message":"Hello from OSGi HTTP Whiteboard!","timestamp":1737734567890}
 ```
 
 ## Architecture
@@ -101,5 +131,6 @@ distribution           → p2 repository + product builds
 - **Eclipse 2024-12** target platform
 - **OSGi Declarative Services** via annotations
 - **Felix SCR** runtime
+- **Felix HTTP Jetty** with HTTP Whiteboard for REST API
 - **Felix WebConsole** with DS plugin
 - **Logback** for logging (default level: INFO)
