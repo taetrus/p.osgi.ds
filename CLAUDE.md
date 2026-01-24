@@ -33,17 +33,37 @@ After a successful build:
 
 ## Running the Application
 
-Extract a product archive, cd into it, and run:
+Extract a product archive, cd into it, and run the launcher script:
+
+**Windows:**
+```cmd
+run.bat
+```
+
+**Linux/macOS:**
 ```bash
-java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005 -jar plugins/org.eclipse.osgi_3.22.0.v20241030-2121.jar -configuration configuration -clean -console -consoleLog
+./run.sh
+```
 
-or
+**Or manually (Java 8+ compatible):**
+```bash
+java -jar plugins/org.eclipse.osgi_3.22.0.v20241030-2121.jar -configuration configuration -console -consoleLog
+```
 
-p.osgi.ds\distribution\target\products\com.kk.pde.ds.product\win32\win32\x86_64>
-java -jar plugins/org.eclipse.osgi_3.22.0.v20241030-2121.jar -configuration configuration -clean -console -consoleLog
+**With remote debugging:**
+```bash
+java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005 -jar plugins/org.eclipse.osgi_3.22.0.v20241030-2121.jar -configuration configuration -console -consoleLog
 ```
 
 The `-configuration configuration` flag is required to point the OSGi framework to the config.ini file.
+
+## Felix WebConsole
+
+Access the web console at: http://localhost:8080/system/console
+- Username: `admin`
+- Password: `admin`
+
+The DS tab shows all Declarative Services components and their status.
 
 ## Module Structure
 
@@ -76,8 +96,10 @@ distribution           → p2 repository + product builds
 
 ## Technology Stack
 
-- **Java 17**
+- **Java 8+** (application bundles are Java 8 compatible)
 - **Tycho 4.0.13** (Maven OSGi build)
 - **Eclipse 2024-12** target platform
 - **OSGi Declarative Services** via annotations
 - **Felix SCR** runtime
+- **Felix WebConsole** with DS plugin
+- **Logback** for logging (default level: INFO)
