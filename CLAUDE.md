@@ -6,6 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is an OSGi Declarative Services (DS) project built with Maven Tycho 4.0.13. It demonstrates service-oriented architecture with clear separation between API contracts, implementations, and consumers. The build produces a p2 repository and platform-specific product archives.
 
+## Additional Instructions
+
+For every project, write a detailed FOR[kerem].md file that explains the whole project in plain language.
+
+Explain the technical architecture, the structure of the codebase and how the various parts are connected, the technologies used, why we made these technical decisions, and lessons I can learn from it (this should include the bugs we ran into and how we fixed them, potential pitfalls and how to avoid them in the future, new technologies used, how good engineers think and work, best practices, etc).
+
+It should be very engaging to read; don't make it sound like boring technical documentation/textbook. Where appropriate, use analogies and anecdotes to make it more understandable and memorable.
+
 ## Build Commands
 
 ```bash
