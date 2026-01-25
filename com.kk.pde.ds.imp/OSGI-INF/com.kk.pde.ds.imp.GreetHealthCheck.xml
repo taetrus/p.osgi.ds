@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.3.0" name="com.kk.pde.ds.imp.GreetHealthCheck">
+   <property name="hc.name" value="Greet Service Health Check"/>
+   <property name="hc.tags" value="application,greet"/>
+   <property name="hc.mbean.name" value="greetServiceHealthCheck"/>
+   <implementation class="com.kk.pde.ds.imp.GreetHealthCheck"/>
+   <service>
+      <provide interface="org.apache.felix.hc.api.HealthCheck"/>
+   </service>
+   <reference cardinality="1..1" field="greetService" interface="com.kk.pde.ds.api.IGreet" name="greetService"/>
+</scr:component>

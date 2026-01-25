@@ -120,6 +120,65 @@
 					<version>2.16.1</version>
 					<type>jar</type>
 				</dependency>
+				<!-- OSGi Configuration Admin -->
+				<dependency>
+					<groupId>org.apache.felix</groupId>
+					<artifactId>org.apache.felix.configadmin</artifactId>
+					<version>1.9.26</version>
+					<type>jar</type>
+				</dependency>
+				<!-- OSGi Metatype (for configuration metadata) -->
+				<dependency>
+					<groupId>org.apache.felix</groupId>
+					<artifactId>org.apache.felix.metatype</artifactId>
+					<version>1.2.4</version>
+					<type>jar</type>
+				</dependency>
+				<!-- Felix File Install (auto-load configurations) -->
+				<dependency>
+					<groupId>org.apache.felix</groupId>
+					<artifactId>org.apache.felix.fileinstall</artifactId>
+					<version>3.7.4</version>
+					<type>jar</type>
+				</dependency>
+				<!-- OSGi Event Admin (required by Health Check) -->
+				<dependency>
+					<groupId>org.osgi</groupId>
+					<artifactId>org.osgi.service.event</artifactId>
+					<version>1.4.1</version>
+					<type>jar</type>
+				</dependency>
+				<dependency>
+					<groupId>org.apache.felix</groupId>
+					<artifactId>org.apache.felix.eventadmin</artifactId>
+					<version>1.6.4</version>
+					<type>jar</type>
+				</dependency>
+				<!-- Felix Health Check (javax.servlet compatible versions) -->
+				<dependency>
+					<groupId>org.apache.felix</groupId>
+					<artifactId>org.apache.felix.healthcheck.api</artifactId>
+					<version>2.0.4</version>
+					<type>jar</type>
+				</dependency>
+				<dependency>
+					<groupId>org.apache.felix</groupId>
+					<artifactId>org.apache.felix.healthcheck.core</artifactId>
+					<version>2.0.8</version>
+					<type>jar</type>
+				</dependency>
+				<dependency>
+					<groupId>org.apache.felix</groupId>
+					<artifactId>org.apache.felix.healthcheck.generalchecks</artifactId>
+					<version>2.0.6</version>
+					<type>jar</type>
+				</dependency>
+				<dependency>
+					<groupId>org.apache.felix</groupId>
+					<artifactId>org.apache.felix.healthcheck.webconsoleplugin</artifactId>
+					<version>2.0.2</version>
+					<type>jar</type>
+				</dependency>
 			</dependencies>
 		</location>
 		<!-- Logging -->

@@ -49,6 +49,15 @@
       <plugin id="org.osgi.service.component.annotations"/>
       <plugin id="org.osgi.util.function"/>
       <plugin id="org.osgi.util.promise"/>
+      <plugin id="org.apache.felix.configadmin"/>
+      <plugin id="org.apache.felix.metatype"/>
+      <plugin id="org.apache.felix.fileinstall"/>
+      <plugin id="org.osgi.service.event"/>
+      <plugin id="org.apache.felix.eventadmin"/>
+      <plugin id="org.apache.felix.healthcheck.api"/>
+      <plugin id="org.apache.felix.healthcheck.core"/>
+      <plugin id="org.apache.felix.healthcheck.generalchecks"/>
+      <plugin id="org.apache.felix.healthcheck.webconsoleplugin"/>
    </plugins>
 
    <configurations>
@@ -71,6 +80,16 @@
       <plugin id="org.osgi.service.component.annotations" autoStart="true" startLevel="2" />
       <plugin id="org.osgi.util.function" autoStart="true" startLevel="2" />
       <plugin id="org.osgi.util.promise" autoStart="true" startLevel="2" />
+      <plugin id="org.osgi.service.servlet" autoStart="true" startLevel="0" />
+      <plugin id="org.apache.felix.configadmin" autoStart="true" startLevel="1" />
+      <plugin id="org.apache.felix.metatype" autoStart="true" startLevel="1" />
+      <plugin id="org.apache.felix.fileinstall" autoStart="true" startLevel="2" />
+      <plugin id="org.osgi.service.event" autoStart="true" startLevel="2" />
+      <plugin id="org.apache.felix.eventadmin" autoStart="true" startLevel="2" />
+      <plugin id="org.apache.felix.healthcheck.api" autoStart="true" startLevel="2" />
+      <plugin id="org.apache.felix.healthcheck.core" autoStart="true" startLevel="2" />
+      <plugin id="org.apache.felix.healthcheck.generalchecks" autoStart="true" startLevel="3" />
+      <plugin id="org.apache.felix.healthcheck.webconsoleplugin" autoStart="true" startLevel="3" />
    </configurations>
 
 </product>
