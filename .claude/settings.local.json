@@ -40,7 +40,20 @@
       "mcp__plugin_serena_serena__think_about_collected_information",
       "WebFetch(domain:mvnrepository.com)",
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:vogella.com)"
+      "WebFetch(domain:vogella.com)",
+      "mcp__plugin_serena_serena__replace_content",
+      "Bash(powershell -Command:*)",
+      "Bash(rd /s /q D:\\\\Dev\\\\p.osgi.ds\\\\distribution\\\\target)",
+      "Bash(cmd /c \"del /f /q D:\\\\Dev\\\\p.osgi.ds\\\\distribution\\\\target\\\\products\\\\com.kk.pde.ds.product\\\\win32\\\\win32\\\\x86_64\\\\plugins\\\\org.apache.felix.healthcheck.generalchecks_2.0.6.jar\")",
+      "Bash(cmd /c \"rmdir /s /q D:\\\\Dev\\\\p.osgi.ds\\\\distribution\\\\target\")",
+      "Bash(netstat:*)",
+      "Bash(tasklist:*)",
+      "Bash(wmic process where \"name=''java.exe''\" get ProcessId,CommandLine)",
+      "Bash(cmd //c \"taskkill /PID 153540 /F\")",
+      "Bash(cmd //c \"taskkill /PID 169088 /F\")",
+      "Bash(cmd //c \"taskkill /PID 97804 /F\")",
+      "Bash(cmd //c \"taskkill /PID 189880 /F\")",
+      "Bash(cmd //c \"start run.bat\")"
     ]
   }
 }
