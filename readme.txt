@@ -1,3 +1,17 @@
+Quick start (see README.md for full documentation)
+
+1) Build:
+   mvn clean verify
+2) Run a built product (after build completes):
+   - Windows: run.bat
+   - Linux/macOS: ./run.sh
+3) WebConsole:
+   http://localhost:8080/system/console (admin/admin)
+4) REST:
+   http://localhost:8080/api/greet
+
+---
+
 java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005 -jar plugins/org.eclipse.osgi_3.22.0.v20241030-2121.jar -configuration configuration -clean -console -consoleLog
 
 
