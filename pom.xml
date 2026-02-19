@@ -111,6 +111,9 @@
 		<!-- <module>com.kk.pde.ds.imp.tests</module> -->
 		<module>com.kk.pde.ds.app</module>
 		<module>com.kk.pde.ds.rest</module>
+		<module>com.kk.pde.ds.mcp.api</module>
+		<module>com.kk.pde.ds.mcp.server</module>
+		<module>com.kk.pde.ds.mcp.client</module>
 		<module>com.kk.pde.ds.feature</module>
 		<module>distribution</module>
 	</modules>

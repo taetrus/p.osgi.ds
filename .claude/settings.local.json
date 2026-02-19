@@ -56,7 +56,10 @@
       "Bash(cmd //c \"start run.bat\")",
       "Bash(pkill:*)",
       "Bash(tar:*)",
-      "Bash(timeout 10 java:*)"
+      "Bash(timeout 10 java:*)",
+      "Bash(java -version:*)",
+      "Bash(xxd:*)",
+      "Bash(bash -n /Users/avalon/dev/p.osgi.ds/distribution/scripts/run.sh)"
     ]
   },
   "outputStyle": "Explanatory"

@@ -1,0 +1,12 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: com.kk.pde.ds.mcp.client
+Bundle-SymbolicName: com.kk.pde.ds.mcp.client
+Bundle-Version: 1.0.0.qualifier
+Import-Package: org.osgi.service.component.annotations;version="1.5.1";resolution:=optional,
+ org.slf4j;version="1.7.32"
+Service-Component: OSGI-INF/com.kk.pde.ds.mcp.client.McpClient.xml
+Bundle-Vendor: KK
+Automatic-Module-Name: com.kk.pde.ds.mcp.client
+Bundle-ActivationPolicy: lazy
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
