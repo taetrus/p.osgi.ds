@@ -41,26 +41,36 @@ After a successful build:
 
 ## Running the Application
 
-Extract a product archive, cd into it, and run the launcher script:
+> **Java requirement**: Java 17+ required at runtime (Eclipse Equinox 3.22 does not support Java 8).
 
-**Windows:**
-```cmd
-run.bat
+**Simplest — run directly from the source tree (scripts auto-detect OS and product path):**
+
+```bash
+# macOS / Linux:
+./distribution/scripts/run.sh
+
+# Windows:
+distribution\scripts\run.bat
 ```
 
-**Linux/macOS:**
+**Or from inside the built product directory:**
+
+macOS product is wrapped in an `.app` bundle:
 ```bash
-./run.sh
+cd distribution/target/products/com.kk.pde.ds.product/macosx/cocoa/x86_64/Eclipse.app/Contents/Eclipse
+java -jar plugins/org.eclipse.osgi_*.jar -configuration configuration -console -consoleLog
 ```
 
-**Or manually (Java 8+ compatible):**
+Linux:
 ```bash
-java -jar plugins/org.eclipse.osgi_3.22.0.v20241030-2121.jar -configuration configuration -console -consoleLog
+cd distribution/target/products/com.kk.pde.ds.product/linux/gtk/x86_64
+java -jar plugins/org.eclipse.osgi_*.jar -configuration configuration -console -consoleLog
 ```
 
 **With remote debugging:**
 ```bash
-java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005 -jar plugins/org.eclipse.osgi_3.22.0.v20241030-2121.jar -configuration configuration -console -consoleLog
+java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005 \
+     -jar plugins/org.eclipse.osgi_*.jar -configuration configuration -console -consoleLog
 ```
 
 The `-configuration configuration` flag is required to point the OSGi framework to the config.ini file.
@@ -134,7 +144,7 @@ curl -X POST http://localhost:8080/api/greet -d '{"message":"Test"}'
 
 ## Technology Stack
 
-- **Java 8+** (application bundles are Java 8 compatible)
+- **Java 17+** (application bundles compile to Java 8 bytecode, but Equinox 3.22 runtime requires Java 17+)
 - **Tycho 4.0.13** (Maven OSGi build)
 - **Eclipse 2024-12** target platform
 - **OSGi Declarative Services** via annotations

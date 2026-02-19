@@ -51,7 +51,7 @@ This workspace contains a fully-functional Java 8 OSGi application built with **
 
 | Requirement | Version |
 |-------------|---------|
-| **Java** | 8 or newer (bundles compile to Java 8 bytecode) |
+| **Java** | 17 or newer (bundles compile to Java 8 bytecode, but Eclipse Equinox 3.22 runtime requires Java 17+) |
 | **Maven** | 3.6+ |
 | **Internet** | Required for Maven to resolve target platform dependencies |
 
@@ -69,25 +69,15 @@ mvn clean package -DskipTests
 ```
 
 ### Run (after build)
+
+The easiest way — run the launcher script directly from the source tree. It auto-detects your OS and finds the built product:
+
 ```bash
-# Extract the product archive for your platform
+# macOS / Linux:
+./distribution/scripts/run.sh
+
 # Windows:
-cd distribution\target\products
-unzip com.kk.pde.ds.product-win32.win32.x86_64.zip
-cd com.kk.pde.ds.product
-run.bat
-
-# Linux:
-cd distribution/target/products
-tar -xzf com.kk.pde.ds.product-linux.gtk.x86_64.tar.gz
-cd com.kk.pde.ds.product
-./run.sh
-
-# macOS:
-cd distribution/target/products
-tar -xzf com.kk.pde.ds.product-macosx.cocoa.x86_64.tar.gz
-cd com.kk.pde.ds.product
-./run.sh
+distribution\scripts\run.bat
 ```
 
 ### Access Services
@@ -934,40 +924,50 @@ Edit `logback.xml` in the product's `configuration/` directory:
 
 ## Running the Application
 
-### Method 1: Run Scripts (Recommended)
+> **Java requirement**: Java 17+ is required at runtime. Eclipse Equinox 3.22 does not support Java 8 even though our bundles are compiled to Java 8 bytecode.
 
-After building, extract the platform-specific archive and run:
+### Method 1: Run Scripts from Source Tree (Recommended)
+
+After `mvn clean verify`, run the launcher script directly from the repo root. The scripts auto-detect your OS and find the correct built product directory — no extracting archives needed.
+
+**macOS / Linux:**
+```bash
+./distribution/scripts/run.sh
+```
 
 **Windows:**
 ```cmd
-cd distribution\target\products
-unzip com.kk.pde.ds.product-win32.win32.x86_64.zip
-cd com.kk.pde.ds.product
+distribution\scripts\run.bat
+```
+
+### Method 2: Run Scripts from Inside the Product
+
+The same scripts also work when placed inside an extracted product archive (they detect `plugins/` next to them):
+
+**Linux product:**
+```bash
+cd distribution/target/products/com.kk.pde.ds.product/linux/gtk/x86_64
+./run.sh
+```
+
+**macOS product** (note: the macOS build wraps everything inside an `.app` bundle):
+```bash
+cd distribution/target/products/com.kk.pde.ds.product/macosx/cocoa/x86_64/Eclipse.app/Contents/Eclipse
+./run.sh
+```
+
+**Windows product:**
+```cmd
+cd distribution\target\products\com.kk.pde.ds.product\win32\win32\x86_64
 run.bat
 ```
 
-**Linux:**
-```bash
-cd distribution/target/products
-tar -xzf com.kk.pde.ds.product-linux.gtk.x86_64.tar.gz
-cd com.kk.pde.ds.product
-./run.sh
-```
+### Method 3: Manual Launch
 
-**macOS:**
-```bash
-cd distribution/target/products
-tar -xzf com.kk.pde.ds.product-macosx.cocoa.x86_64.tar.gz
-cd com.kk.pde.ds.product
-./run.sh
-```
-
-### Method 2: Manual Launch
-
-From inside the product directory:
+From inside any product directory (where `plugins/` and `configuration/` live):
 
 ```bash
-java -jar plugins/org.eclipse.osgi_3.22.0.v20241030-2121.jar \
+java -jar plugins/org.eclipse.osgi_*.jar \
      -configuration configuration \
      -console \
      -consoleLog
@@ -977,16 +977,26 @@ java -jar plugins/org.eclipse.osgi_3.22.0.v20241030-2121.jar \
 
 ### Run Script Details
 
-**run.sh (Linux/macOS):**
+Both scripts use the same dual-mode detection logic:
+
+1. If `plugins/` exists next to the script → running from inside a product, use current directory
+2. Otherwise → running from `distribution/scripts/` in the source tree, navigate to the built product for the current OS
+
+**run.sh (macOS/Linux):**
 ```bash
 #!/bin/bash
-cd "$(dirname "$0")"
-OSGI_JAR=$(ls plugins/org.eclipse.osgi_*.jar 2>/dev/null | head -1)
-if [ -z "$OSGI_JAR" ]; then
-    echo "ERROR: Could not find org.eclipse.osgi jar in plugins directory"
-    exit 1
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [ -d "$SCRIPT_DIR/plugins" ]; then
+    PRODUCT_DIR="$SCRIPT_DIR"
+else
+    BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+    case "$(uname -s)" in
+        Darwin) PRODUCT_DIR="$BASE_DIR/target/products/.../Eclipse.app/Contents/Eclipse" ;;
+        Linux)  PRODUCT_DIR="$BASE_DIR/target/products/.../linux/gtk/x86_64" ;;
+    esac
 fi
-echo "Starting OSGi framework: $OSGI_JAR"
+OSGI_JAR=$(ls "$PRODUCT_DIR/plugins/org.eclipse.osgi_"*.jar 2>/dev/null | head -1)
+cd "$PRODUCT_DIR"
 java -jar "$OSGI_JAR" -configuration configuration -console -consoleLog "$@"
 ```
 
@@ -994,13 +1004,16 @@ java -jar "$OSGI_JAR" -configuration configuration -console -consoleLog "$@"
 ```batch
 @echo off
 setlocal
-cd /d "%~dp0"
-for %%f in (plugins\org.eclipse.osgi_*.jar) do set OSGI_JAR=%%f
-if not defined OSGI_JAR (
-    echo ERROR: Could not find org.eclipse.osgi jar in plugins directory
-    exit /b 1
+set "SCRIPT_DIR=%~dp0"
+if "%SCRIPT_DIR:~-1%"=="\" set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
+if exist "%SCRIPT_DIR%\plugins\" (
+    set "PRODUCT_DIR=%SCRIPT_DIR%"
+) else (
+    for %%A in ("%SCRIPT_DIR%\..")  do set "BASE_DIR=%%~fA"
+    set "PRODUCT_DIR=%BASE_DIR%\target\products\...\win32\win32\x86_64"
 )
-echo Starting OSGi framework: %OSGI_JAR%
+for %%f in ("%PRODUCT_DIR%\plugins\org.eclipse.osgi_*.jar") do set OSGI_JAR=%%f
+cd /d "%PRODUCT_DIR%"
 java -jar "%OSGI_JAR%" -configuration configuration -console -consoleLog %*
 ```
 
