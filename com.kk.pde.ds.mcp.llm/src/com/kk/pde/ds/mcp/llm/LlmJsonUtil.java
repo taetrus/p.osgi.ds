@@ -1,0 +1,189 @@
+package com.kk.pde.ds.mcp.llm;
+
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+/**
+ * Minimal JSON utilities for parsing LLM API responses and building requests.
+ * Extended from the server's JsonUtil pattern with array support needed for
+ * OpenRouter's choices/tool_calls response structure.
+ */
+final class LlmJsonUtil {
+
+	private LlmJsonUtil() {
+	}
+
+	/**
+	 * Extract a string value for the given key from a JSON object string.
+	 */
+	static String getString(String json, String key) {
+		if (json == null) return null;
+		String search = "\"" + key + "\"";
+		int keyIdx = json.indexOf(search);
+		if (keyIdx < 0) return null;
+
+		int colonIdx = json.indexOf(':', keyIdx + search.length());
+		if (colonIdx < 0) return null;
+
+		int i = colonIdx + 1;
+		while (i < json.length() && Character.isWhitespace(json.charAt(i))) i++;
+		if (i >= json.length()) return null;
+
+		char c = json.charAt(i);
+		if (c == '"') return extractQuotedString(json, i);
+		if (c == 'n' && json.startsWith("null", i)) return null;
+
+		int end = i;
+		while (end < json.length()) {
+			char ch = json.charAt(end);
+			if (ch == ',' || ch == '}' || ch == ']' || Character.isWhitespace(ch)) break;
+			end++;
+		}
+		return json.substring(i, end);
+	}
+
+	/**
+	 * Extract a nested JSON object or array for the given key as a raw string.
+	 */
+	static String getObject(String json, String key) {
+		if (json == null) return null;
+		String search = "\"" + key + "\"";
+		int keyIdx = json.indexOf(search);
+		if (keyIdx < 0) return null;
+
+		int colonIdx = json.indexOf(':', keyIdx + search.length());
+		if (colonIdx < 0) return null;
+
+		int i = colonIdx + 1;
+		while (i < json.length() && Character.isWhitespace(json.charAt(i))) i++;
+		if (i >= json.length()) return null;
+
+		char c = json.charAt(i);
+		if (c == '{') return extractBracketed(json, i, '{', '}');
+		if (c == '[') return extractBracketed(json, i, '[', ']');
+		if (c == '"') return extractQuotedString(json, i);
+		if (c == 'n' && json.startsWith("null", i)) return null;
+
+		int end = i;
+		while (end < json.length()) {
+			char ch = json.charAt(end);
+			if (ch == ',' || ch == '}' || ch == ']') break;
+			end++;
+		}
+		return json.substring(i, end).trim();
+	}
+
+	/**
+	 * Returns the first element of a JSON array string as a raw string.
+	 * e.g. "[{...}, {...}]" returns the raw text of the first object.
+	 */
+	static String getFirstInArray(String arrayJson) {
+		if (arrayJson == null) return null;
+		String trimmed = arrayJson.trim();
+		if (!trimmed.startsWith("[")) return null;
+
+		int i = 1;
+		while (i < trimmed.length() && Character.isWhitespace(trimmed.charAt(i))) i++;
+		if (i >= trimmed.length() || trimmed.charAt(i) == ']') return null;
+
+		char c = trimmed.charAt(i);
+		if (c == '{') return extractBracketed(trimmed, i, '{', '}');
+		if (c == '[') return extractBracketed(trimmed, i, '[', ']');
+		if (c == '"') return extractQuotedString(trimmed, i);
+
+		int end = i;
+		while (end < trimmed.length() && trimmed.charAt(end) != ',' && trimmed.charAt(end) != ']') end++;
+		return trimmed.substring(i, end).trim();
+	}
+
+	/**
+	 * Parse a flat JSON object {"key":"value", ...} into a Map.
+	 * Only handles string values. Suitable for tool arguments.
+	 */
+	static Map<String, String> parseFlat(String json) {
+		if (json == null || json.trim().isEmpty()) return Collections.emptyMap();
+
+		String trimmed = json.trim();
+		if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) return Collections.emptyMap();
+
+		Map<String, String> result = new LinkedHashMap<String, String>();
+		int i = 1;
+		int len = trimmed.length() - 1;
+
+		while (i < len) {
+			while (i < len && (Character.isWhitespace(trimmed.charAt(i)) || trimmed.charAt(i) == ',')) i++;
+			if (i >= len) break;
+
+			if (trimmed.charAt(i) != '"') break;
+			String key = extractQuotedString(trimmed, i);
+			if (key == null) break;
+			i += key.length() + 2;
+
+			while (i < len && (Character.isWhitespace(trimmed.charAt(i)) || trimmed.charAt(i) == ':')) i++;
+			if (i >= len) break;
+
+			if (trimmed.charAt(i) == '"') {
+				String value = extractQuotedString(trimmed, i);
+				if (value == null) break;
+				result.put(key, value);
+				i += value.length() + 2;
+			} else if (trimmed.charAt(i) == 'n' && trimmed.startsWith("null", i)) {
+				result.put(key, null);
+				i += 4;
+			} else {
+				int start = i;
+				while (i < len && trimmed.charAt(i) != ',' && trimmed.charAt(i) != '}') i++;
+				result.put(key, trimmed.substring(start, i).trim());
+			}
+		}
+		return result;
+	}
+
+	/** Escape a string for safe inclusion in a JSON string value. */
+	static String escape(String value) {
+		if (value == null) return "";
+		return value
+			.replace("\\", "\\\\")
+			.replace("\"", "\\\"")
+			.replace("\n", "\\n")
+			.replace("\r", "\\r")
+			.replace("\t", "\\t");
+	}
+
+	private static String extractQuotedString(String json, int i) {
+		if (i >= json.length() || json.charAt(i) != '"') return null;
+		int start = i + 1;
+		int end = start;
+		while (end < json.length()) {
+			char c = json.charAt(end);
+			if (c == '\\') { end += 2; continue; }
+			if (c == '"') return json.substring(start, end);
+			end++;
+		}
+		return null;
+	}
+
+	private static String extractBracketed(String json, int i, char open, char close) {
+		if (i >= json.length() || json.charAt(i) != open) return null;
+		int depth = 0;
+		int pos = i;
+		boolean inString = false;
+		while (pos < json.length()) {
+			char c = json.charAt(pos);
+			if (inString) {
+				if (c == '\\') { pos += 2; continue; }
+				if (c == '"') inString = false;
+			} else {
+				if (c == '"') inString = true;
+				else if (c == open) depth++;
+				else if (c == close) {
+					depth--;
+					if (depth == 0) return json.substring(i, pos + 1);
+				}
+			}
+			pos++;
+		}
+		return null;
+	}
+}

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.1.0" name="com.kk.pde.ds.mcp.llm.LlmChatServlet">
+   <property name="osgi.http.whiteboard.servlet.pattern" value="/llm/chat"/>
+   <property name="osgi.http.whiteboard.servlet.name" value="LlmChatServlet"/>
+   <reference bind="setAgent" interface="com.kk.pde.ds.mcp.llm.OpenRouterAgent" name="Agent"/>
+   <service>
+      <provide interface="javax.servlet.Servlet"/>
+   </service>
+   <implementation class="com.kk.pde.ds.mcp.llm.LlmChatServlet"/>
+</scr:component>

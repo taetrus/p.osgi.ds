@@ -1,11 +1,8 @@
 {
   "mcpServers": {
-    "github": {
+    "osgi-mcp": {
       "type": "http",
-      "url": "https://api.githubcopilot.com/mcp/",
-      "headers": {
-        "Authorization": "Bhellllloooooo"
-      }
+      "url": "http://localhost:8080/mcp"
     }
   }
 }

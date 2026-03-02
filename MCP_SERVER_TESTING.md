@@ -269,3 +269,134 @@ ds:list
 ```
 
 Should show `McpServlet`, `McpToolRegistry`, `EchoTool`, `GreetTool`, `SystemInfoTool` all in **satisfied** state.
+
+---
+
+## Connecting LLMs to the MCP Server
+
+### LM Studio (local, native MCP support)
+
+LM Studio ≥ v0.3.17 can act as an MCP host and connect directly to the OSGi server.
+
+1. Open **LM Studio** → **Settings** → **MCP**
+2. Click **Add server** and enter:
+   ```json
+   {
+     "osgi-mcp": {
+       "type": "http",
+       "url": "http://localhost:8080/mcp"
+     }
+   }
+   ```
+   (The `settings/mcp.json` file in the project root already contains this config — copy and paste from there.)
+3. Load a tool-capable model (e.g. Llama 3.1 8B, Qwen2.5, Mistral Nemo)
+4. Start chatting. LM Studio will automatically discover `echo`, `greet`, and `system_info`.
+
+**Test prompts:**
+- *"What is the system info?"* → LM Studio calls `system_info` and shows JVM output
+- *"Echo the phrase 'hello from LM Studio'"* → returns `Echo: hello from LM Studio`
+- *"Greet me as Kerem"* → calls `greet` with `name=Kerem`
+
+---
+
+### OpenCode (terminal coding agent, native MCP support)
+
+OpenCode uses MCP servers registered in its config file.
+
+**Config location:**
+- macOS/Linux: `~/.config/opencode/config.json`
+- Windows: `%APPDATA%\opencode\config.json`
+
+**Add the following entry to your config:**
+```json
+{
+  "mcpServers": {
+    "osgi-mcp": {
+      "type": "remote",
+      "url": "http://localhost:8080/mcp",
+      "headers": []
+    }
+  }
+}
+```
+
+Note: OpenCode uses `"type": "remote"` for HTTP servers (vs LM Studio's `"type": "http"`).
+
+**Usage:** Start `opencode`, then reference the tools naturally in conversation:
+- *"Use the system_info tool to check what Java version is running"*
+- *"Echo back the string 'hello from opencode'"*
+
+---
+
+### OpenRouter (via the `/llm/chat` bridge)
+
+OpenRouter has no native MCP support. The `com.kk.pde.ds.mcp.llm` bundle provides a bridge that:
+1. Reads all tools directly from the OSGi service registry
+2. Converts them to OpenAI function-calling format
+3. Runs the agent loop against OpenRouter's API
+4. Returns the final LLM answer
+
+**Setup:**
+
+```bash
+# Get your API key from https://openrouter.ai/settings/keys
+# Start the app with the key as a system property:
+
+# macOS / Linux
+./distribution/scripts/run.sh -Dopenrouter.api.key=sk-or-v1-your-key-here
+
+# Windows
+distribution\scripts\run.bat -Dopenrouter.api.key=sk-or-v1-your-key-here
+```
+
+**Optional: choose a different model (default is `google/gemini-flash-1.5`):**
+```bash
+./distribution/scripts/run.sh \
+  -Dopenrouter.api.key=sk-or-v1-your-key-here \
+  -Dopenrouter.model=openai/gpt-4o-mini
+```
+
+**Test — macOS / Linux:**
+```zsh
+curl -s -X POST http://localhost:8080/llm/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message":"What is the system info and echo hello back to me?"}' \
+  | python3 -m json.tool
+```
+
+**Test — Windows cmd.exe:**
+```cmd
+curl -s -X POST http://localhost:8080/llm/chat -H "Content-Type: application/json" -d "{\"message\":\"What is the system info and echo hello back to me?\"}"
+```
+
+**Test — Windows PowerShell:**
+```powershell
+Invoke-RestMethod -Method POST -Uri http://localhost:8080/llm/chat `
+  -ContentType "application/json" `
+  -Body '{"message":"What is the system info and echo hello back to me?"}'
+```
+
+**Expected response:**
+```json
+{
+  "response": "Here is what I found:\n\nSystem info: Java: 17.0.x, OS: Mac OS X 14.x, Arch: aarch64, Heap: 256MB, Free: 200MB\n\nEcho: hello"
+}
+```
+
+The LLM will call `system_info` and `echo` automatically, then compose a natural-language answer.
+
+**Override the model per-request:**
+```zsh
+curl -s -X POST http://localhost:8080/llm/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message":"What tools do you have?","model":"anthropic/claude-3.5-haiku"}' \
+  | python3 -m json.tool
+```
+
+**Troubleshooting the bridge:**
+
+| Symptom | Fix |
+|---------|-----|
+| `"openrouter.api.key system property not set"` | Add `-Dopenrouter.api.key=...` to the start command |
+| `Error from OpenRouter: ...` | Check the key, model name, and your OpenRouter credit balance |
+| `LlmChatServlet` not in `ds:list` | Ensure `com.kk.pde.ds.mcp.llm` bundle is ACTIVE (`ss mcp.llm` in OSGi console) |
