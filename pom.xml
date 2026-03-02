@@ -114,6 +114,7 @@
 		<module>com.kk.pde.ds.mcp.api</module>
 		<module>com.kk.pde.ds.mcp.server</module>
 		<module>com.kk.pde.ds.mcp.client</module>
+		<module>com.kk.pde.ds.mcp.llm</module>
 		<module>com.kk.pde.ds.feature</module>
 		<module>distribution</module>
 	</modules>
