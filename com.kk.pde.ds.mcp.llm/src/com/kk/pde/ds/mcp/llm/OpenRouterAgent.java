@@ -67,75 +67,10 @@ public class OpenRouterAgent {
 			? modelOverride
 			: System.getProperty("openrouter.model", DEFAULT_MODEL);
 
-		String toolsJson = buildToolsJson();
 		List<String> messages = new ArrayList<String>();
 		messages.add("{\"role\":\"user\",\"content\":\"" + LlmJsonUtil.escape(userMessage) + "\"}");
 
-		LOG.info("Starting chat: model={}, tools={}", model, registry.getTools().size());
-
-		for (int turn = 0; turn < MAX_TURNS; turn++) {
-			String requestBody = buildRequest(model, messages, toolsJson);
-			String response = post(apiKey, requestBody);
-
-			if (response == null) {
-				return "Error: failed to reach OpenRouter API";
-			}
-
-			LOG.debug("OpenRouter response (turn {}): {}", turn, response);
-
-			String choices = LlmJsonUtil.getObject(response, "choices");
-			String firstChoice = LlmJsonUtil.getFirstInArray(choices);
-
-			if (firstChoice == null) {
-				String errorBlock = LlmJsonUtil.getObject(response, "error");
-				if (errorBlock != null) {
-					String errMsg = LlmJsonUtil.getString(errorBlock, "message");
-					return "Error from OpenRouter: " + errMsg;
-				}
-				return "Error: unexpected response format from OpenRouter";
-			}
-
-			String finishReason = LlmJsonUtil.getString(firstChoice, "finish_reason");
-			String message = LlmJsonUtil.getObject(firstChoice, "message");
-
-			if ("stop".equals(finishReason) || finishReason == null) {
-				String content = LlmJsonUtil.getString(message, "content");
-				return content != null ? content : "(no content in response)";
-			}
-
-			if ("tool_calls".equals(finishReason)) {
-				String toolCallsArray = LlmJsonUtil.getObject(message, "tool_calls");
-				String firstCall = LlmJsonUtil.getFirstInArray(toolCallsArray);
-				if (firstCall == null) {
-					return "Error: tool_calls array is empty";
-				}
-
-				String callId = LlmJsonUtil.getString(firstCall, "id");
-				String function = LlmJsonUtil.getObject(firstCall, "function");
-				String toolName = LlmJsonUtil.getString(function, "name");
-				String argsJson = LlmJsonUtil.getString(function, "arguments");
-
-				LOG.info("Tool call: {} args={}", toolName, argsJson);
-
-				// Record the assistant's decision in conversation history
-				messages.add(buildAssistantToolCallMessage(callId, toolName, argsJson));
-
-				// Execute the tool directly via the OSGi registry
-				String toolResult = executeTool(toolName, argsJson);
-				LOG.info("Tool result for {}: {}", toolName, toolResult);
-
-				// Feed the result back into the conversation
-				messages.add("{\"role\":\"tool\",\"tool_call_id\":\""
-					+ LlmJsonUtil.escape(callId) + "\",\"content\":\""
-					+ LlmJsonUtil.escape(toolResult) + "\"}");
-
-			} else {
-				LOG.warn("Unexpected finish_reason: {}", finishReason);
-				break;
-			}
-		}
-
-		return "Error: maximum turns (" + MAX_TURNS + ") reached without a final answer";
+		return chatWithHistory(messages, model);
 	}
 
 	/**

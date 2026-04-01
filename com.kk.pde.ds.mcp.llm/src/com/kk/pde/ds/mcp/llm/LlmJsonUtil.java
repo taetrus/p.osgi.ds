@@ -1,7 +1,9 @@
 package com.kk.pde.ds.mcp.llm;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -101,8 +103,8 @@ public final class LlmJsonUtil {
 	 * Returns all elements of a JSON array as a list of raw strings.
 	 * e.g. "[{...}, {...}]" returns a list with each object's raw text.
 	 */
-	public static java.util.List<String> getAllInArray(String arrayJson) {
-		java.util.List<String> results = new java.util.ArrayList<String>();
+	public static List<String> getAllInArray(String arrayJson) {
+		List<String> results = new ArrayList<String>();
 		if (arrayJson == null) return results;
 		String trimmed = arrayJson.trim();
 		if (!trimmed.startsWith("[")) return results;
