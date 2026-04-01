@@ -9,7 +9,7 @@ import java.util.Map;
  * Extended from the server's JsonUtil pattern with array support needed for
  * OpenRouter's choices/tool_calls response structure.
  */
-final class LlmJsonUtil {
+public final class LlmJsonUtil {
 
 	private LlmJsonUtil() {
 	}
@@ -17,7 +17,7 @@ final class LlmJsonUtil {
 	/**
 	 * Extract a string value for the given key from a JSON object string.
 	 */
-	static String getString(String json, String key) {
+	public static String getString(String json, String key) {
 		if (json == null) return null;
 		String search = "\"" + key + "\"";
 		int keyIdx = json.indexOf(search);
@@ -46,7 +46,7 @@ final class LlmJsonUtil {
 	/**
 	 * Extract a nested JSON object or array for the given key as a raw string.
 	 */
-	static String getObject(String json, String key) {
+	public static String getObject(String json, String key) {
 		if (json == null) return null;
 		String search = "\"" + key + "\"";
 		int keyIdx = json.indexOf(search);
@@ -78,7 +78,7 @@ final class LlmJsonUtil {
 	 * Returns the first element of a JSON array string as a raw string.
 	 * e.g. "[{...}, {...}]" returns the raw text of the first object.
 	 */
-	static String getFirstInArray(String arrayJson) {
+	public static String getFirstInArray(String arrayJson) {
 		if (arrayJson == null) return null;
 		String trimmed = arrayJson.trim();
 		if (!trimmed.startsWith("[")) return null;
@@ -98,10 +98,58 @@ final class LlmJsonUtil {
 	}
 
 	/**
+	 * Returns all elements of a JSON array as a list of raw strings.
+	 * e.g. "[{...}, {...}]" returns a list with each object's raw text.
+	 */
+	public static java.util.List<String> getAllInArray(String arrayJson) {
+		java.util.List<String> results = new java.util.ArrayList<String>();
+		if (arrayJson == null) return results;
+		String trimmed = arrayJson.trim();
+		if (!trimmed.startsWith("[")) return results;
+
+		int i = 1;
+		while (i < trimmed.length()) {
+			while (i < trimmed.length() && (Character.isWhitespace(trimmed.charAt(i))
+				|| trimmed.charAt(i) == ',')) i++;
+			if (i >= trimmed.length() || trimmed.charAt(i) == ']') break;
+
+			char c = trimmed.charAt(i);
+			String element = null;
+			if (c == '{') {
+				element = extractBracketed(trimmed, i, '{', '}');
+			} else if (c == '[') {
+				element = extractBracketed(trimmed, i, '[', ']');
+			} else if (c == '"') {
+				element = extractQuotedString(trimmed, i);
+				if (element != null) {
+					results.add(element);
+					i += element.length() + 2;
+					continue;
+				}
+			} else {
+				int end = i;
+				while (end < trimmed.length() && trimmed.charAt(end) != ','
+					&& trimmed.charAt(end) != ']') end++;
+				element = trimmed.substring(i, end).trim();
+				results.add(element);
+				i = end;
+				continue;
+			}
+			if (element != null) {
+				results.add(element);
+				i += element.length();
+			} else {
+				break;
+			}
+		}
+		return results;
+	}
+
+	/**
 	 * Parse a flat JSON object {"key":"value", ...} into a Map.
 	 * Only handles string values. Suitable for tool arguments.
 	 */
-	static Map<String, String> parseFlat(String json) {
+	public static Map<String, String> parseFlat(String json) {
 		if (json == null || json.trim().isEmpty()) return Collections.emptyMap();
 
 		String trimmed = json.trim();
@@ -141,7 +189,7 @@ final class LlmJsonUtil {
 	}
 
 	/** Escape a string for safe inclusion in a JSON string value. */
-	static String escape(String value) {
+	public static String escape(String value) {
 		if (value == null) return "";
 		return value
 			.replace("\\", "\\\\")

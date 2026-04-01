@@ -3,6 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: com.kk.pde.ds.mcp.llm
 Bundle-SymbolicName: com.kk.pde.ds.mcp.llm
 Bundle-Version: 1.0.0.qualifier
+Export-Package: com.kk.pde.ds.mcp.llm
 Import-Package: com.kk.pde.ds.mcp.api,
  javax.servlet;version="3.1.0",
  javax.servlet.http;version="3.1.0",

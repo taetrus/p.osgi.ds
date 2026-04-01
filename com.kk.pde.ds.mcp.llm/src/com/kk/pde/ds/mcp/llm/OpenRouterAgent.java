@@ -138,6 +138,94 @@ public class OpenRouterAgent {
 		return "Error: maximum turns (" + MAX_TURNS + ") reached without a final answer";
 	}
 
+	/**
+	 * Run an agent conversation with externally-managed message history.
+	 * The caller provides the full message list (including prior user/assistant messages).
+	 * New messages generated during tool-call loops are appended to the provided list.
+	 *
+	 * @param messages  mutable list of JSON message strings (caller retains reference)
+	 * @param model     model ID to use
+	 * @return final text answer from the LLM, or error string
+	 */
+	public String chatWithHistory(List<String> messages, String model) {
+		String apiKey = System.getProperty("openrouter.api.key", "");
+		if (apiKey.isEmpty()) {
+			return "Error: openrouter.api.key system property not set. "
+				+ "Start the app with -Dopenrouter.api.key=your_key";
+		}
+
+		if (model == null || model.isEmpty()) {
+			model = System.getProperty("openrouter.model", DEFAULT_MODEL);
+		}
+
+		String toolsJson = buildToolsJson();
+		LOG.info("Chat with history: model={}, messages={}, tools={}",
+			model, messages.size(), registry.getTools().size());
+
+		for (int turn = 0; turn < MAX_TURNS; turn++) {
+			String requestBody = buildRequest(model, messages, toolsJson);
+			String response = post(apiKey, requestBody);
+
+			if (response == null) {
+				return "Error: failed to reach OpenRouter API";
+			}
+
+			LOG.debug("OpenRouter response (turn {}): {}", turn, response);
+
+			String choices = LlmJsonUtil.getObject(response, "choices");
+			String firstChoice = LlmJsonUtil.getFirstInArray(choices);
+
+			if (firstChoice == null) {
+				String errorBlock = LlmJsonUtil.getObject(response, "error");
+				if (errorBlock != null) {
+					String errMsg = LlmJsonUtil.getString(errorBlock, "message");
+					return "Error from OpenRouter: " + errMsg;
+				}
+				return "Error: unexpected response format from OpenRouter";
+			}
+
+			String finishReason = LlmJsonUtil.getString(firstChoice, "finish_reason");
+			String message = LlmJsonUtil.getObject(firstChoice, "message");
+
+			if ("stop".equals(finishReason) || finishReason == null) {
+				String content = LlmJsonUtil.getString(message, "content");
+				if (content != null) {
+					messages.add("{\"role\":\"assistant\",\"content\":\""
+						+ LlmJsonUtil.escape(content) + "\"}");
+				}
+				return content != null ? content : "(no content in response)";
+			}
+
+			if ("tool_calls".equals(finishReason)) {
+				String toolCallsArray = LlmJsonUtil.getObject(message, "tool_calls");
+				String firstCall = LlmJsonUtil.getFirstInArray(toolCallsArray);
+				if (firstCall == null) {
+					return "Error: tool_calls array is empty";
+				}
+
+				String callId = LlmJsonUtil.getString(firstCall, "id");
+				String function = LlmJsonUtil.getObject(firstCall, "function");
+				String toolName = LlmJsonUtil.getString(function, "name");
+				String argsJson = LlmJsonUtil.getString(function, "arguments");
+
+				LOG.info("Tool call: {} args={}", toolName, argsJson);
+				messages.add(buildAssistantToolCallMessage(callId, toolName, argsJson));
+
+				String toolResult = executeTool(toolName, argsJson);
+				LOG.info("Tool result for {}: {}", toolName, toolResult);
+
+				messages.add("{\"role\":\"tool\",\"tool_call_id\":\""
+					+ LlmJsonUtil.escape(callId) + "\",\"content\":\""
+					+ LlmJsonUtil.escape(toolResult) + "\"}");
+			} else {
+				LOG.warn("Unexpected finish_reason: {}", finishReason);
+				break;
+			}
+		}
+
+		return "Error: maximum turns (" + MAX_TURNS + ") reached without a final answer";
+	}
+
 	private String executeTool(String toolName, String argsJson) {
 		IMcpTool tool = registry.getTool(toolName);
 		if (tool == null) {
