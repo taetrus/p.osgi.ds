@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.1.0" name="com.kk.pde.ds.chatbot.ChatService">
+   <service>
+      <provide interface="com.kk.pde.ds.chatbot.ChatService"/>
+   </service>
+   <reference bind="setAgent" interface="com.kk.pde.ds.mcp.llm.OpenRouterAgent" name="Agent"/>
+   <implementation class="com.kk.pde.ds.chatbot.ChatService"/>
+</scr:component>
