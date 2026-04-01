@@ -1,0 +1,23 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: com.kk.pde.ds.chatbot
+Bundle-SymbolicName: com.kk.pde.ds.chatbot
+Bundle-Version: 1.0.0.qualifier
+Export-Package: com.kk.pde.ds.chatbot
+Import-Package: com.kk.pde.ds.mcp.api,
+ com.kk.pde.ds.mcp.llm,
+ java.awt,
+ java.awt.event,
+ java.awt.geom,
+ javax.swing,
+ javax.swing.border,
+ javax.swing.text,
+ javax.swing.text.html,
+ org.osgi.service.component.annotations;version="1.5.1";resolution:=optional,
+ org.slf4j;version="1.7.32"
+Service-Component: OSGI-INF/*.xml
+Bundle-Vendor: KK
+Automatic-Module-Name: com.kk.pde.ds.chatbot
+Bundle-ActivationPolicy: lazy
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+
