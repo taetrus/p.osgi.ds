@@ -36,6 +36,7 @@
       <plugin id="com.kk.pde.ds.mcp.server"/>
       <plugin id="com.kk.pde.ds.mcp.client"/>
       <plugin id="com.kk.pde.ds.mcp.llm"/>
+      <plugin id="com.kk.pde.ds.chatbot"/>
       <plugin id="org.apache.commons.commons-fileupload"/>
       <plugin id="org.apache.commons.commons-io"/>
       <plugin id="org.apache.felix.gogo.command"/>
@@ -73,6 +74,7 @@
       <plugin id="com.kk.pde.ds.mcp.server" autoStart="true" startLevel="4" />
       <plugin id="com.kk.pde.ds.mcp.client" autoStart="true" startLevel="4" />
       <plugin id="com.kk.pde.ds.mcp.llm" autoStart="true" startLevel="4" />
+      <plugin id="com.kk.pde.ds.chatbot" autoStart="true" startLevel="4" />
       <plugin id="org.apache.felix.gogo.command" autoStart="true" startLevel="3" />
       <plugin id="org.apache.felix.gogo.runtime" autoStart="true" startLevel="3" />
       <plugin id="org.apache.felix.gogo.shell" autoStart="true" startLevel="3" />

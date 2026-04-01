@@ -23,6 +23,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.kk.pde.ds.api.IGreet;
+import com.kk.pde.ds.chatbot.ChatFrame;
+import com.kk.pde.ds.chatbot.ChatService;
 
 @Component
 public class App {
@@ -31,6 +33,13 @@ public class App {
 
     private IGreet greet;
     private String mcpJson;
+    private ChatService chatService;
+
+    @Reference
+    public void setChatService(ChatService chatService) {
+        log.info("App.setChatService()");
+        this.chatService = chatService;
+    }
 
     public App() {
         log.info("App.App()");
@@ -54,6 +63,8 @@ public class App {
         SwingUtilities.invokeLater(() -> {
             ClockFrame frame = new ClockFrame();
             frame.setVisible(true);
+            ChatFrame chatFrame = new ChatFrame(chatService);
+            chatFrame.setVisible(true);
         });
     }
 

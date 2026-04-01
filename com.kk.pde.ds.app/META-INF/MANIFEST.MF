@@ -4,6 +4,7 @@ Bundle-Name: com.kk.pde.ds.app
 Bundle-SymbolicName: com.kk.pde.ds.app
 Bundle-Version: 1.0.0.qualifier
 Import-Package: com.kk.pde.ds.api,
+ com.kk.pde.ds.chatbot,
  java.awt,
  java.awt.event,
  javax.swing,
