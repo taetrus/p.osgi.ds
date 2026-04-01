@@ -59,7 +59,17 @@
       "Bash(timeout 10 java:*)",
       "Bash(java -version:*)",
       "Bash(xxd:*)",
-      "Bash(bash -n /Users/avalon/dev/p.osgi.ds/distribution/scripts/run.sh)"
+      "Bash(bash -n /Users/avalon/dev/p.osgi.ds/distribution/scripts/run.sh)",
+      "Bash(git push:*)",
+      "Bash(du:*)",
+      "Bash(wc:*)",
+      "Bash(for f in /Users/avalon/dev/p.osgi.ds/com.kk.pde.ds.*/META-INF/MANIFEST.MF)",
+      "Bash(do echo \"=== $f ===\")",
+      "Read(//Users/avalon/dev/p.osgi.ds/**)",
+      "Bash(done)",
+      "Bash(for f in /Users/avalon/dev/p.osgi.ds/*/OSGI-INF/*.xml)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   },
   "outputStyle": "Explanatory"
