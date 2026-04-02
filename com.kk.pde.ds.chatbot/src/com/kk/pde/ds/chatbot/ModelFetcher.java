@@ -26,7 +26,10 @@ public final class ModelFetcher {
 	}
 
 	/**
-	 * Fetch available model IDs from the given base URL.
+	 * Fetch tool-capable model IDs from the given base URL.
+	 * Only returns models whose supported_parameters include "tools".
+	 * If the API doesn't provide supported_parameters (e.g. LM Studio),
+	 * all models are included.
 	 *
 	 * @param baseUrl  API base URL (e.g. "https://openrouter.ai/api/v1")
 	 * @param apiKey   bearer token (may be empty for local APIs like LM Studio)
@@ -71,13 +74,21 @@ public final class ModelFetcher {
 			List<String> modelIds = new ArrayList<String>();
 			for (String element : allElements) {
 				String id = LlmJsonUtil.getString(element, "id");
-				if (id != null && !id.isEmpty()) {
-					modelIds.add(id);
+				if (id == null || id.isEmpty()) {
+					continue;
 				}
+				// Filter: only include models that support tool calls.
+				// If supported_parameters is absent (e.g. LM Studio), include the model.
+				String params = LlmJsonUtil.getObject(element, "supported_parameters");
+				if (params != null && !params.contains("\"tools\"")) {
+					continue;
+				}
+				modelIds.add(id);
 			}
 
 			Collections.sort(modelIds);
-			LOG.info("Fetched {} models from {}", modelIds.size(), modelsUrl);
+			LOG.info("Fetched {} tool-capable models from {} (total: {})",
+				modelIds.size(), modelsUrl, allElements.size());
 			return modelIds;
 
 		} catch (IOException e) {

@@ -136,7 +136,7 @@ public class ChatFrame extends JFrame {
 	private void fetchModelsAsync() {
 		refreshModelsButton.setEnabled(false);
 		refreshModelsButton.setText("Loading...");
-		chatPanel.addSystemMessage("Fetching models from " + chatService.getBaseUrl() + "...");
+		chatPanel.addSystemMessage("Fetching tool-capable models from " + chatService.getBaseUrl() + "...");
 
 		new SwingWorker<List<String>, Void>() {
 			@Override
@@ -159,7 +159,7 @@ public class ChatFrame extends JFrame {
 						if (currentSelection != null) {
 							modelCombo.setSelectedItem(currentSelection);
 						}
-						chatPanel.addSystemMessage("Loaded " + models.size() + " models.");
+						chatPanel.addSystemMessage("Loaded " + models.size() + " tool-capable models.");
 					}
 				} catch (Exception e) {
 					LOG.error("Failed to fetch models", e);
