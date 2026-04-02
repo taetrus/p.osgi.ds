@@ -94,9 +94,16 @@ public class ChatService {
 		return System.getProperty("openrouter.base.url", DEFAULT_BASE_URL);
 	}
 
-	/** Get the API key from system properties. */
+	/** Get the API key from system property or OPENROUTER_API_KEY env var. */
 	public String getApiKey() {
-		return System.getProperty("openrouter.api.key", "");
+		String key = System.getProperty("openrouter.api.key", "");
+		if (key.isEmpty()) {
+			String envKey = System.getenv("OPENROUTER_API_KEY");
+			if (envKey != null && !envKey.isEmpty()) {
+				return envKey;
+			}
+		}
+		return key;
 	}
 
 	/**

@@ -57,10 +57,10 @@ public class OpenRouterAgent {
 	 * @return final text answer from the LLM
 	 */
 	public String chat(String userMessage, String modelOverride) {
-		String apiKey = System.getProperty("openrouter.api.key", "");
+		String apiKey = resolveApiKey();
 		if (apiKey.isEmpty()) {
-			return "Error: openrouter.api.key system property not set. "
-				+ "Start the app with -Dopenrouter.api.key=your_key";
+			return "Error: No API key found. Set OPENROUTER_API_KEY env var "
+				+ "or start with -Dopenrouter.api.key=your_key";
 		}
 
 		String model = (modelOverride != null && !modelOverride.isEmpty())
@@ -83,10 +83,10 @@ public class OpenRouterAgent {
 	 * @return final text answer from the LLM, or error string
 	 */
 	public String chatWithHistory(List<String> messages, String model) {
-		String apiKey = System.getProperty("openrouter.api.key", "");
+		String apiKey = resolveApiKey();
 		if (apiKey.isEmpty()) {
-			return "Error: openrouter.api.key system property not set. "
-				+ "Start the app with -Dopenrouter.api.key=your_key";
+			return "Error: No API key found. Set OPENROUTER_API_KEY env var "
+				+ "or start with -Dopenrouter.api.key=your_key";
 		}
 
 		if (model == null || model.isEmpty()) {
@@ -213,6 +213,21 @@ public class OpenRouterAgent {
 			+ "\"function\":{\"name\":\"" + LlmJsonUtil.escape(toolName) + "\","
 			+ "\"arguments\":\"" + LlmJsonUtil.escape(argsJson != null ? argsJson : "{}") + "\"}"
 			+ "}]}";
+	}
+
+	/**
+	 * Resolve the API key from system property or environment variable.
+	 * Priority: -Dopenrouter.api.key > OPENROUTER_API_KEY env var.
+	 */
+	private String resolveApiKey() {
+		String key = System.getProperty("openrouter.api.key", "");
+		if (key.isEmpty()) {
+			String envKey = System.getenv("OPENROUTER_API_KEY");
+			if (envKey != null && !envKey.isEmpty()) {
+				key = envKey;
+			}
+		}
+		return key;
 	}
 
 	private String post(String apiKey, String jsonBody) {
