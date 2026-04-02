@@ -35,11 +35,11 @@ public class ChatFrame extends JFrame {
 	private final JComboBox<String> modelCombo;
 	private final DefaultComboBoxModel<String> modelComboModel;
 	private final JButton refreshModelsButton;
+	private boolean suppressModelAction;
 
 	public ChatFrame(ChatService chatService) {
 		this.chatService = chatService;
 
-		DarkTheme.apply();
 		setTitle("OSGi Chatbot");
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		setPreferredSize(new Dimension(700, 500));
@@ -68,6 +68,7 @@ public class ChatFrame extends JFrame {
 		modelCombo.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				if (suppressModelAction) return;
 				String selected = (String) modelCombo.getSelectedItem();
 				if (selected != null && !selected.isEmpty()) {
 					chatService.setModel(selected);
@@ -170,9 +171,14 @@ public class ChatFrame extends JFrame {
 						chatPanel.addSystemMessage("No models returned. Check API key and base URL.");
 					} else {
 						String currentSelection = (String) modelCombo.getSelectedItem();
-						modelComboModel.removeAllElements();
-						for (String model : models) {
-							modelComboModel.addElement(model);
+						suppressModelAction = true;
+						try {
+							modelComboModel.removeAllElements();
+							for (String model : models) {
+								modelComboModel.addElement(model);
+							}
+						} finally {
+							suppressModelAction = false;
 						}
 						if (currentSelection != null) {
 							modelCombo.setSelectedItem(currentSelection);

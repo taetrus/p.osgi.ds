@@ -25,6 +25,8 @@ public class ChatPanel extends JScrollPane {
 	private final Style assistantStyle;
 	private final Style systemStyle;
 	private final Style labelStyle;
+	private final Style userLabelStyle;
+	private final Style assistantLabelStyle;
 
 	public ChatPanel() {
 		textPane = new JTextPane();
@@ -50,10 +52,16 @@ public class ChatPanel extends JScrollPane {
 		StyleConstants.setFontSize(systemStyle, 12);
 		StyleConstants.setItalic(systemStyle, true);
 
-		// Label style (role indicators)
+		// Label style (role indicators) — created once, not per message
 		labelStyle = doc.addStyle("label", null);
 		StyleConstants.setFontSize(labelStyle, 11);
 		StyleConstants.setBold(labelStyle, true);
+
+		userLabelStyle = doc.addStyle("userLabel", labelStyle);
+		StyleConstants.setForeground(userLabelStyle, new Color(80, 160, 220));
+
+		assistantLabelStyle = doc.addStyle("assistantLabel", labelStyle);
+		StyleConstants.setForeground(assistantLabelStyle, new Color(100, 200, 120));
 
 		setViewportView(textPane);
 		setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
@@ -64,18 +72,14 @@ public class ChatPanel extends JScrollPane {
 
 	/** Append a user message to the display. */
 	public void addUserMessage(String message) {
-		Style label = doc.addStyle("userLabel", labelStyle);
-		StyleConstants.setForeground(label, new Color(80, 160, 220));
-		appendText("\nYou:\n", label);
+		appendText("\nYou:\n", userLabelStyle);
 		appendText(message + "\n", userStyle);
 		scrollToBottom();
 	}
 
 	/** Append an assistant message to the display. */
 	public void addAssistantMessage(String message) {
-		Style label = doc.addStyle("assistantLabel", labelStyle);
-		StyleConstants.setForeground(label, new Color(100, 200, 120));
-		appendText("\nAssistant:\n", label);
+		appendText("\nAssistant:\n", assistantLabelStyle);
 		appendText(message + "\n", assistantStyle);
 		scrollToBottom();
 	}

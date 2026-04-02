@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import com.kk.pde.ds.api.IGreet;
 import com.kk.pde.ds.chatbot.ChatFrame;
 import com.kk.pde.ds.chatbot.ChatService;
+import com.kk.pde.ds.chatbot.DarkTheme;
 
 @Component
 public class App {
@@ -59,8 +60,9 @@ public class App {
 
         greet.greet();
 
-        // Launch the clock UI
+        // Launch the UI — apply dark theme BEFORE creating any components
         SwingUtilities.invokeLater(() -> {
+            DarkTheme.apply();
             ClockFrame frame = new ClockFrame();
             frame.setVisible(true);
             ChatFrame chatFrame = new ChatFrame(chatService);
