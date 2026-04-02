@@ -46,12 +46,16 @@ After a successful build:
 **Simplest — run directly from the source tree (scripts auto-detect OS and product path):**
 
 ```bash
-# macOS / Linux:
+# macOS / Linux (set OPENROUTER_API_KEY env var for chatbot/LLM features):
+export OPENROUTER_API_KEY=your_key_here
 ./distribution/scripts/run.sh
 
 # Windows:
+set OPENROUTER_API_KEY=your_key_here
 distribution\scripts\run.bat
 ```
+
+The API key can also be passed as a system property: `./distribution/scripts/run.sh -Dopenrouter.api.key=your_key`
 
 **Or from inside the built product directory:**
 
@@ -89,8 +93,13 @@ The DS tab shows all Declarative Services components and their status.
 com.kk.pde.ds.target   → Target platform definition (Eclipse 2024-12)
 com.kk.pde.ds.api      → IGreet interface (service contract)
 com.kk.pde.ds.imp      → Greet implementation (service provider)
-com.kk.pde.ds.app      → App consumer (@Reference injection)
+com.kk.pde.ds.app      → App consumer (@Reference injection, launches Clock + Chatbot UI)
 com.kk.pde.ds.rest     → REST API via HTTP Whiteboard (@Reference injection)
+com.kk.pde.ds.mcp.api  → MCP tool contract (IMcpTool, IMcpToolRegistry)
+com.kk.pde.ds.mcp.server → MCP server (HTTP servlet + tool registry + built-in tools)
+com.kk.pde.ds.mcp.client → MCP client (tests server via HTTP/JSON-RPC)
+com.kk.pde.ds.mcp.llm  → OpenRouter LLM bridge (agent loop with tool calls)
+com.kk.pde.ds.chatbot  → Swing chatbot UI (model selection, chat history, LLM integration)
 com.kk.pde.ds.feature  → Feature grouping all bundles
 distribution           → p2 repository + product builds
 ```
@@ -123,6 +132,31 @@ curl -X POST http://localhost:8080/api/greet -d '{"message":"Test"}'
 ```json
 {"message":"Hello from OSGi HTTP Whiteboard!","timestamp":1737734567890}
 ```
+
+## Chatbot UI
+
+The `com.kk.pde.ds.chatbot` bundle provides a Swing-based chat interface for interacting with LLMs.
+
+**Features:**
+- Multi-turn conversation with session history
+- Model selection via editable dropdown (queries `/v1/models` endpoint)
+- Works with any OpenAI-compatible API (OpenRouter, LM Studio, etc.)
+- MCP tool integration — LLM can call registered tools during conversations
+- Clear history button to reset conversation
+
+**Configuration (environment variables or system properties):**
+
+| Env Var | System Property | Default | Purpose |
+|---------|----------------|---------|---------|
+| `OPENROUTER_API_KEY` | `openrouter.api.key` | — | API key (required) |
+| — | `openrouter.model` | `google/gemini-flash-1.5` | Default model ID |
+| — | `openrouter.base.url` | `https://openrouter.ai/api/v1` | API base URL |
+
+**Service binding flow:**
+1. `OpenRouterAgent` injects `IMcpToolRegistry` for tool access
+2. `ChatService` injects `OpenRouterAgent` for LLM communication
+3. `App` injects `ChatService` and launches `ChatFrame` on the EDT
+4. `ChatFrame` uses `SwingWorker` for non-blocking LLM calls
 
 ## Architecture
 

@@ -16,16 +16,19 @@ A complete Java 8 OSGi application demonstrating enterprise-grade architecture w
 8. [HTTP Whiteboard (REST API)](#http-whiteboard-rest-api)
 9. [Felix WebConsole](#felix-webconsole)
 10. [Health Checks](#health-checks)
-11. [File-Based Configuration](#file-based-configuration)
-12. [Settings Loader](#settings-loader)
-13. [Logging](#logging)
-14. [Product Definition](#product-definition)
-15. [Running the Application](#running-the-application)
-16. [Remote Debugging](#remote-debugging)
-17. [IDE Integration](#ide-integration)
-18. [OSGi Console Commands](#osgi-console-commands)
-19. [Troubleshooting](#troubleshooting)
-20. [File Reference](#file-reference)
+11. [MCP Server (Model Context Protocol)](#mcp-server-model-context-protocol)
+12. [LLM Integration (OpenRouter / OpenAI-Compatible)](#llm-integration-openrouter--openai-compatible)
+13. [Chatbot UI](#chatbot-ui)
+14. [File-Based Configuration](#file-based-configuration)
+15. [Settings Loader](#settings-loader)
+16. [Logging](#logging)
+17. [Product Definition](#product-definition)
+18. [Running the Application](#running-the-application)
+19. [Remote Debugging](#remote-debugging)
+20. [IDE Integration](#ide-integration)
+21. [OSGi Console Commands](#osgi-console-commands)
+22. [Troubleshooting](#troubleshooting)
+23. [File Reference](#file-reference)
 
 ---
 
@@ -44,6 +47,9 @@ This workspace contains a fully-functional Java 8 OSGi application built with **
 | **Product Builds** | Platform-specific archives for Linux, Windows, macOS |
 | **Remote Debugging** | JDWP support for attaching debuggers |
 | **Logging** | Logback with configurable levels |
+| **MCP Server** | Model Context Protocol with tool registry and JSON-RPC 2.0 |
+| **LLM Integration** | OpenAI-compatible API bridge with agent loop and tool calls |
+| **Chatbot UI** | Swing desktop chat with model selection and conversation history |
 
 ---
 
@@ -79,6 +85,17 @@ The easiest way — run the launcher script directly from the source tree. It au
 # Windows:
 distribution\scripts\run.bat
 ```
+
+### Enable LLM Features (Chatbot)
+
+Set your OpenRouter API key as an environment variable before running:
+
+```bash
+export OPENROUTER_API_KEY=your_key_here   # macOS/Linux
+set OPENROUTER_API_KEY=your_key_here      # Windows
+```
+
+The chatbot window will launch automatically alongside the clock.
 
 ### Access Services
 - **WebConsole**: http://localhost:8080/system/console (admin/admin)
@@ -133,6 +150,51 @@ p.osgi.ds/
 │   └── src/com/kk/pde/ds/rest/
 │       ├── GreetServlet.java         # HTTP Whiteboard servlet
 │       └── GreetResponse.java        # Response DTO
+│
+├── com.kk.pde.ds.mcp.api/            # MCP Tool API Bundle
+│   ├── pom.xml
+│   ├── META-INF/MANIFEST.MF
+│   └── src/com/kk/pde/ds/mcp/api/
+│       ├── IMcpTool.java             # Tool contract interface
+│       └── IMcpToolRegistry.java     # Tool registry interface
+│
+├── com.kk.pde.ds.mcp.server/         # MCP Server Bundle
+│   ├── pom.xml
+│   ├── META-INF/MANIFEST.MF
+│   ├── OSGI-INF/                     # DS component descriptors
+│   └── src/com/kk/pde/ds/mcp/server/
+│       ├── McpServlet.java           # JSON-RPC 2.0 HTTP endpoint
+│       ├── McpToolRegistry.java      # Dynamic tool registry
+│       ├── JsonUtil.java             # JSON parser utility
+│       └── tools/
+│           ├── EchoTool.java         # Echo tool
+│           ├── GreetTool.java        # Greet tool (uses IGreet)
+│           └── SystemInfoTool.java   # System info tool
+│
+├── com.kk.pde.ds.mcp.client/         # MCP Client Bundle
+│   ├── pom.xml
+│   └── src/com/kk/pde/ds/mcp/client/
+│       └── McpClient.java            # Protocol test client
+│
+├── com.kk.pde.ds.mcp.llm/            # LLM Bridge Bundle
+│   ├── pom.xml
+│   ├── META-INF/MANIFEST.MF
+│   ├── OSGI-INF/
+│   └── src/com/kk/pde/ds/mcp/llm/
+│       ├── OpenRouterAgent.java       # Agent loop with tool calls
+│       ├── LlmChatServlet.java        # HTTP endpoint for LLM chat
+│       └── LlmJsonUtil.java          # JSON parser (extended)
+│
+├── com.kk.pde.ds.chatbot/            # Chatbot UI Bundle
+│   ├── pom.xml
+│   ├── META-INF/MANIFEST.MF
+│   ├── OSGI-INF/
+│   └── src/com/kk/pde/ds/chatbot/
+│       ├── ChatService.java           # DS component (history, model)
+│       ├── ChatFrame.java             # Main window (JFrame)
+│       ├── ChatPanel.java             # Message display (styled)
+│       ├── InputPanel.java            # Text input + buttons
+│       └── ModelFetcher.java          # /v1/models endpoint query
 │
 ├── com.kk.pde.ds.feature/            # Feature (bundle grouping)
 │   ├── pom.xml
@@ -718,6 +780,95 @@ Verifies health check infrastructure is operational.
 
 ---
 
+## MCP Server (Model Context Protocol)
+
+The MCP bundles implement a tool-call server following the [Model Context Protocol](https://modelcontextprotocol.io/) specification (JSON-RPC 2.0 over HTTP).
+
+### Architecture
+
+```
+IMcpTool (service interface)
+    ├── EchoTool        ─┐
+    ├── GreetTool        ├── Register via @Reference (dynamic, 0..n)
+    └── SystemInfoTool  ─┘
+            │
+    McpToolRegistry (collects all IMcpTool services)
+            │
+    McpServlet (/mcp endpoint, JSON-RPC 2.0)
+```
+
+### Built-in Tools
+
+| Tool | Description | Input |
+|------|-------------|-------|
+| `echo` | Echoes a message back | `{"message": "text"}` |
+| `greet` | Invokes IGreet service | `{"name": "optional"}` |
+| `system_info` | Returns JVM/OS info | `{}` |
+
+### Adding Custom Tools
+
+Create a new `@Component` implementing `IMcpTool` in any bundle. It will be auto-discovered by the dynamic `@Reference` in `McpToolRegistry`.
+
+---
+
+## LLM Integration (OpenRouter / OpenAI-Compatible)
+
+The `com.kk.pde.ds.mcp.llm` bundle bridges the MCP tool registry to OpenAI-compatible APIs.
+
+### Agent Loop
+
+`OpenRouterAgent` implements a tool-calling agent loop:
+1. Sends user message + available tools to the LLM
+2. If LLM responds with `tool_calls` → executes tool via OSGi registry, feeds result back
+3. If LLM responds with `stop` → returns final text answer
+4. Repeats up to 10 turns
+
+### HTTP Endpoint
+
+```bash
+# Send a chat message via HTTP
+curl -X POST http://localhost:8080/llm/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "What tools do you have?", "model": "google/gemini-flash-1.5"}'
+```
+
+---
+
+## Chatbot UI
+
+The `com.kk.pde.ds.chatbot` bundle provides a Swing desktop chat interface.
+
+### Features
+
+- Multi-turn conversation with session history
+- Model selection via editable dropdown (queries `/v1/models` endpoint)
+- "Refresh Models" button to reload available models
+- "Clear" button to reset conversation history
+- Works with any OpenAI-compatible API (OpenRouter, LM Studio, etc.)
+- MCP tool integration — LLM can use registered tools during conversations
+- Non-blocking UI via `SwingWorker` (UI stays responsive during LLM calls)
+
+### Configuration
+
+| Source | Variable | Default | Purpose |
+|--------|----------|---------|---------|
+| Env var | `OPENROUTER_API_KEY` | — | API key (recommended) |
+| System property | `openrouter.api.key` | — | API key (alternative, overrides env var) |
+| System property | `openrouter.model` | `google/gemini-flash-1.5` | Default model ID |
+| System property | `openrouter.base.url` | `https://openrouter.ai/api/v1` | API base URL |
+
+### Service Wiring
+
+```
+OpenRouterAgent (@Reference IMcpToolRegistry)
+        │
+ChatService (@Reference OpenRouterAgent)
+        │
+App (@Reference ChatService) → launches ChatFrame on EDT
+```
+
+---
+
 ## File-Based Configuration
 
 ### Felix File Install
@@ -932,11 +1083,15 @@ After `mvn clean verify`, run the launcher script directly from the repo root. T
 
 **macOS / Linux:**
 ```bash
+# Set API key for chatbot/LLM features (optional but recommended)
+export OPENROUTER_API_KEY=your_key_here
+
 ./distribution/scripts/run.sh
 ```
 
 **Windows:**
 ```cmd
+set OPENROUTER_API_KEY=your_key_here
 distribution\scripts\run.bat
 ```
 
@@ -1369,12 +1524,13 @@ java -jar ... ...                         # Missing flag entirely
 
 | Metric | Count |
 |--------|-------|
-| Maven Modules | 8 (7 active, 1 test disabled) |
-| Application Bundles | 4 |
+| Maven Modules | 13 (12 active, 1 test disabled) |
+| Application Bundles | 9 (api, imp, app, rest, mcp.api, mcp.server, mcp.client, mcp.llm, chatbot) |
 | Framework Bundles | 27 |
-| DS Components | 4 |
+| DS Components | 8 |
+| MCP Tools | 3 (echo, greet, system_info) |
 | Health Checks | 7 (1 custom + 6 file-based) |
-| Java Source Files | 8 |
+| Java Source Files | 18 |
 | Configuration Files | 9 (.ini, .xml, .cfg) |
 | Shell Scripts | 2 |
 | Build Environments | 3 (Linux, Windows, macOS) |
