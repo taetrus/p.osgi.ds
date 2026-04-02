@@ -21,11 +21,7 @@ public final class LlmJsonUtil {
 	 */
 	public static String getString(String json, String key) {
 		if (json == null) return null;
-		String search = "\"" + key + "\"";
-		int keyIdx = json.indexOf(search);
-		if (keyIdx < 0) return null;
-
-		int colonIdx = json.indexOf(':', keyIdx + search.length());
+		int colonIdx = findKeyColon(json, key);
 		if (colonIdx < 0) return null;
 
 		int i = colonIdx + 1;
@@ -50,11 +46,7 @@ public final class LlmJsonUtil {
 	 */
 	public static String getObject(String json, String key) {
 		if (json == null) return null;
-		String search = "\"" + key + "\"";
-		int keyIdx = json.indexOf(search);
-		if (keyIdx < 0) return null;
-
-		int colonIdx = json.indexOf(':', keyIdx + search.length());
+		int colonIdx = findKeyColon(json, key);
 		if (colonIdx < 0) return null;
 
 		int i = colonIdx + 1;
@@ -74,6 +66,33 @@ public final class LlmJsonUtil {
 			end++;
 		}
 		return json.substring(i, end).trim();
+	}
+
+	/**
+	 * Find the colon after a JSON key, distinguishing keys from values.
+	 * In {"type":"function","function":{...}}, searching for "function"
+	 * must skip the VALUE "function" and find the KEY "function".
+	 * A key is "text" immediately followed by : (with optional whitespace).
+	 * A value is "text" followed by , or } or ].
+	 */
+	private static int findKeyColon(String json, String key) {
+		String search = "\"" + key + "\"";
+		int fromIdx = 0;
+		while (true) {
+			int keyIdx = json.indexOf(search, fromIdx);
+			if (keyIdx < 0) return -1;
+
+			// Check if this occurrence is a key (followed by ':')
+			int afterQuote = keyIdx + search.length();
+			int j = afterQuote;
+			while (j < json.length() && Character.isWhitespace(json.charAt(j))) j++;
+			if (j < json.length() && json.charAt(j) == ':') {
+				return j;
+			}
+
+			// Not a key — it's a value. Keep searching after this occurrence.
+			fromIdx = afterQuote;
+		}
 	}
 
 	/**
