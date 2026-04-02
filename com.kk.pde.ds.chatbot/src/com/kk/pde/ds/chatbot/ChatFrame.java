@@ -85,6 +85,15 @@ public class ChatFrame extends JFrame {
 		});
 		topBar.add(refreshModelsButton);
 
+		JButton settingsButton = DarkTheme.createButton("Settings");
+		settingsButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				new SettingsDialog(ChatFrame.this, chatService).setVisible(true);
+			}
+		});
+		topBar.add(settingsButton);
+
 		contentPane.add(topBar, BorderLayout.NORTH);
 
 		// --- Center: chat display ---

@@ -43,10 +43,22 @@ public class OpenRouterAgent {
 	private static final int MAX_TURNS = 10;
 
 	private IMcpToolRegistry registry;
+	private String apiKeyOverride;
+	private String baseUrlOverride;
 
 	@Reference
 	public void setRegistry(IMcpToolRegistry registry) {
 		this.registry = registry;
+	}
+
+	/** Set an API key override (takes priority over system property and env var). */
+	public void setApiKey(String apiKey) {
+		this.apiKeyOverride = apiKey;
+	}
+
+	/** Set a base URL override (takes priority over the default OPENROUTER_URL). */
+	public void setBaseUrl(String baseUrl) {
+		this.baseUrlOverride = baseUrl;
 	}
 
 	/**
@@ -220,6 +232,9 @@ public class OpenRouterAgent {
 	 * Priority: -Dopenrouter.api.key > OPENROUTER_API_KEY env var.
 	 */
 	private String resolveApiKey() {
+		if (apiKeyOverride != null && !apiKeyOverride.isEmpty()) {
+			return apiKeyOverride;
+		}
 		String key = System.getProperty("openrouter.api.key", "");
 		if (key.isEmpty()) {
 			String envKey = System.getenv("OPENROUTER_API_KEY");
@@ -233,7 +248,10 @@ public class OpenRouterAgent {
 	private String post(String apiKey, String jsonBody) {
 		HttpURLConnection conn = null;
 		try {
-			URL url = new URL(OPENROUTER_URL);
+			String targetUrl = (baseUrlOverride != null && !baseUrlOverride.isEmpty())
+				? baseUrlOverride + "/chat/completions"
+				: OPENROUTER_URL;
+			URL url = new URL(targetUrl);
 			conn = (HttpURLConnection) url.openConnection();
 			conn.setRequestMethod("POST");
 			conn.setRequestProperty("Content-Type", "application/json");

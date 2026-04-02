@@ -27,6 +27,7 @@ public class ChatService {
 	private final List<String> history = new ArrayList<String>();
 	private String currentModel;
 	private String baseUrl;
+	private String apiKeyOverride;
 
 	@Reference
 	public void setAgent(OpenRouterAgent agent) {
@@ -52,6 +53,8 @@ public class ChatService {
 		LOG.info("Sending chat message (history size={}): {}",
 			history.size(), userMessage);
 
+		agent.setApiKey(getApiKey());
+		agent.setBaseUrl(getBaseUrl());
 		String response = agent.chatWithHistory(history, currentModel);
 
 		LOG.info("Chat response: {}", response);
@@ -94,8 +97,11 @@ public class ChatService {
 		return System.getProperty("openrouter.base.url", DEFAULT_BASE_URL);
 	}
 
-	/** Get the API key from system property or OPENROUTER_API_KEY env var. */
+	/** Get the API key: override > system property > OPENROUTER_API_KEY env var. */
 	public String getApiKey() {
+		if (apiKeyOverride != null && !apiKeyOverride.isEmpty()) {
+			return apiKeyOverride;
+		}
 		String key = System.getProperty("openrouter.api.key", "");
 		if (key.isEmpty()) {
 			String envKey = System.getenv("OPENROUTER_API_KEY");
@@ -104,6 +110,12 @@ public class ChatService {
 			}
 		}
 		return key;
+	}
+
+	/** Set an API key override (takes priority over system property and env var). */
+	public void setApiKey(String apiKey) {
+		this.apiKeyOverride = apiKey;
+		LOG.info("Chat API key override set");
 	}
 
 	/**
