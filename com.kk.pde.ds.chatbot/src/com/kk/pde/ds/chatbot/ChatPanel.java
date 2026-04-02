@@ -3,6 +3,7 @@ package com.kk.pde.ds.chatbot;
 import java.awt.Color;
 import java.awt.Font;
 
+import javax.swing.BorderFactory;
 import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
 import javax.swing.SwingUtilities;
@@ -57,6 +58,8 @@ public class ChatPanel extends JScrollPane {
 		setViewportView(textPane);
 		setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 		setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+		setBorder(BorderFactory.createLineBorder(DarkTheme.BORDER, 1));
+		getVerticalScrollBar().setBackground(DarkTheme.BG_DARK);
 	}
 
 	/** Append a user message to the display. */

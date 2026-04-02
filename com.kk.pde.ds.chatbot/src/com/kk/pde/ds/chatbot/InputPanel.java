@@ -1,12 +1,14 @@
 package com.kk.pde.ds.chatbot;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -36,10 +38,14 @@ public class InputPanel extends JPanel {
 
 	public InputPanel(final SendListener sendListener, final ClearListener clearListener) {
 		setLayout(new BorderLayout(5, 5));
+		setBackground(DarkTheme.BG_DARK);
 
 		textArea = new JTextArea(3, 40);
 		textArea.setLineWrap(true);
 		textArea.setWrapStyleWord(true);
+		textArea.setBackground(DarkTheme.BG_MEDIUM);
+		textArea.setForeground(DarkTheme.FG_PRIMARY);
+		textArea.setCaretColor(DarkTheme.FG_PRIMARY);
 
 		// Enter sends, Shift+Enter adds newline
 		textArea.addKeyListener(new KeyAdapter() {
@@ -54,11 +60,13 @@ public class InputPanel extends JPanel {
 
 		JScrollPane scrollPane = new JScrollPane(textArea);
 		scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+		scrollPane.setBorder(BorderFactory.createLineBorder(DarkTheme.BORDER, 1));
 		add(scrollPane, BorderLayout.CENTER);
 
 		JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+		buttonPanel.setBackground(DarkTheme.BG_DARK);
 
-		clearButton = new JButton("Clear");
+		clearButton = DarkTheme.createButton("Clear");
 		clearButton.setToolTipText("Clear conversation history");
 		clearButton.addActionListener(new ActionListener() {
 			@Override
@@ -70,7 +78,7 @@ public class InputPanel extends JPanel {
 		});
 		buttonPanel.add(clearButton);
 
-		sendButton = new JButton("Send");
+		sendButton = DarkTheme.createAccentButton("Send");
 		sendButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {

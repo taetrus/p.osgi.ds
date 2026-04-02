@@ -1,6 +1,7 @@
 package com.kk.pde.ds.chatbot;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
@@ -38,17 +39,23 @@ public class ChatFrame extends JFrame {
 	public ChatFrame(ChatService chatService) {
 		this.chatService = chatService;
 
+		DarkTheme.apply();
 		setTitle("OSGi Chatbot");
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		setPreferredSize(new Dimension(700, 500));
 
 		JPanel contentPane = new JPanel(new BorderLayout(5, 5));
 		contentPane.setBorder(new EmptyBorder(8, 8, 8, 8));
+		contentPane.setBackground(DarkTheme.BG_DARK);
 		setContentPane(contentPane);
 
 		// --- Top bar: model selector ---
 		JPanel topBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
-		topBar.add(new JLabel("Model:"));
+		topBar.setBackground(DarkTheme.BG_DARK);
+		topBar.setOpaque(true);
+		JLabel modelLabel = new JLabel("Model:");
+		modelLabel.setForeground(DarkTheme.FG_PRIMARY);
+		topBar.add(modelLabel);
 
 		modelComboModel = new DefaultComboBoxModel<String>();
 		String defaultModel = System.getProperty("openrouter.model", "google/gemini-flash-1.5");
@@ -56,6 +63,8 @@ public class ChatFrame extends JFrame {
 		modelCombo = new JComboBox<String>(modelComboModel);
 		modelCombo.setEditable(true);
 		modelCombo.setPreferredSize(new Dimension(350, 26));
+		modelCombo.setBackground(DarkTheme.BG_MEDIUM);
+		modelCombo.setForeground(DarkTheme.FG_PRIMARY);
 		modelCombo.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -67,7 +76,7 @@ public class ChatFrame extends JFrame {
 		});
 		topBar.add(modelCombo);
 
-		refreshModelsButton = new JButton("Refresh Models");
+		refreshModelsButton = DarkTheme.createButton("Refresh Models");
 		refreshModelsButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
