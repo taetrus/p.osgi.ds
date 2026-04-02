@@ -153,7 +153,7 @@ public class OpenRouterAgent {
 				String callId = LlmJsonUtil.getString(firstCall, "id");
 				String function = LlmJsonUtil.getObject(firstCall, "function");
 				String toolName = LlmJsonUtil.getString(function, "name");
-				String argsJson = LlmJsonUtil.getString(function, "arguments");
+				String argsJson = extractArguments(function);
 
 				LOG.info("Tool call: {} args={}", toolName, argsJson);
 				messages.add(buildAssistantToolCallMessage(callId, toolName, argsJson));
@@ -218,12 +218,35 @@ public class OpenRouterAgent {
 		return sb.toString();
 	}
 
+	/**
+	 * Extract tool call arguments, handling both string and object formats.
+	 * Some models return "arguments":"{}" (string), others return "arguments":{} (object).
+	 * Some return "arguments":"" (empty string). Normalizes all to valid JSON.
+	 */
+	private String extractArguments(String functionJson) {
+		// Try as string first (OpenAI standard: "arguments":"{...}")
+		String args = LlmJsonUtil.getString(functionJson, "arguments");
+		if (args != null && !args.trim().isEmpty()) {
+			return args;
+		}
+		// Try as object (some models: "arguments":{...})
+		args = LlmJsonUtil.getObject(functionJson, "arguments");
+		if (args != null && !args.trim().isEmpty()) {
+			return args;
+		}
+		return "{}";
+	}
+
 	private String buildAssistantToolCallMessage(String callId, String toolName, String argsJson) {
+		// Ensure argsJson is valid JSON for the arguments field
+		if (argsJson == null || argsJson.trim().isEmpty()) {
+			argsJson = "{}";
+		}
 		return "{\"role\":\"assistant\",\"content\":null,\"tool_calls\":[{"
 			+ "\"id\":\"" + LlmJsonUtil.escape(callId) + "\","
 			+ "\"type\":\"function\","
 			+ "\"function\":{\"name\":\"" + LlmJsonUtil.escape(toolName) + "\","
-			+ "\"arguments\":\"" + LlmJsonUtil.escape(argsJson != null ? argsJson : "{}") + "\"}"
+			+ "\"arguments\":\"" + LlmJsonUtil.escape(argsJson) + "\"}"
 			+ "}]}";
 	}
 
