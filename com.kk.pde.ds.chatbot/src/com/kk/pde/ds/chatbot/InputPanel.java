@@ -14,7 +14,6 @@ import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
-import javax.swing.text.DefaultCaret;
 
 /**
  * Input panel with multi-line text area, Send button, and Clear History button.
@@ -48,13 +47,6 @@ public class InputPanel extends JPanel {
 		textArea.setBackground(DarkTheme.BG_MEDIUM);
 		textArea.setForeground(DarkTheme.FG_PRIMARY);
 		textArea.setCaretColor(DarkTheme.FG_PRIMARY);
-
-		// Prevent the caret from triggering scroll-to-visible on every keystroke.
-		// The default UPDATE_WHEN_ON_EDT policy causes the scroll pane to
-		// re-validate the viewport after each character, which combined with
-		// word-wrap creates a layout feedback loop.
-		DefaultCaret caret = (DefaultCaret) textArea.getCaret();
-		caret.setUpdatePolicy(DefaultCaret.NEVER_UPDATE);
 
 		// Enter sends, Shift+Enter adds newline
 		textArea.addKeyListener(new KeyAdapter() {
