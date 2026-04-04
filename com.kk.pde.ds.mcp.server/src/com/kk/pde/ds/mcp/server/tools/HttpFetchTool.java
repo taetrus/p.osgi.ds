@@ -7,14 +7,23 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Map;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.kk.pde.ds.mcp.api.IMcpTool;
 
 @Component(service = IMcpTool.class)
 public class HttpFetchTool implements IMcpTool {
 
+	private static final Logger LOG = LoggerFactory.getLogger(HttpFetchTool.class);
 	private static final int MAX_RESPONSE_CHARS = 4096;
+
+	@Activate
+	public void activate() {
+		LOG.info("HttpFetchTool activated");
+	}
 
 	@Override
 	public String getName() {

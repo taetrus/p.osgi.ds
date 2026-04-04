@@ -2,12 +2,22 @@ package com.kk.pde.ds.mcp.server.tools;
 
 import java.util.Map;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.kk.pde.ds.mcp.api.IMcpTool;
 
 @Component(service = IMcpTool.class)
 public class CalculatorTool implements IMcpTool {
+
+	private static final Logger LOG = LoggerFactory.getLogger(CalculatorTool.class);
+
+	@Activate
+	public void activate() {
+		LOG.info("CalculatorTool activated");
+	}
 
 	@Override
 	public String getName() {

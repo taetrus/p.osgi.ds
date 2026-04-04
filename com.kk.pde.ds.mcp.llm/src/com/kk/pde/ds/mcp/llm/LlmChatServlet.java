@@ -9,6 +9,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.http.whiteboard.HttpWhiteboardConstants;
@@ -39,6 +40,11 @@ public class LlmChatServlet extends HttpServlet {
 	private static final Logger LOG = LoggerFactory.getLogger(LlmChatServlet.class);
 
 	private OpenRouterAgent agent;
+
+	@Activate
+	public void activate() {
+		LOG.info("LlmChatServlet activated at /llm/chat");
+	}
 
 	@Reference
 	public void setAgent(OpenRouterAgent agent) {

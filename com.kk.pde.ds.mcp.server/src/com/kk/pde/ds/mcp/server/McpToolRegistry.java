@@ -3,6 +3,7 @@ package com.kk.pde.ds.mcp.server;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
@@ -23,6 +24,11 @@ public class McpToolRegistry implements IMcpToolRegistry {
 	private static final Logger LOG = LoggerFactory.getLogger(McpToolRegistry.class);
 
 	private final List<IMcpTool> tools = new CopyOnWriteArrayList<IMcpTool>();
+
+	@Activate
+	public void activate() {
+		LOG.info("McpToolRegistry activated");
+	}
 
 	@Reference(cardinality = ReferenceCardinality.MULTIPLE, policy = ReferencePolicy.DYNAMIC)
 	public void addTool(IMcpTool tool) {

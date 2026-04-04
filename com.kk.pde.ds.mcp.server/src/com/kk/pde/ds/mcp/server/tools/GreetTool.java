@@ -2,8 +2,11 @@ package com.kk.pde.ds.mcp.server.tools;
 
 import java.util.Map;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.kk.pde.ds.api.IGreet;
 import com.kk.pde.ds.mcp.api.IMcpTool;
@@ -15,7 +18,14 @@ import com.kk.pde.ds.mcp.api.IMcpTool;
 @Component(service = IMcpTool.class)
 public class GreetTool implements IMcpTool {
 
+	private static final Logger LOG = LoggerFactory.getLogger(GreetTool.class);
+
 	private IGreet greetService;
+
+	@Activate
+	public void activate() {
+		LOG.info("GreetTool activated");
+	}
 
 	@Reference
 	public void setGreetService(IGreet service) {

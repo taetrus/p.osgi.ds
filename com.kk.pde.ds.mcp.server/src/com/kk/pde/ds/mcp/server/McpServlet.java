@@ -11,6 +11,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.http.whiteboard.HttpWhiteboardConstants;
@@ -47,6 +48,11 @@ public class McpServlet extends HttpServlet {
 	private static final String SERVER_VERSION = "1.0.0";
 
 	private IMcpToolRegistry registry;
+
+	@Activate
+	public void activate() {
+		LOG.info("McpServlet activated at /mcp");
+	}
 
 	@Reference
 	public void setRegistry(IMcpToolRegistry registry) {

@@ -3,6 +3,7 @@ package com.kk.pde.ds.chatbot;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.slf4j.Logger;
@@ -28,6 +29,11 @@ public class ChatService {
 	private String currentModel;
 	private String baseUrl;
 	private String apiKeyOverride;
+
+	@Activate
+	public void activate() {
+		LOG.info("ChatService activated");
+	}
 
 	@Reference
 	public void setAgent(OpenRouterAgent agent) {

@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.slf4j.Logger;
@@ -45,6 +46,11 @@ public class OpenRouterAgent {
 	private IMcpToolRegistry registry;
 	private String apiKeyOverride;
 	private String baseUrlOverride;
+
+	@Activate
+	public void activate() {
+		LOG.info("OpenRouterAgent activated");
+	}
 
 	@Reference
 	public void setRegistry(IMcpToolRegistry registry) {

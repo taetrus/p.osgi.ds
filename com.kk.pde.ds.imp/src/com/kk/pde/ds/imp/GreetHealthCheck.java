@@ -3,6 +3,7 @@ package com.kk.pde.ds.imp;
 import org.apache.felix.hc.api.FormattingResultLog;
 import org.apache.felix.hc.api.HealthCheck;
 import org.apache.felix.hc.api.Result;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.slf4j.Logger;
@@ -30,6 +31,11 @@ public class GreetHealthCheck implements HealthCheck {
 
     @Reference
     private IGreet greetService;
+
+    @Activate
+    public void activate() {
+        log.info("GreetHealthCheck activated");
+    }
 
     @Override
     public Result execute() {
