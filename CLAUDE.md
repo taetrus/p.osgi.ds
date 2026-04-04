@@ -41,7 +41,7 @@ After a successful build:
 
 ## Running the Application
 
-> **Java requirement**: Java 17+ required at runtime (Eclipse Equinox 3.22 does not support Java 8).
+> **Java requirement**: Java 8+ required at runtime.
 
 **Simplest — run directly from the source tree (scripts auto-detect OS and product path):**
 
@@ -178,7 +178,7 @@ The `com.kk.pde.ds.chatbot` bundle provides a Swing-based chat interface for int
 
 ## Technology Stack
 
-- **Java 17+** (application bundles compile to Java 8 bytecode, but Equinox 3.22 runtime requires Java 17+)
+- **Java 8+** (all bundles and the fat JAR launcher target Java 8 bytecode)
 - **Tycho 4.0.13** (Maven OSGi build)
 - **Eclipse 2024-12** target platform
 - **OSGi Declarative Services** via annotations

@@ -58,7 +58,7 @@ This workspace contains a fully-functional Java 8 OSGi application built with **
 
 | Requirement | Version |
 |-------------|---------|
-| **Java** | 17 or newer (bundles compile to Java 8 bytecode, but Eclipse Equinox 3.22 runtime requires Java 17+) |
+| **Java** | 8 or newer |
 | **Maven** | 3.6+ |
 | **Internet** | Required for Maven to resolve target platform dependencies |
 
@@ -1089,7 +1089,7 @@ Edit `logback.xml` in the product's `configuration/` directory:
 
 ## Running the Application
 
-> **Java requirement**: Java 17+ is required at runtime. Eclipse Equinox 3.22 does not support Java 8 even though our bundles are compiled to Java 8 bytecode.
+> **Java requirement**: Java 8+ is required at runtime.
 
 ### Method 1: Run Scripts from Source Tree (Recommended)
 
@@ -1282,7 +1282,7 @@ The Gogo shell console is available on stdin/stdout by default. Use `ss` to list
 
 ### Platform Notes
 
-The fat JAR is cross-platform — the same JAR runs on macOS, Linux, and Windows with Java 17+. The `pom.xml` includes OS-detection profiles to find the built product plugins directory automatically.
+The fat JAR is cross-platform — the same JAR runs on macOS, Linux, and Windows with Java 8+. The `pom.xml` includes OS-detection profiles to find the built product plugins directory automatically.
 
 ---
 
