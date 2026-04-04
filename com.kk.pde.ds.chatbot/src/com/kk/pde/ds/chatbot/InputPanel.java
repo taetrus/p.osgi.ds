@@ -2,6 +2,7 @@ package com.kk.pde.ds.chatbot;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -13,6 +14,7 @@ import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.text.DefaultCaret;
 
 /**
  * Input panel with multi-line text area, Send button, and Clear History button.
@@ -47,6 +49,13 @@ public class InputPanel extends JPanel {
 		textArea.setForeground(DarkTheme.FG_PRIMARY);
 		textArea.setCaretColor(DarkTheme.FG_PRIMARY);
 
+		// Prevent the caret from triggering scroll-to-visible on every keystroke.
+		// The default UPDATE_WHEN_ON_EDT policy causes the scroll pane to
+		// re-validate the viewport after each character, which combined with
+		// word-wrap creates a layout feedback loop.
+		DefaultCaret caret = (DefaultCaret) textArea.getCaret();
+		caret.setUpdatePolicy(DefaultCaret.NEVER_UPDATE);
+
 		// Enter sends, Shift+Enter adds newline
 		textArea.addKeyListener(new KeyAdapter() {
 			@Override
@@ -59,8 +68,17 @@ public class InputPanel extends JPanel {
 		});
 
 		JScrollPane scrollPane = new JScrollPane(textArea);
-		scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+		// ALWAYS show the vertical scrollbar to avoid the show/hide feedback loop:
+		// AS_NEEDED checks on every document change whether the scrollbar should
+		// appear, which changes viewport width, which re-triggers word-wrap, which
+		// changes document height, which re-triggers the scrollbar check...
+		scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+		scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 		scrollPane.setBorder(BorderFactory.createLineBorder(DarkTheme.BORDER, 1));
+		// Fix the preferred size so the scroll pane doesn't re-layout the
+		// parent panel when the text area content changes height.
+		scrollPane.setPreferredSize(new Dimension(400, 70));
+		scrollPane.setMinimumSize(new Dimension(200, 50));
 		add(scrollPane, BorderLayout.CENTER);
 
 		JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
