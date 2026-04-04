@@ -106,6 +106,12 @@ public class Main {
         Path bundlesDir = extractBundles(tempDir);
         Path configDir = extractConfiguration(tempDir);
 
+        // 1b. Set logback config as a JVM system property BEFORE any bundle loads it.
+        //     Logback reads System.getProperty("logback.configurationFile"), not OSGi
+        //     framework properties, so this must be set at the JVM level.
+        System.setProperty("logback.configurationFile",
+            configDir.resolve("logback.xml").toString());
+
         // 2. Find the Equinox framework JAR
         File equinoxJar = findEquinoxJar(bundlesDir);
         if (equinoxJar == null) {
@@ -127,6 +133,11 @@ public class Main {
         fwProps.put("org.osgi.framework.storage", tempDir.resolve("osgi-cache").toString());
         fwProps.put("org.osgi.framework.storage.clean", "onFirstInit");
         fwProps.put("org.osgi.framework.startlevel.beginning", "4");
+
+        // Equinox console: empty string = stdin/stdout, port number = telnet
+        // Default to stdin/stdout; override with -Dosgi.console.port=5555 for telnet
+        String consolePort = System.getProperty("osgi.console.port", "");
+        fwProps.put("osgi.console", consolePort);
 
         // HTTP / WebConsole
         fwProps.put("org.apache.felix.http.enable", "true");
@@ -181,6 +192,8 @@ public class Main {
         Arrays.sort(jars, Comparator.comparing(File::getName));
 
         Method installBundle = ctx.getClass().getMethod("installBundle", String.class);
+        Class<?> bslClass = fwClassLoader.loadClass("org.osgi.framework.startlevel.BundleStartLevel");
+        Method bslSetStartLevel = bslClass.getMethod("setStartLevel", int.class);
         List<Object> installed = new ArrayList<>();
 
         for (File jar : jars) {
@@ -193,15 +206,13 @@ public class Main {
                 Object bundle = installBundle.invoke(ctx, location);
                 installed.add(bundle);
 
-                // Set start level: bundle.adapt(BundleStartLevel.class).setStartLevel(n)
+                // Set start level via the interface class (not the impl class)
                 StartConfig sc = findConfig(jar.getName());
                 if (sc != null) {
-                    Class<?> bslClass = fwClassLoader.loadClass("org.osgi.framework.startlevel.BundleStartLevel");
                     Method adapt = bundle.getClass().getMethod("adapt", Class.class);
                     Object bsl = adapt.invoke(bundle, bslClass);
                     if (bsl != null) {
-                        Method setStartLevel = bsl.getClass().getMethod("setStartLevel", int.class);
-                        setStartLevel.invoke(bsl, sc.startLevel);
+                        bslSetStartLevel.invoke(bsl, sc.startLevel);
                     }
                 }
             } catch (Exception e) {
@@ -241,11 +252,17 @@ public class Main {
         }
 
         // 8. Set framework start level to 4
+        //    FrameworkStartLevel.setStartLevel(int, FrameworkListener...) is varargs,
+        //    so the actual signature is (int, FrameworkListener[]). We need to pass
+        //    the array type for the method lookup and an empty array for the invocation.
         Class<?> fslClass = fwClassLoader.loadClass("org.osgi.framework.startlevel.FrameworkStartLevel");
+        Class<?> flClass = fwClassLoader.loadClass("org.osgi.framework.FrameworkListener");
+        Class<?> flArrayClass = java.lang.reflect.Array.newInstance(flClass, 0).getClass();
         Method adaptFw = framework.getClass().getMethod("adapt", Class.class);
         Object fsl = adaptFw.invoke(framework, fslClass);
-        Method setStartLevel = fsl.getClass().getMethod("setStartLevel", int.class);
-        setStartLevel.invoke(fsl, 4);
+        Method setStartLevel = fslClass.getMethod("setStartLevel", int.class, flArrayClass);
+        Object emptyListeners = java.lang.reflect.Array.newInstance(flClass, 0);
+        setStartLevel.invoke(fsl, 4, emptyListeners);
 
         System.out.println("All bundles started. Framework running.");
         System.out.println("WebConsole: http://localhost:8080/system/console (admin/admin)");
