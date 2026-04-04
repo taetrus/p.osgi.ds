@@ -24,11 +24,12 @@ A complete Java 8 OSGi application demonstrating enterprise-grade architecture w
 16. [Logging](#logging)
 17. [Product Definition](#product-definition)
 18. [Running the Application](#running-the-application)
-19. [Remote Debugging](#remote-debugging)
-20. [IDE Integration](#ide-integration)
-21. [OSGi Console Commands](#osgi-console-commands)
-22. [Troubleshooting](#troubleshooting)
-23. [File Reference](#file-reference)
+19. [Fat JAR (Single Executable)](#fat-jar-single-executable)
+20. [Remote Debugging](#remote-debugging)
+21. [IDE Integration](#ide-integration)
+22. [OSGi Console Commands](#osgi-console-commands)
+23. [Troubleshooting](#troubleshooting)
+24. [File Reference](#file-reference)
 
 ---
 
@@ -76,7 +77,7 @@ mvn clean package -DskipTests
 
 ### Run (after build)
 
-The easiest way — run the launcher script directly from the source tree. It auto-detects your OS and finds the built product:
+**Option A — Launcher script** (runs from the built product directory):
 
 ```bash
 # macOS / Linux:
@@ -84,6 +85,13 @@ The easiest way — run the launcher script directly from the source tree. It au
 
 # Windows:
 distribution\scripts\run.bat
+```
+
+**Option B — Fat JAR** (single executable, no product directory needed):
+
+```bash
+cd fatjar && mvn clean package
+java -jar target/osgi-fatjar.jar
 ```
 
 ### Enable LLM Features (Chatbot)
@@ -195,6 +203,12 @@ p.osgi.ds/
 │       ├── ChatPanel.java             # Message display (styled)
 │       ├── InputPanel.java            # Text input + buttons
 │       └── ModelFetcher.java          # /v1/models endpoint query
+│
+├── fatjar/                            # Fat JAR Launcher (standalone)
+│   ├── pom.xml                       # Plain Maven (not Tycho)
+│   ├── run.sh                        # Build + run convenience script
+│   ├── src/assembly/fatjar.xml       # Assembly descriptor
+│   └── src/main/java/.../Main.java   # Embedded Equinox launcher
 │
 ├── com.kk.pde.ds.feature/            # Feature (bundle grouping)
 │   ├── pom.xml
@@ -1198,9 +1212,77 @@ com.kk.pde.ds.product/
 │       ├── *.cfg               # 6 health check files
 ├── settings/                   # Runtime settings
 │   └── mcp.json
-├── run.sh                      # Linux/macOS launcher
+├��─ run.sh                      # Linux/macOS launcher
 └── run.bat                     # Windows launcher
 ```
+
+---
+
+## Fat JAR (Single Executable)
+
+The `fatjar/` module packages the entire application — Equinox framework, all 37 OSGi bundles, and configuration — into a single 8.4 MB executable JAR. No installation or product directory needed.
+
+### How It Works
+
+The fat JAR uses a **reflection-based embedded Equinox** approach:
+
+1. `Main.java` extracts all bundle JARs from `bundles/` inside the fat JAR to a temp directory
+2. Loads the Equinox framework JAR via `URLClassLoader` (keeps OSGi classes off the app classpath)
+3. Boots the framework using `FrameworkFactory` SPI via `ServiceLoader` + reflection
+4. Installs all bundles with correct start levels matching the product definition
+5. Starts everything, waits for shutdown, cleans up the temp directory
+
+> **Why reflection?** Unpacking Equinox onto the flat classpath would put `org.osgi.framework.*` packages on both the app classpath and the system bundle, breaking the OSGi resolver. The reflection approach keeps Main.java completely OSGi-free — zero `org.osgi` imports.
+
+### Build
+
+The fat JAR is a **standalone Maven module** (not part of the Tycho reactor). Build the main project first, then the fat JAR:
+
+```bash
+# 1. Build all bundles + product
+mvn clean verify
+
+# 2. Build the fat JAR (collects bundles from the built product)
+cd fatjar
+mvn clean package
+```
+
+Output: `fatjar/target/osgi-fatjar.jar`
+
+### Run
+
+```bash
+# Basic
+java -jar fatjar/target/osgi-fatjar.jar
+
+# With API key for chatbot/LLM features
+OPENROUTER_API_KEY=your_key java -jar fatjar/target/osgi-fatjar.jar
+
+# With telnet console on port 5555
+java -Dosgi.console.port=5555 -jar fatjar/target/osgi-fatjar.jar
+
+# Or use the convenience script (builds if needed)
+./fatjar/run.sh
+```
+
+### Services Available
+
+Once running, the same services are available as the product build:
+
+| Service | URL |
+|---------|-----|
+| REST API | http://localhost:8080/api/greet |
+| WebConsole | http://localhost:8080/system/console (admin/admin) |
+| MCP Server | http://localhost:8080/mcp |
+| LLM Chat | http://localhost:8080/llm/chat (POST) |
+
+### OSGi Console
+
+The Gogo shell console is available on stdin/stdout by default. Use `ss` to list bundles and `scr:list` to inspect DS components. For remote access, start with `-Dosgi.console.port=5555` and connect via telnet.
+
+### Platform Notes
+
+The fat JAR is cross-platform — the same JAR runs on macOS, Linux, and Windows with Java 17+. The `pom.xml` includes OS-detection profiles to find the built product plugins directory automatically.
 
 ---
 
