@@ -91,6 +91,9 @@ public class InputPanel extends JPanel {
 	}
 
 	private void doSend(SendListener listener) {
+		if (!sendButton.isEnabled()) {
+			return; // Already waiting for a response
+		}
 		String text = textArea.getText().trim();
 		if (!text.isEmpty() && listener != null) {
 			textArea.setText("");
@@ -101,7 +104,9 @@ public class InputPanel extends JPanel {
 	/** Enable or disable the send button (e.g. while waiting for response). */
 	public void setSendEnabled(boolean enabled) {
 		sendButton.setEnabled(enabled);
-		textArea.setEnabled(enabled);
+		// Do NOT disable textArea — the user should be able to type their next
+		// message while waiting for the LLM response. Disabling the text area
+		// blocks all keystrokes and feels like lag.
 	}
 
 	/** Request focus on the text area. */

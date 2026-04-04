@@ -71,48 +71,77 @@ public class ChatPanel extends JScrollPane {
 	}
 
 	/** Append a user message to the display. */
-	public void addUserMessage(String message) {
-		appendText("\nYou:\n", userLabelStyle);
-		appendText(message + "\n", userStyle);
-		scrollToBottom();
+	public void addUserMessage(final String message) {
+		appendStyledMessage("\nYou:\n", userLabelStyle, message + "\n", userStyle);
 	}
 
 	/** Append an assistant message to the display. */
-	public void addAssistantMessage(String message) {
-		appendText("\nAssistant:\n", assistantLabelStyle);
-		appendText(message + "\n", assistantStyle);
-		scrollToBottom();
+	public void addAssistantMessage(final String message) {
+		appendStyledMessage("\nAssistant:\n", assistantLabelStyle, message + "\n", assistantStyle);
 	}
 
 	/** Append a system/status message (tool calls, errors, etc.). */
-	public void addSystemMessage(String message) {
-		appendText("\n" + message + "\n", systemStyle);
-		scrollToBottom();
+	public void addSystemMessage(final String message) {
+		final Runnable task = new Runnable() {
+			@Override
+			public void run() {
+				try {
+					doc.insertString(doc.getLength(), "\n" + message + "\n", systemStyle);
+					textPane.setCaretPosition(doc.getLength());
+				} catch (BadLocationException e) {
+					// ignore
+				}
+			}
+		};
+		if (SwingUtilities.isEventDispatchThread()) {
+			task.run();
+		} else {
+			SwingUtilities.invokeLater(task);
+		}
 	}
 
 	/** Clear all displayed messages. */
 	public void clear() {
-		try {
-			doc.remove(0, doc.getLength());
-		} catch (BadLocationException e) {
-			// ignore
-		}
-	}
-
-	private void appendText(String text, Style style) {
-		try {
-			doc.insertString(doc.getLength(), text, style);
-		} catch (BadLocationException e) {
-			// ignore
-		}
-	}
-
-	private void scrollToBottom() {
-		SwingUtilities.invokeLater(new Runnable() {
+		final Runnable task = new Runnable() {
 			@Override
 			public void run() {
-				textPane.setCaretPosition(doc.getLength());
+				try {
+					doc.remove(0, doc.getLength());
+				} catch (BadLocationException e) {
+					// ignore
+				}
 			}
-		});
+		};
+		if (SwingUtilities.isEventDispatchThread()) {
+			task.run();
+		} else {
+			SwingUtilities.invokeLater(task);
+		}
+	}
+
+	/**
+	 * Batch a label + message into a single EDT task with one scroll.
+	 * This reduces the number of layout recalculations from 3 (label insert +
+	 * message insert + scroll) to 1 batched operation.
+	 */
+	private void appendStyledMessage(final String label, final Style lblStyle,
+			final String body, final Style bodyStyle) {
+		final Runnable task = new Runnable() {
+			@Override
+			public void run() {
+				try {
+					doc.insertString(doc.getLength(), label, lblStyle);
+					doc.insertString(doc.getLength(), body, bodyStyle);
+					textPane.setCaretPosition(doc.getLength());
+				} catch (BadLocationException e) {
+					// ignore
+				}
+			}
+		};
+		if (SwingUtilities.isEventDispatchThread()) {
+			task.run();
+		} else {
+			SwingUtilities.invokeLater(task);
+		}
 	}
 }

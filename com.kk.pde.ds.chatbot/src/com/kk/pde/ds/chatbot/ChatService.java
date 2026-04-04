@@ -1,5 +1,6 @@
 package com.kk.pde.ds.chatbot;
 
+import java.util.Collections;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,7 +26,7 @@ public class ChatService {
 	private static final String DEFAULT_BASE_URL = "https://openrouter.ai/api/v1";
 
 	private OpenRouterAgent agent;
-	private final List<String> history = new ArrayList<String>();
+	private final List<String> history = Collections.synchronizedList(new ArrayList<String>());
 	private String currentModel;
 	private String baseUrl;
 	private String apiKeyOverride;
