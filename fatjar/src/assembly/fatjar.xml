@@ -1,0 +1,45 @@
+<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.3"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.3 http://maven.apache.org/xsd/assembly-1.1.3.xsd">
+
+    <id>fatjar</id>
+    <formats>
+        <format>jar</format>
+    </formats>
+    <includeBaseDirectory>false</includeBaseDirectory>
+
+    <fileSets>
+        <!-- Include compiled classes (Main.java) -->
+        <fileSet>
+            <directory>${project.build.outputDirectory}</directory>
+            <outputDirectory>/</outputDirectory>
+        </fileSet>
+
+        <!-- Include all bundle JARs from the built product -->
+        <fileSet>
+            <directory>${product.plugins.dir}</directory>
+            <outputDirectory>/bundles</outputDirectory>
+            <includes>
+                <include>*.jar</include>
+            </includes>
+        </fileSet>
+
+        <!-- Include configuration resources from src/main/resources -->
+        <fileSet>
+            <directory>${project.basedir}/src/main/resources</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>configuration/**</include>
+            </includes>
+        </fileSet>
+
+        <!-- Include health check configs from distribution -->
+        <fileSet>
+            <directory>${project.basedir}/../distribution/configuration/configs</directory>
+            <outputDirectory>/configuration/configs</outputDirectory>
+            <includes>
+                <include>*.cfg</include>
+            </includes>
+        </fileSet>
+    </fileSets>
+</assembly>
