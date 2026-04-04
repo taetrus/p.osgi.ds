@@ -34,6 +34,16 @@ public class ChatPanel extends JScrollPane {
 		textPane.setBackground(new Color(30, 30, 40));
 		textPane.setFont(new Font("SansSerif", Font.PLAIN, 14));
 
+		// Disable the caret entirely on this read-only pane.
+		// Even non-editable JTextPanes have a blinking caret timer (~500ms)
+		// that calls repaint(), triggering a StyledDocument layout pass.
+		// As the conversation grows this steals increasing EDT time from
+		// the input text area's keystroke processing.
+		textPane.getCaret().setVisible(false);
+		textPane.getCaret().setSelectionVisible(false);
+		((javax.swing.text.DefaultCaret) textPane.getCaret())
+			.setUpdatePolicy(javax.swing.text.DefaultCaret.NEVER_UPDATE);
+
 		doc = textPane.getStyledDocument();
 
 		// User message style (light blue)
@@ -87,7 +97,7 @@ public class ChatPanel extends JScrollPane {
 			public void run() {
 				try {
 					doc.insertString(doc.getLength(), "\n" + message + "\n", systemStyle);
-					textPane.setCaretPosition(doc.getLength());
+					scrollToEnd();
 				} catch (BadLocationException e) {
 					// ignore
 				}
@@ -132,7 +142,7 @@ public class ChatPanel extends JScrollPane {
 				try {
 					doc.insertString(doc.getLength(), label, lblStyle);
 					doc.insertString(doc.getLength(), body, bodyStyle);
-					textPane.setCaretPosition(doc.getLength());
+					scrollToEnd();
 				} catch (BadLocationException e) {
 					// ignore
 				}
@@ -142,6 +152,21 @@ public class ChatPanel extends JScrollPane {
 			task.run();
 		} else {
 			SwingUtilities.invokeLater(task);
+		}
+	}
+
+	/** Scroll to end without updating caret position (avoids layout pass). */
+	private void scrollToEnd() {
+		int len = doc.getLength();
+		if (len > 0) {
+			try {
+				java.awt.Rectangle r = textPane.modelToView(len);
+				if (r != null) {
+					textPane.scrollRectToVisible(r);
+				}
+			} catch (BadLocationException e) {
+				// ignore
+			}
 		}
 	}
 }

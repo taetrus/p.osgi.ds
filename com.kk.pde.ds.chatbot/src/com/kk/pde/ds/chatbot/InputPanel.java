@@ -43,7 +43,9 @@ public class InputPanel extends JPanel {
 
 		textArea = new JTextArea(3, 40);
 		textArea.setLineWrap(true);
-		textArea.setWrapStyleWord(true);
+		// Use character wrap instead of word wrap — word wrap scans backwards
+		// on every keystroke to find word boundaries, character wrap is O(1).
+		textArea.setWrapStyleWord(false);
 		textArea.setBackground(DarkTheme.BG_MEDIUM);
 		textArea.setForeground(DarkTheme.FG_PRIMARY);
 		textArea.setCaretColor(DarkTheme.FG_PRIMARY);
