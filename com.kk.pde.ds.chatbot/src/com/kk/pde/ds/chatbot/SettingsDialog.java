@@ -89,12 +89,7 @@ public class SettingsDialog extends JDialog {
 		modelField.setForeground(DarkTheme.FG_PRIMARY);
 		modelField.setCaretColor(DarkTheme.FG_PRIMARY);
 		modelField.setBorder(DarkTheme.inputBorder());
-		String currentModel = chatService.getModel();
-		if (currentModel != null) {
-			modelField.setText(currentModel);
-		} else {
-			modelField.setText(System.getProperty("openrouter.model", "google/gemini-flash-1.5"));
-		}
+		modelField.setText(chatService.getModel());
 		formPanel.add(modelField, gbc);
 
 		// Base URL
@@ -174,7 +169,8 @@ public class SettingsDialog extends JDialog {
 			chatService.setBaseUrl(baseUrl);
 		}
 
-		LOG.info("Settings saved");
+		chatService.getConfig().save();
+		LOG.info("Settings saved to disk");
 		dispose();
 	}
 

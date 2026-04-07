@@ -58,7 +58,7 @@ public class ChatFrame extends JFrame {
 		topBar.add(modelLabel);
 
 		modelComboModel = new DefaultComboBoxModel<String>();
-		String defaultModel = System.getProperty("openrouter.model", "google/gemini-flash-1.5");
+		String defaultModel = chatService.getModel();
 		modelComboModel.addElement(defaultModel);
 		modelCombo = new JComboBox<String>(modelComboModel);
 		modelCombo.setEditable(true);

@@ -16,6 +16,8 @@ import com.kk.pde.ds.mcp.llm.OpenRouterAgent;
 /**
  * DS component that manages chat conversations with an LLM.
  * Maintains message history and delegates to OpenRouterAgent for completions.
+ * Settings are loaded from and persisted to {@code settings/chatbot.properties}
+ * via {@link ChatConfig}.
  *
  * Registered as a service so other bundles (e.g. App) can inject it.
  */
@@ -23,23 +25,26 @@ import com.kk.pde.ds.mcp.llm.OpenRouterAgent;
 public class ChatService {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ChatService.class);
-	private static final String DEFAULT_BASE_URL = "https://openrouter.ai/api/v1";
 
 	private OpenRouterAgent agent;
 	private final List<String> history = Collections.synchronizedList(new ArrayList<String>());
-	private String currentModel;
-	private String baseUrl;
-	private String apiKeyOverride;
+	private ChatConfig config;
 
 	@Activate
 	public void activate() {
-		LOG.info("ChatService activated");
+		config = new ChatConfig();
+		LOG.info("ChatService activated (config loaded)");
 	}
 
 	@Reference
 	public void setAgent(OpenRouterAgent agent) {
 		this.agent = agent;
 		LOG.info("ChatService: OpenRouterAgent injected");
+	}
+
+	/** Get the configuration object. */
+	public ChatConfig getConfig() {
+		return config;
 	}
 
 	/**
@@ -62,7 +67,7 @@ public class ChatService {
 
 		agent.setApiKey(getApiKey());
 		agent.setBaseUrl(getBaseUrl());
-		String response = agent.chatWithHistory(history, currentModel);
+		String response = agent.chatWithHistory(history, getModel());
 
 		LOG.info("Chat response: {}", response);
 		return response;
@@ -79,50 +84,37 @@ public class ChatService {
 		return history.size();
 	}
 
-	/** Set the model ID to use for completions. Null uses the agent's default. */
+	/** Set the model ID and persist to config. */
 	public void setModel(String model) {
-		this.currentModel = model;
+		config.setModel(model);
 		LOG.info("Chat model set to: {}", model);
 	}
 
-	/** Get the current model ID, or null if using default. */
+	/** Get the current model ID. */
 	public String getModel() {
-		return currentModel;
+		return config.getModel();
 	}
 
-	/** Set the API base URL (e.g. "https://openrouter.ai/api/v1"). */
+	/** Set the API base URL and persist to config. */
 	public void setBaseUrl(String baseUrl) {
-		this.baseUrl = baseUrl;
+		config.setBaseUrl(baseUrl);
 		LOG.info("Chat base URL set to: {}", baseUrl);
 	}
 
 	/** Get the API base URL. */
 	public String getBaseUrl() {
-		if (baseUrl != null && !baseUrl.isEmpty()) {
-			return baseUrl;
-		}
-		return System.getProperty("openrouter.base.url", DEFAULT_BASE_URL);
+		return config.getBaseUrl();
 	}
 
-	/** Get the API key: override > system property > OPENROUTER_API_KEY env var. */
+	/** Get the API key (resolved via config priority chain). */
 	public String getApiKey() {
-		if (apiKeyOverride != null && !apiKeyOverride.isEmpty()) {
-			return apiKeyOverride;
-		}
-		String key = System.getProperty("openrouter.api.key", "");
-		if (key.isEmpty()) {
-			String envKey = System.getenv("OPENROUTER_API_KEY");
-			if (envKey != null && !envKey.isEmpty()) {
-				return envKey;
-			}
-		}
-		return key;
+		return config.getApiKey();
 	}
 
-	/** Set an API key override (takes priority over system property and env var). */
+	/** Set an API key and persist to config. */
 	public void setApiKey(String apiKey) {
-		this.apiKeyOverride = apiKey;
-		LOG.info("Chat API key override set");
+		config.setApiKey(apiKey);
+		LOG.info("Chat API key set");
 	}
 
 	/**
