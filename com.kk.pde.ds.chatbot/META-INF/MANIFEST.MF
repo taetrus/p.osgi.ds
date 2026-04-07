@@ -20,4 +20,7 @@ Bundle-Vendor: KK
 Automatic-Module-Name: com.kk.pde.ds.chatbot
 Bundle-ActivationPolicy: lazy
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-ClassPath: .,
+ lib/commonmark-0.24.0.jar,
+ lib/commonmark-ext-gfm-tables-0.24.0.jar
 

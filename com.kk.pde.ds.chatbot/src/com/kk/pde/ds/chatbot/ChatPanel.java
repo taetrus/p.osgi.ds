@@ -85,9 +85,25 @@ public class ChatPanel extends JScrollPane {
 		appendStyledMessage("\nYou:\n", userLabelStyle, message + "\n", userStyle);
 	}
 
-	/** Append an assistant message to the display. */
+	/** Append an assistant message with markdown rendering to the display. */
 	public void addAssistantMessage(final String message) {
-		appendStyledMessage("\nAssistant:\n", assistantLabelStyle, message + "\n", assistantStyle);
+		final Runnable task = new Runnable() {
+			@Override
+			public void run() {
+				try {
+					doc.insertString(doc.getLength(), "\nAssistant:\n", assistantLabelStyle);
+				} catch (BadLocationException e) {
+					// ignore
+				}
+				MarkdownStyler.appendMarkdown(doc, message, assistantStyle);
+				scrollToEnd();
+			}
+		};
+		if (SwingUtilities.isEventDispatchThread()) {
+			task.run();
+		} else {
+			SwingUtilities.invokeLater(task);
+		}
 	}
 
 	/** Append a system/status message (tool calls, errors, etc.). */

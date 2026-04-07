@@ -29,7 +29,7 @@ public final class LlmJsonUtil {
 		if (i >= json.length()) return null;
 
 		char c = json.charAt(i);
-		if (c == '"') return extractQuotedString(json, i);
+		if (c == '"') return unescape(extractQuotedString(json, i));
 		if (c == 'n' && json.startsWith("null", i)) return null;
 
 		int end = i;
@@ -218,6 +218,34 @@ public final class LlmJsonUtil {
 			.replace("\n", "\\n")
 			.replace("\r", "\\r")
 			.replace("\t", "\\t");
+	}
+
+	/**
+	 * Unescape a JSON string value. Converts JSON escape sequences
+	 * ({@code \n}, {@code \"}, {@code \\}, etc.) to their actual characters.
+	 */
+	public static String unescape(String value) {
+		if (value == null) return null;
+		if (value.indexOf('\\') < 0) return value;
+		StringBuilder sb = new StringBuilder(value.length());
+		for (int i = 0; i < value.length(); i++) {
+			char c = value.charAt(i);
+			if (c == '\\' && i + 1 < value.length()) {
+				char next = value.charAt(i + 1);
+				switch (next) {
+					case 'n':  sb.append('\n'); i++; break;
+					case 'r':  sb.append('\r'); i++; break;
+					case 't':  sb.append('\t'); i++; break;
+					case '"':  sb.append('"');  i++; break;
+					case '\\': sb.append('\\'); i++; break;
+					case '/':  sb.append('/');  i++; break;
+					default:   sb.append(c); break;
+				}
+			} else {
+				sb.append(c);
+			}
+		}
+		return sb.toString();
 	}
 
 	private static String extractQuotedString(String json, int i) {

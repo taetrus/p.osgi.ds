@@ -30,6 +30,12 @@ public final class DarkTheme {
 	public static final Color ACCENT_BLUE = new Color(80, 160, 220);
 	public static final Color ACCENT_GREEN = new Color(100, 200, 120);
 
+	// Markdown colors
+	public static final Color MD_CODE_FG = new Color(200, 200, 140);
+	public static final Color MD_CODE_BLOCK_FG = new Color(170, 190, 170);
+	public static final Color MD_HEADING_FG = new Color(240, 240, 250);
+	public static final Color MD_QUOTE_FG = new Color(160, 160, 180);
+
 	// Border
 	public static final Color BORDER = new Color(70, 70, 85);
 
