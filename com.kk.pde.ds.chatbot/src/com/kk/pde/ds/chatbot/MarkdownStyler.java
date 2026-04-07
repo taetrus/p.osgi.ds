@@ -2,8 +2,10 @@ package com.kk.pde.ds.chatbot;
 
 import java.awt.Font;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
+import java.util.List;
 
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Style;
@@ -80,8 +82,6 @@ public final class MarkdownStyler {
 		private int listDepth = 0;
 		private int orderedIndex = 0;
 		private boolean inOrderedList = false;
-		private boolean firstTableRow = false;
-
 		StyledDocVisitor(StyledDocument doc, Style baseStyle) {
 			this.doc = doc;
 			this.baseStyle = baseStyle;
@@ -266,14 +266,14 @@ public final class MarkdownStyler {
 		}
 
 		// ── Tables (GFM extension) ────────────────────────
+		// Two-pass rendering: first collect all cell text and compute
+		// column widths, then render with monospaced padding so columns
+		// align properly.
 
 		@Override
 		public void visit(CustomBlock customBlock) {
 			if (customBlock instanceof TableBlock) {
-				insert("\n", styleStack.peek());
-				firstTableRow = true;
-				visitChildren(customBlock);
-				insert("\n", styleStack.peek());
+				renderTable((TableBlock) customBlock);
 			} else {
 				visitChildren(customBlock);
 			}
@@ -281,36 +281,142 @@ public final class MarkdownStyler {
 
 		@Override
 		public void visit(CustomNode customNode) {
-			if (customNode instanceof TableHead) {
-				Style headerStyle = doc.addStyle(null, styleStack.peek());
-				StyleConstants.setBold(headerStyle, true);
-				StyleConstants.setForeground(headerStyle, DarkTheme.MD_HEADING_FG);
-				styleStack.push(headerStyle);
-				visitChildren(customNode);
-				styleStack.pop();
-			} else if (customNode instanceof TableBody) {
-				visitChildren(customNode);
-			} else if (customNode instanceof TableRow) {
-				if (!firstTableRow) {
-					insert("\n", styleStack.peek());
-				}
-				firstTableRow = false;
-				visitChildren(customNode);
-			} else if (customNode instanceof TableCell) {
-				TableCell cell = (TableCell) customNode;
-				if (!isFirstCell(cell)) {
-					Style sepStyle = doc.addStyle(null, styleStack.peek());
-					StyleConstants.setForeground(sepStyle, DarkTheme.FG_DIM);
-					insert("  |  ", sepStyle);
-				}
-				visitChildren(customNode);
-			} else {
-				visitChildren(customNode);
-			}
+			// Table nodes are handled by renderTable(); this handles
+			// any other custom extensions that might be present.
+			visitChildren(customNode);
 		}
 
-		private boolean isFirstCell(TableCell cell) {
-			return cell.getPrevious() == null;
+		private void renderTable(TableBlock table) {
+			// Pass 1: collect all rows (header + body) as string arrays
+			List<String[]> rows = new ArrayList<String[]>();
+			int headerRowCount = 0;
+
+			// Collect header rows
+			Node section = table.getFirstChild();
+			while (section != null) {
+				if (section instanceof TableHead) {
+					Node row = section.getFirstChild();
+					while (row != null) {
+						if (row instanceof TableRow) {
+							rows.add(collectRowCells((TableRow) row));
+							headerRowCount++;
+						}
+						row = row.getNext();
+					}
+				} else if (section instanceof TableBody) {
+					Node row = section.getFirstChild();
+					while (row != null) {
+						if (row instanceof TableRow) {
+							rows.add(collectRowCells((TableRow) row));
+						}
+						row = row.getNext();
+					}
+				}
+				section = section.getNext();
+			}
+
+			if (rows.isEmpty()) return;
+
+			// Compute max column widths
+			int colCount = 0;
+			for (String[] row : rows) {
+				if (row.length > colCount) colCount = row.length;
+			}
+			int[] widths = new int[colCount];
+			for (String[] row : rows) {
+				for (int c = 0; c < row.length; c++) {
+					if (row[c].length() > widths[c]) {
+						widths[c] = row[c].length();
+					}
+				}
+			}
+
+			// Pass 2: render with padding
+			Style tableStyle = doc.addStyle(null, baseStyle);
+			StyleConstants.setFontFamily(tableStyle, Font.MONOSPACED);
+			StyleConstants.setFontSize(tableStyle, 13);
+
+			Style headerStyle = doc.addStyle(null, tableStyle);
+			StyleConstants.setBold(headerStyle, true);
+			StyleConstants.setForeground(headerStyle, DarkTheme.MD_HEADING_FG);
+
+			Style sepStyle = doc.addStyle(null, tableStyle);
+			StyleConstants.setForeground(sepStyle, DarkTheme.FG_DIM);
+
+			insert("\n", baseStyle);
+
+			for (int r = 0; r < rows.size(); r++) {
+				String[] row = rows.get(r);
+				boolean isHeader = r < headerRowCount;
+				Style cellStyle = isHeader ? headerStyle : tableStyle;
+
+				for (int c = 0; c < colCount; c++) {
+					if (c > 0) {
+						insert(" | ", sepStyle);
+					}
+					String cell = c < row.length ? row[c] : "";
+					insert(pad(cell, widths[c]), cellStyle);
+				}
+				insert("\n", baseStyle);
+
+				// Draw separator line after header
+				if (isHeader && r == headerRowCount - 1) {
+					for (int c = 0; c < colCount; c++) {
+						if (c > 0) {
+							insert("-+-", sepStyle);
+						}
+						insert(repeat('-', widths[c]), sepStyle);
+					}
+					insert("\n", baseStyle);
+				}
+			}
+			insert("\n", baseStyle);
+		}
+
+		private String[] collectRowCells(TableRow row) {
+			List<String> cells = new ArrayList<String>();
+			Node cell = row.getFirstChild();
+			while (cell != null) {
+				if (cell instanceof TableCell) {
+					cells.add(extractPlainText(cell));
+				}
+				cell = cell.getNext();
+			}
+			return cells.toArray(new String[0]);
+		}
+
+		private String extractPlainText(Node node) {
+			StringBuilder sb = new StringBuilder();
+			Node child = node.getFirstChild();
+			while (child != null) {
+				if (child instanceof Text) {
+					sb.append(((Text) child).getLiteral());
+				} else if (child instanceof Code) {
+					sb.append(((Code) child).getLiteral());
+				} else if (child instanceof SoftLineBreak) {
+					sb.append(' ');
+				} else {
+					// Recurse into inline formatting (bold, italic, etc.)
+					sb.append(extractPlainText(child));
+				}
+				child = child.getNext();
+			}
+			return sb.toString();
+		}
+
+		private String pad(String text, int width) {
+			if (text.length() >= width) return text;
+			StringBuilder sb = new StringBuilder(text);
+			for (int i = text.length(); i < width; i++) {
+				sb.append(' ');
+			}
+			return sb.toString();
+		}
+
+		private String repeat(char c, int count) {
+			char[] chars = new char[count];
+			Arrays.fill(chars, c);
+			return new String(chars);
 		}
 
 		// ── Helpers ────────────────────────────────────────
