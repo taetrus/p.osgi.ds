@@ -169,7 +169,7 @@ public class SettingsDialog extends JDialog {
 			chatService.setBaseUrl(baseUrl);
 		}
 
-		chatService.getConfig().save();
+		chatService.getConfig().saveAsync();
 		LOG.info("Settings saved to disk");
 		dispose();
 	}

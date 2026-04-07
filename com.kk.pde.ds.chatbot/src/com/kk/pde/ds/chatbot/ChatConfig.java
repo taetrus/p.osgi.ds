@@ -76,7 +76,21 @@ public final class ChatConfig {
 		}
 	}
 
-	/** Persist current settings to disk. */
+	/**
+	 * Persist current settings to disk on a background thread.
+	 * Safe to call from the EDT — file I/O is offloaded so the
+	 * event dispatch thread is never blocked by disk writes.
+	 */
+	public void saveAsync() {
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				save();
+			}
+		}, "ChatConfig-save").start();
+	}
+
+	/** Persist current settings to disk (blocks the calling thread). */
 	public void save() {
 		File dir = configFile.getParentFile();
 		if (dir != null && !dir.exists()) {

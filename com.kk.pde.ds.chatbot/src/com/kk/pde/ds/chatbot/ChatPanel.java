@@ -2,11 +2,13 @@ package com.kk.pde.ds.chatbot;
 
 import java.awt.Color;
 import java.awt.Font;
+import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
 import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Style;
 import javax.swing.text.StyleConstants;
@@ -85,25 +87,34 @@ public class ChatPanel extends JScrollPane {
 		appendStyledMessage("\nYou:\n", userLabelStyle, message + "\n", userStyle);
 	}
 
-	/** Append an assistant message with markdown rendering to the display. */
+	/**
+	 * Append an assistant message with markdown rendering to the display.
+	 * Parsing runs on a background thread; only the final insertion into
+	 * the StyledDocument happens on the EDT. This keeps the UI responsive
+	 * even for long, heavily-formatted LLM responses.
+	 *
+	 * <p>Ordering note: sends are serialized (input disabled while waiting),
+	 * so concurrent calls to this method cannot race.
+	 */
 	public void addAssistantMessage(final String message) {
-		final Runnable task = new Runnable() {
+		new SwingWorker<List<MarkdownStyler.StyledSegment>, Void>() {
 			@Override
-			public void run() {
-				try {
-					doc.insertString(doc.getLength(), "\nAssistant:\n", assistantLabelStyle);
-				} catch (BadLocationException e) {
-					// ignore
-				}
-				MarkdownStyler.appendMarkdown(doc, message, assistantStyle);
-				scrollToEnd();
+			protected List<MarkdownStyler.StyledSegment> doInBackground() {
+				return MarkdownStyler.parseMarkdown(message, assistantStyle);
 			}
-		};
-		if (SwingUtilities.isEventDispatchThread()) {
-			task.run();
-		} else {
-			SwingUtilities.invokeLater(task);
-		}
+
+			@Override
+			protected void done() {
+				try {
+					List<MarkdownStyler.StyledSegment> segments = get();
+					doc.insertString(doc.getLength(), "\nAssistant:\n", assistantLabelStyle);
+					MarkdownStyler.insertSegments(doc, segments);
+					scrollToEnd();
+				} catch (Exception e) {
+					// ignore — parse or insertion failure
+				}
+			}
+		}.execute();
 	}
 
 	/** Append a system/status message (tool calls, errors, etc.). */

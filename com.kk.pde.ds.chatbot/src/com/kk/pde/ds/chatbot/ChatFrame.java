@@ -220,7 +220,7 @@ public class ChatFrame extends JFrame {
 		String selected = (String) modelCombo.getSelectedItem();
 		if (selected != null && !selected.isEmpty()) {
 			chatService.setModel(selected);
-			chatService.getConfig().save();
+			chatService.getConfig().saveAsync();
 			chatPanel.addSystemMessage("Default model set to: " + selected);
 		}
 	}
