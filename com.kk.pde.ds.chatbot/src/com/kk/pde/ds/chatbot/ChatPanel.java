@@ -75,7 +75,7 @@ public class ChatPanel extends JScrollPane {
 
 		setViewportView(textPane);
 		setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-		setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+		setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		setBorder(BorderFactory.createLineBorder(DarkTheme.BORDER, 1));
 		getVerticalScrollBar().setBackground(DarkTheme.BG_DARK);
 	}
