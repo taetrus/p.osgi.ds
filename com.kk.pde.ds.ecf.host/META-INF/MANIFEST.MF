@@ -1,0 +1,13 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: com.kk.pde.ds.ecf.host
+Bundle-SymbolicName: com.kk.pde.ds.ecf.host
+Bundle-Version: 1.0.0.qualifier
+Import-Package: com.kk.pde.ds.ecf.api,
+ org.osgi.service.component.annotations;resolution:=optional,
+ org.slf4j;version="1.7.32"
+Service-Component: OSGI-INF/*.xml
+Bundle-Vendor: KK
+Automatic-Module-Name: com.kk.pde.ds.ecf.host
+Bundle-ActivationPolicy: lazy
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8

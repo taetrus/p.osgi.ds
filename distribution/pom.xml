@@ -25,12 +25,14 @@
 							<goal>materialize-products</goal>
 						</goals>
 					</execution>
-					<execution>
-						<id>archive-products</id>
-						<goals>
-							<goal>archive-products</goal>
-						</goals>
-					</execution>
+					<!--
+						archive-products removed: with multiple .product files Tycho
+						needs a unique attachId per product, and the main product's
+						distributable archives are (re)built by the antrun step below
+						with the fixed config.ini. The ECF demo products are run from
+						their materialized directories via the run-ecf-*.sh scripts and
+						do not need archiving.
+					-->
 				</executions>
 			</plugin>
 			<!-- Fix config.ini bundle paths for java -jar launching -->
@@ -87,6 +89,36 @@
 								<copy file="${project.basedir}/scripts/run.sh"
 									 todir="${project.build.directory}/products/com.kk.pde.ds.product/macosx/cocoa/x86_64/Eclipse.app/Contents/Eclipse"/>
 								<chmod file="${project.build.directory}/products/com.kk.pde.ds.product/macosx/cocoa/x86_64/Eclipse.app/Contents/Eclipse/run.sh" perm="755"/>
+								<!-- ECF demo products: copy logback.xml + run scripts into each materialized product dir -->
+								<!-- HOST product -->
+								<copy file="${project.basedir}/configuration/logback.xml"
+									 todir="${project.build.directory}/products/com.kk.pde.ds.ecf.host.product/linux/gtk/x86_64/configuration" failonerror="false"/>
+								<copy file="${project.basedir}/configuration/logback.xml"
+									 todir="${project.build.directory}/products/com.kk.pde.ds.ecf.host.product/win32/win32/x86_64/configuration" failonerror="false"/>
+								<copy file="${project.basedir}/configuration/logback.xml"
+									 todir="${project.build.directory}/products/com.kk.pde.ds.ecf.host.product/macosx/cocoa/x86_64/Eclipse.app/Contents/Eclipse/configuration" failonerror="false"/>
+								<copy file="${project.basedir}/scripts/run-ecf-host.sh"
+									 todir="${project.build.directory}/products/com.kk.pde.ds.ecf.host.product/linux/gtk/x86_64" failonerror="false"/>
+								<copy file="${project.basedir}/scripts/run-ecf-host.bat"
+									 todir="${project.build.directory}/products/com.kk.pde.ds.ecf.host.product/win32/win32/x86_64" failonerror="false"/>
+								<copy file="${project.basedir}/scripts/run-ecf-host.sh"
+									 todir="${project.build.directory}/products/com.kk.pde.ds.ecf.host.product/macosx/cocoa/x86_64/Eclipse.app/Contents/Eclipse" failonerror="false"/>
+								<!-- CONSUMER product -->
+								<copy file="${project.basedir}/configuration/logback.xml"
+									 todir="${project.build.directory}/products/com.kk.pde.ds.ecf.consumer.product/linux/gtk/x86_64/configuration" failonerror="false"/>
+								<copy file="${project.basedir}/configuration/logback.xml"
+									 todir="${project.build.directory}/products/com.kk.pde.ds.ecf.consumer.product/win32/win32/x86_64/configuration" failonerror="false"/>
+								<copy file="${project.basedir}/configuration/logback.xml"
+									 todir="${project.build.directory}/products/com.kk.pde.ds.ecf.consumer.product/macosx/cocoa/x86_64/Eclipse.app/Contents/Eclipse/configuration" failonerror="false"/>
+								<copy file="${project.basedir}/scripts/run-ecf-consumer.sh"
+									 todir="${project.build.directory}/products/com.kk.pde.ds.ecf.consumer.product/linux/gtk/x86_64" failonerror="false"/>
+								<copy file="${project.basedir}/scripts/run-ecf-consumer.bat"
+									 todir="${project.build.directory}/products/com.kk.pde.ds.ecf.consumer.product/win32/win32/x86_64" failonerror="false"/>
+								<copy file="${project.basedir}/scripts/run-ecf-consumer.sh"
+									 todir="${project.build.directory}/products/com.kk.pde.ds.ecf.consumer.product/macosx/cocoa/x86_64/Eclipse.app/Contents/Eclipse" failonerror="false"/>
+								<chmod perm="755" failonerror="false">
+									<fileset dir="${project.build.directory}/products" includes="**/run-ecf-*.sh"/>
+								</chmod>
 								<!-- Regenerate archives with fixed config.ini -->
 								<tar destfile="${project.build.directory}/products/com.kk.pde.ds.product-linux.gtk.x86_64.tar.gz"
 									 basedir="${project.build.directory}/products/com.kk.pde.ds.product/linux/gtk/x86_64"

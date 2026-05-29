@@ -100,6 +100,9 @@ com.kk.pde.ds.mcp.server → MCP server (HTTP servlet + tool registry + built-in
 com.kk.pde.ds.mcp.client → MCP client (tests server via HTTP/JSON-RPC)
 com.kk.pde.ds.mcp.llm  → OpenRouter LLM bridge (agent loop with tool calls)
 com.kk.pde.ds.chatbot  → Swing chatbot UI (model selection, chat history, LLM integration)
+com.kk.pde.ds.ecf.api      → IRemoteGreet contract (ECF remote service interface)
+com.kk.pde.ds.ecf.host     → RemoteGreetImpl exported as a remote service (ECF RSA)
+com.kk.pde.ds.ecf.consumer → Imports IRemoteGreet via EDEF, @Reference injection
 com.kk.pde.ds.feature  → Feature grouping all bundles
 distribution           → p2 repository + product builds
 ```
@@ -158,6 +161,44 @@ The `com.kk.pde.ds.chatbot` bundle provides a Swing-based chat interface for int
 3. `App` injects `ChatService` and launches `ChatFrame` on the EDT
 4. `ChatFrame` uses `SwingWorker` for non-blocking LLM calls
 
+## ECF Remote Services
+
+The `com.kk.pde.ds.ecf.*` bundles showcase **OSGi Remote Services** via Eclipse
+Communication Framework (ECF). A service exported in one OSGi process (the *host*)
+is consumed via DS `@Reference` in a separate process (the *consumer*) — the same
+`@Reference` pattern as the local demo, stretched across a network socket.
+
+**Topology:** two separate JVMs (two dedicated products), communicating over ECF's
+**Generic provider** transport on `ecftcp://localhost:3288/server`. Discovery is
+**file-based EDEF** (no ZooKeeper/mDNS daemon).
+
+| Bundle | Role |
+|--------|------|
+| `com.kk.pde.ds.ecf.api` | `IRemoteGreet { String greet(String name); }` |
+| `com.kk.pde.ds.ecf.host` | `RemoteGreetImpl` — `@Component` with `service.exported.interfaces=*`, `service.exported.configs=ecf.generic.server`, `ecf.exported.containerfactoryargs=ecftcp://localhost:3288/server` |
+| `com.kk.pde.ds.ecf.consumer` | `RemoteGreetConsumer` (`@Reference`) + `GreetCommand` (Gogo `ecf:greet`) + EDEF file `OSGI-INF/remote-service/remote-greet-endpoint.xml` referenced from the `Remote-Service` manifest header |
+
+**Run it (two terminals):**
+```bash
+mvn clean verify
+./distribution/scripts/run-ecf-host.sh       # terminal 1 — exports IRemoteGreet
+./distribution/scripts/run-ecf-consumer.sh   # terminal 2 — imports + invokes greet("ECF")
+```
+The consumer logs `Remote response: Hello, ECF! (served remotely by host)`. At the
+consumer's `osgi>` prompt, `ecf:greet World` re-invokes on demand.
+
+**Flow:**
+1. Host `RemoteGreetImpl` registers `IRemoteGreet` with `service.exported.*` properties
+2. ECF RSA exports it via the Generic server (TCP socket on :3288)
+3. Consumer's `Remote-Service` header → RSA reads the EDEF → connects → registers a proxy `IRemoteGreet`
+4. Consumer's `@Reference` binds the proxy; the method call round-trips to the host JVM
+
+**Key facts / pitfalls:**
+- ECF is pinned to the **3.14.x line** (last with `JavaSE-1.8` BREEs); newer ECF needs Java 11/17. Bundles come from Maven Central (groupId `org.eclipse.ecf`). The runtime here is actually Java 21, so even Java-17 Equinox bundles resolve.
+- The ECF bundle set must be enumerated **explicitly** in the target platform — OSGi `Require-Bundle`/`Import-Package` are invisible to Maven's transitive resolver.
+- The static EDEF's `ecf.endpoint.id.ns` must be `org.eclipse.ecf.core.identity.StringID` (the Generic provider's identity namespace class), and `ecf.rsvc.id=1` (deterministic for a single exported service). Capture these from the host's exported `ECFEndpointDescription` log if they change.
+- The two products exclude Felix HTTP/WebConsole so the two JVMs don't both grab port 8080.
+
 ## Architecture
 
 **Service binding flow:**
@@ -185,4 +226,5 @@ The `com.kk.pde.ds.chatbot` bundle provides a Swing-based chat interface for int
 - **Felix SCR** runtime
 - **Felix HTTP Jetty** with HTTP Whiteboard for REST API
 - **Felix WebConsole** with DS plugin
+- **Eclipse Communication Framework (ECF) 3.14.x** for OSGi Remote Services (RSA) with the Generic provider
 - **Logback** for logging (default level: INFO)

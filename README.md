@@ -883,6 +883,64 @@ App (@Reference ChatService) → launches ChatFrame on EDT
 
 ---
 
+## ECF Remote Services (OSGi RSA)
+
+The `com.kk.pde.ds.ecf.*` bundles demonstrate **OSGi Remote Services** using the
+Eclipse Communication Framework (ECF). A service exported in one OSGi process is
+consumed via DS `@Reference` in a **separate JVM** — the same `@Reference` pattern as
+the local demo, but the method call travels over a network socket.
+
+### Bundles
+
+| Bundle | Role |
+|--------|------|
+| `com.kk.pde.ds.ecf.api` | `IRemoteGreet { String greet(String name); }` — shared contract |
+| `com.kk.pde.ds.ecf.host` | `RemoteGreetImpl`, a `@Component` exported as a remote service |
+| `com.kk.pde.ds.ecf.consumer` | `RemoteGreetConsumer` (`@Reference`) + Gogo command `ecf:greet` + EDEF discovery file |
+
+### How export/import works
+
+The host exports purely via DS component properties (no ECF code):
+
+```java
+@Component(property = {
+    "service.exported.interfaces=*",
+    "service.exported.configs=ecf.generic.server",
+    "ecf.exported.containerfactoryargs=ecftcp://localhost:3288/server"
+})
+public class RemoteGreetImpl implements IRemoteGreet { ... }
+```
+
+The consumer discovers the endpoint via a static **EDEF** file referenced from its
+manifest (`Remote-Service: OSGI-INF/remote-service/*.xml`) — no ZooKeeper/mDNS daemon.
+ECF's Remote Service Admin reads it, connects, and registers a proxy `IRemoteGreet`
+that the `@Reference` binds to.
+
+### Run it (two terminals)
+
+```bash
+mvn clean verify
+# Terminal 1 — host (exports IRemoteGreet on ecftcp://localhost:3288/server)
+./distribution/scripts/run-ecf-host.sh
+# Terminal 2 — consumer (imports via EDEF, invokes greet("ECF"))
+./distribution/scripts/run-ecf-consumer.sh
+```
+
+The consumer logs `Remote response: Hello, ECF! (served remotely by host)`. At its
+`osgi>` prompt, `ecf:greet World` re-invokes the remote service on demand.
+
+### Notes
+
+- **ECF 3.14.x** is used (the last line with `JavaSE-1.8` BREEs); bundles come from
+  Maven Central under groupId `org.eclipse.ecf`.
+- The full ECF bundle closure is enumerated **explicitly** in the target platform —
+  OSGi `Require-Bundle`/`Import-Package` requirements are invisible to Maven's
+  transitive resolver.
+- The two products are built from `distribution/com.kk.pde.ds.ecf.{host,consumer}.product`
+  and exclude Felix HTTP/WebConsole so the two JVMs don't both bind port 8080.
+
+---
+
 ## File-Based Configuration
 
 ### Felix File Install

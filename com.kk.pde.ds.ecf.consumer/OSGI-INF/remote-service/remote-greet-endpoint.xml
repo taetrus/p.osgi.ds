@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Endpoint Description Extender Format (EDEF) document — RSA spec ch. 122.13.
+
+  This static file is how the consumer process *discovers* the remote service
+  without any network discovery daemon (ZooKeeper / mDNS). It is referenced from
+  the bundle's MANIFEST.MF via the `Remote-Service` header. When this bundle
+  starts, ECF's EndpointDescriptionLocator reads it, connects to the host's ECF
+  Generic server, and registers a local proxy IRemoteGreet service.
+
+  These property values were captured from a live host export (verified working):
+    - ecf.endpoint.id.ns = org.eclipse.ecf.core.identity.StringID
+        (the Generic provider's identity namespace CLASS name — not "ecf.namespace.generic")
+    - ecf.rsvc.id = 1
+        (the host registers exactly one remote service, so its container-relative
+         id is deterministically 1 across restarts — which is what makes a static
+         EDEF viable here)
+  If you change the host's port/URI or export more services, re-capture these from
+  the host log (it prints the exported ECFEndpointDescription).
+-->
+<endpoint-descriptions xmlns="http://www.osgi.org/xmlns/rsa/v1.0.0">
+   <endpoint-description>
+      <property name="objectClass" value-type="String">
+         <array>
+            <value>com.kk.pde.ds.ecf.api.IRemoteGreet</value>
+         </array>
+      </property>
+      <property name="remote.configs.supported" value-type="String">
+         <array>
+            <value>ecf.generic.server</value>
+         </array>
+      </property>
+      <property name="service.imported.configs" value-type="String">
+         <array>
+            <value>ecf.generic.server</value>
+         </array>
+      </property>
+      <property name="remote.intents.supported" value-type="String">
+         <array>
+            <value>passByValue</value>
+            <value>exactlyOnce</value>
+            <value>ordered</value>
+            <value>osgi.basic</value>
+            <value>osgi.async</value>
+         </array>
+      </property>
+      <property name="service.imported" value-type="String" value="true"/>
+      <property name="endpoint.id" value-type="String" value="ecftcp://localhost:3288/server"/>
+      <property name="endpoint.service.id" value-type="Long" value="1"/>
+      <property name="endpoint.framework.uuid" value-type="String" value="ecf-host-framework"/>
+      <property name="ecf.endpoint.id" value-type="String" value="ecftcp://localhost:3288/server"/>
+      <property name="ecf.endpoint.id.ns" value-type="String" value="org.eclipse.ecf.core.identity.StringID"/>
+      <property name="ecf.endpoint.ts" value-type="Long" value="1"/>
+      <property name="ecf.rsvc.id" value-type="Long" value="1"/>
+   </endpoint-description>
+</endpoint-descriptions>
