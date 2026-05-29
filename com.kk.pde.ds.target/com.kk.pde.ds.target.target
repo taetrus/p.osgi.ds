@@ -192,5 +192,113 @@
 				</dependency>
 			</dependencies>
 		</location>
+		<!-- Eclipse Communication Framework (ECF) — OSGi Remote Services (RSA) -->
+		<!-- ECF 3.14.x line: last release with JavaSE-1.8 BREEs (resolves on the Java 21 runtime). -->
+		<location includeDependencyDepth="none" includeDependencyScopes="compile" missingManifest="error" type="Maven">
+			<dependencies>
+				<!-- ECF core + identity -->
+				<dependency>
+					<groupId>org.eclipse.ecf</groupId>
+					<artifactId>org.eclipse.ecf</artifactId>
+					<version>3.10.0</version>
+					<type>jar</type>
+				</dependency>
+				<dependency>
+					<groupId>org.eclipse.ecf</groupId>
+					<artifactId>org.eclipse.ecf.identity</artifactId>
+					<version>3.9.402</version>
+					<type>jar</type>
+				</dependency>
+				<!-- ECF remote service API + discovery -->
+				<dependency>
+					<groupId>org.eclipse.ecf</groupId>
+					<artifactId>org.eclipse.ecf.remoteservice</artifactId>
+					<version>8.14.0</version>
+					<type>jar</type>
+				</dependency>
+				<dependency>
+					<groupId>org.eclipse.ecf</groupId>
+					<artifactId>org.eclipse.ecf.remoteservice.asyncproxy</artifactId>
+					<version>2.1.200</version>
+					<type>jar</type>
+				</dependency>
+				<dependency>
+					<groupId>org.eclipse.ecf</groupId>
+					<artifactId>org.eclipse.ecf.discovery</artifactId>
+					<version>5.1.1</version>
+					<type>jar</type>
+				</dependency>
+				<!-- ECF Generic provider transport -->
+				<dependency>
+					<groupId>org.eclipse.ecf</groupId>
+					<artifactId>org.eclipse.ecf.sharedobject</artifactId>
+					<version>2.6.200</version>
+					<type>jar</type>
+				</dependency>
+				<dependency>
+					<groupId>org.eclipse.ecf</groupId>
+					<artifactId>org.eclipse.ecf.provider</artifactId>
+					<version>4.9.1</version>
+					<type>jar</type>
+				</dependency>
+				<dependency>
+					<groupId>org.eclipse.ecf</groupId>
+					<artifactId>org.eclipse.ecf.provider.remoteservice</artifactId>
+					<version>4.6.1</version>
+					<type>jar</type>
+				</dependency>
+				<!-- ECF Remote Service Admin (RSA) implementation + topology manager -->
+				<dependency>
+					<groupId>org.eclipse.ecf</groupId>
+					<artifactId>org.eclipse.ecf.osgi.services.remoteserviceadmin</artifactId>
+					<version>4.9.1</version>
+					<type>jar</type>
+				</dependency>
+				<dependency>
+					<groupId>org.eclipse.ecf</groupId>
+					<artifactId>org.eclipse.ecf.osgi.services.remoteserviceadmin.proxy</artifactId>
+					<version>1.0.101</version>
+					<type>jar</type>
+				</dependency>
+				<dependency>
+					<groupId>org.eclipse.ecf</groupId>
+					<artifactId>org.eclipse.ecf.osgi.services.distribution</artifactId>
+					<version>2.1.600</version>
+					<type>jar</type>
+				</dependency>
+				<!-- OSGi Remote Service Admin API package (org.osgi.service.remoteserviceadmin[.namespace]) -->
+				<dependency>
+					<groupId>org.osgi</groupId>
+					<artifactId>org.osgi.service.remoteserviceadmin</artifactId>
+					<version>1.1.0</version>
+					<type>jar</type>
+				</dependency>
+				<!-- Equinox bundles required by ECF (Require-Bundle / Import-Package) -->
+				<dependency>
+					<groupId>org.eclipse.platform</groupId>
+					<artifactId>org.eclipse.equinox.common</artifactId>
+					<version>3.20.100</version>
+					<type>jar</type>
+				</dependency>
+				<dependency>
+					<groupId>org.eclipse.platform</groupId>
+					<artifactId>org.eclipse.equinox.registry</artifactId>
+					<version>3.12.400</version>
+					<type>jar</type>
+				</dependency>
+				<dependency>
+					<groupId>org.eclipse.platform</groupId>
+					<artifactId>org.eclipse.equinox.concurrent</artifactId>
+					<version>1.3.300</version>
+					<type>jar</type>
+				</dependency>
+				<dependency>
+					<groupId>org.eclipse.platform</groupId>
+					<artifactId>org.eclipse.core.jobs</artifactId>
+					<version>3.15.600</version>
+					<type>jar</type>
+				</dependency>
+			</dependencies>
+		</location>
 	</locations>
 </target>

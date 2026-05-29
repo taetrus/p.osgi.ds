@@ -72,4 +72,25 @@
 		version="0.0.0"
 		unpack="false"/>
 
+	<plugin
+		id="com.kk.pde.ds.ecf.api"
+		download-size="0"
+		install-size="0"
+		version="0.0.0"
+		unpack="false"/>
+
+	<plugin
+		id="com.kk.pde.ds.ecf.host"
+		download-size="0"
+		install-size="0"
+		version="0.0.0"
+		unpack="false"/>
+
+	<plugin
+		id="com.kk.pde.ds.ecf.consumer"
+		download-size="0"
+		install-size="0"
+		version="0.0.0"
+		unpack="false"/>
+
 </feature>
