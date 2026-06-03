@@ -1,0 +1,273 @@
+package com.kk.pde.ds.spike.detail;
+
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.GridLayout;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTextArea;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.Timer;
+
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.kk.pde.ds.spike.api.CatalogItem;
+import com.kk.pde.ds.spike.api.DockBounds;
+import com.kk.pde.ds.spike.api.DockState;
+import com.kk.pde.ds.spike.api.ICatalogService;
+
+/**
+ * App-2 ("detail") — docking follower of the combined UI. Hosts several panels, each
+ * badged "APP-2 · DETAIL" in an amber accent so its owning process is obvious when
+ * docked next to App-1. Glues its borderless window to the master's right edge.
+ */
+@Component
+public class DetailApp {
+
+	private static final Logger log = LoggerFactory.getLogger(DetailApp.class);
+
+	private static final int HEADER_H = 34;     // must match the master's header height
+	private static final int WIDTH = 400;
+	private static final String APP_TAG = "APP-2 · DETAIL";
+	private static final Color ACCENT = new Color(0xFFB454);   // amber = App-2
+	private static final Color HEADER_BG = new Color(0x16202C);
+	private static final Color PANEL_HEAD = new Color(0x121B26);
+	private static final Color BODY_BG = new Color(0x0E151F);
+	private static final Color INK = new Color(0xE8EEF6);
+	private static final Color MUTED = new Color(0x7C8A9C);
+	private static final Color GOOD = new Color(0x2FD4A7);
+
+	private volatile ICatalogService catalog;
+	private final ExecutorService exec = Executors.newSingleThreadExecutor(r -> {
+		Thread t = new Thread(r, "detail-poll");
+		t.setDaemon(true);
+		return t;
+	});
+
+	private JFrame frame;
+	private JLabel nameLabel, qtyLabel, statusLabel, headerDot;
+	private JLabel idLabel, lenLabel, uptimeLabel;
+	private JTextArea descArea;
+	private Timer poll;
+	private DockBounds lastBounds;
+	private String lastShownId = " ";
+	private int uptime;
+
+	@Reference(policy = ReferencePolicy.DYNAMIC, cardinality = ReferenceCardinality.OPTIONAL)
+	public void setCatalog(ICatalogService catalog) {
+		this.catalog = catalog;
+		log.info("Connected to master ICatalogService (remote proxy {})", catalog.getClass().getName());
+	}
+
+	public void unsetCatalog(ICatalogService catalog) {
+		if (this.catalog == catalog) { this.catalog = null; log.warn("Lost connection to master ICatalogService"); }
+	}
+
+	@Activate
+	public void start() {
+		log.info("DetailApp.start() — launching App-2 follower window");
+		SwingUtilities.invokeLater(this::buildFrame);
+	}
+
+	@Deactivate
+	public void stop() {
+		if (poll != null) poll.stop();
+		exec.shutdownNow();
+	}
+
+	private void buildFrame() {
+		frame = new JFrame("Detail");
+		frame.setUndecorated(true);
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setSize(WIDTH, 520 + HEADER_H);
+		frame.setLocation(600, 130); // provisional; first poll docks it
+
+		JPanel root = new JPanel(new BorderLayout());
+		root.add(makeHeader(), BorderLayout.NORTH);
+		root.add(makeBody(), BorderLayout.CENTER);
+		frame.setContentPane(root);
+		frame.setVisible(true);
+
+		// App-2's own uptime — proves it runs independently of App-1
+		new Timer(1000, e -> { uptime++; if (uptimeLabel != null) uptimeLabel.setText(uptime + "s"); }).start();
+
+		poll = new Timer(120, e -> tick());
+		poll.start();
+		log.info("App-2 follower visible; tracking anchor every 120ms");
+	}
+
+	private JPanel makeHeader() {
+		JPanel header = new JPanel(new BorderLayout());
+		header.setBackground(HEADER_BG);
+		header.setBorder(BorderFactory.createEmptyBorder(0, 12, 0, 12));
+		header.setPreferredSize(new Dimension(10, HEADER_H));
+		headerDot = new JLabel("●");
+		headerDot.setForeground(ACCENT);
+		JLabel t = new JLabel("detail · App-2");
+		t.setForeground(MUTED);
+		t.setHorizontalAlignment(SwingConstants.RIGHT);
+		header.add(headerDot, BorderLayout.WEST);
+		header.add(t, BorderLayout.CENTER);
+		return header;
+	}
+
+	private JPanel makeBody() {
+		JPanel body = new JPanel();
+		body.setBackground(BODY_BG);
+		body.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+		body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
+
+		// --- Panel 1: SELECTED ITEM ---
+		nameLabel = ink(new JLabel("—"), 16, true);
+		qtyLabel = muted(new JLabel(" "));
+		descArea = new JTextArea(3, 22);
+		descArea.setEditable(false); descArea.setLineWrap(true); descArea.setWrapStyleWord(true);
+		descArea.setOpaque(false); descArea.setForeground(INK);
+		JPanel sel = col();
+		sel.add(muted(new JLabel("owned by App-1, fetched over ECF:")));
+		sel.add(nameLabel); sel.add(qtyLabel); sel.add(descArea);
+		body.add(badged("SELECTED ITEM", grow(sel, 130)));
+		body.add(Box.createVerticalStrut(8));
+
+		// --- Panel 2: INSPECTOR (derived locally in App-2 + App-2 uptime) ---
+		idLabel = mono(new JLabel("—"));
+		lenLabel = mono(new JLabel("—"));
+		uptimeLabel = mono(new JLabel("0s"));
+		JPanel insp = new JPanel(new GridLayout(0, 2, 6, 4));
+		insp.setOpaque(false);
+		insp.add(muted(new JLabel("item id"))); insp.add(idLabel);
+		insp.add(muted(new JLabel("name / desc length"))); insp.add(lenLabel);
+		insp.add(muted(new JLabel("App-2 uptime"))); insp.add(uptimeLabel);
+		body.add(badged("INSPECTOR", fixed(insp, 84)));
+		body.add(Box.createVerticalStrut(8));
+
+		// --- Panel 3: STATUS ---
+		statusLabel = muted(new JLabel("Waiting for host…"));
+		body.add(badged("CONNECTION", fixed(wrap(statusLabel), 30)));
+		body.add(Box.createVerticalStrut(8));
+
+		// --- Footer: isolation controls (tagged App-2) ---
+		JButton freeze = new JButton("Freeze 5s");
+		freeze.addActionListener(e -> {
+			log.warn("App-2 EDT frozen for 5s (isolation demo)");
+			try { Thread.sleep(5000); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
+		});
+		JButton crash = new JButton("Crash");
+		crash.addActionListener(e -> { log.error("App-2 crashing on purpose — App-1 unaffected"); System.exit(7); });
+		JPanel ctl = new JPanel(new GridLayout(1, 2, 6, 6));
+		ctl.setOpaque(false); ctl.add(freeze); ctl.add(crash);
+		body.add(badged("CONTROLS", fixed(ctl, 36)));
+		return body;
+	}
+
+	/** EDT (Timer) → only submit the remote call to the background executor. */
+	private void tick() {
+		final ICatalogService svc = this.catalog;
+		if (svc == null) { showUnavailable(); return; }
+		exec.submit(() -> {
+			try {
+				DockState st = svc.getDockState();
+				SwingUtilities.invokeLater(() -> apply(st));
+			} catch (Exception ex) {
+				SwingUtilities.invokeLater(this::showUnavailable);
+			}
+		});
+	}
+
+	private void apply(DockState st) {
+		if (st == null) { showUnavailable(); return; }
+		if (st.isClosing()) {
+			log.info("Host signalled combined close — App-2 exiting too");
+			if (poll != null) poll.stop();
+			frame.dispose();
+			System.exit(0);
+			return;
+		}
+		DockBounds b = st.getHostBounds();
+		if (b != null && !b.equals(lastBounds)) {
+			lastBounds = b;
+			frame.setBounds(b.getX() + b.getWidth(), b.getY(), WIDTH, b.getHeight());
+		}
+		CatalogItem item = st.getSelected();
+		if (item == null) {
+			nameLabel.setText("(nothing selected)"); qtyLabel.setText(" "); descArea.setText("");
+			idLabel.setText("—"); lenLabel.setText("—");
+		} else {
+			nameLabel.setText(item.getName());
+			qtyLabel.setText("In stock: " + item.getQuantity());
+			descArea.setText(item.getDescription());
+			idLabel.setText(item.getId());
+			lenLabel.setText(item.getName().length() + " / " + item.getDescription().length());
+		}
+		headerDot.setForeground(GOOD);
+		statusLabel.setForeground(GOOD);
+		statusLabel.setText("✔ docked to host (App-1)");
+		String id = item == null ? null : item.getId();
+		if (id == null ? lastShownId != null : !id.equals(lastShownId)) {
+			lastShownId = id;
+			log.info("Detail now showing remote selection: {}", item == null ? "(none)" : item.getName());
+		}
+	}
+
+	private void showUnavailable() {
+		lastBounds = null;
+		if (headerDot != null) headerDot.setForeground(ACCENT);
+		if (statusLabel != null) {
+			statusLabel.setForeground(ACCENT);
+			statusLabel.setText("⚠ Host (App-1) unavailable — waiting…");
+		}
+	}
+
+	// --- badge + layout helpers (amber accent, "APP-2 · DETAIL") ---
+
+	private JComponent badged(String name, JComponent content) {
+		JPanel p = new JPanel(new BorderLayout());
+		p.setBackground(BODY_BG);
+		p.setBorder(BorderFactory.createMatteBorder(0, 3, 0, 0, ACCENT));
+		p.setAlignmentX(JComponent.LEFT_ALIGNMENT);
+		JPanel head = new JPanel(new BorderLayout());
+		head.setBackground(PANEL_HEAD);
+		head.setBorder(BorderFactory.createEmptyBorder(4, 9, 4, 9));
+		JLabel tag = new JLabel(APP_TAG);
+		tag.setForeground(ACCENT);
+		tag.setFont(tag.getFont().deriveFont(Font.BOLD, 10f));
+		JLabel nm = new JLabel(name);
+		nm.setForeground(MUTED);
+		nm.setFont(nm.getFont().deriveFont(10f));
+		nm.setHorizontalAlignment(SwingConstants.RIGHT);
+		head.add(tag, BorderLayout.WEST);
+		head.add(nm, BorderLayout.EAST);
+		content.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
+		content.setOpaque(false);
+		p.add(head, BorderLayout.NORTH);
+		p.add(content, BorderLayout.CENTER);
+		return p;
+	}
+
+	private JPanel col() { JPanel p = new JPanel(); p.setOpaque(false); p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS)); return p; }
+	private JComponent wrap(JComponent c) { JPanel w = new JPanel(new BorderLayout()); w.setOpaque(false); w.add(c, BorderLayout.WEST); return w; }
+	private JComponent grow(JComponent c, int pref) { c.setPreferredSize(new Dimension(360, pref)); c.setMaximumSize(new Dimension(Integer.MAX_VALUE, pref + 80)); return c; }
+	private JComponent fixed(JComponent c, int h) { c.setMaximumSize(new Dimension(Integer.MAX_VALUE, h)); c.setPreferredSize(new Dimension(360, h)); return c; }
+	private JLabel ink(JLabel l, float size, boolean bold) { l.setForeground(INK); l.setFont(l.getFont().deriveFont(bold ? Font.BOLD : Font.PLAIN, size)); return l; }
+	private JLabel muted(JLabel l) { l.setForeground(MUTED); return l; }
+	private JLabel mono(JLabel l) { l.setForeground(INK); l.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12)); return l; }
+}

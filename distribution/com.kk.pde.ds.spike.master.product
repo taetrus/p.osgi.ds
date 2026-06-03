@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?pde version="3.5"?>
+
+<!--
+  Isolation spike — MASTER app (App-1, its own JVM + window).
+  Owns the catalog data + selection; exports ICatalogService via ECF Generic
+  provider on ecftcp://localhost:3289/catalog. Run alongside the detail product:
+
+      ./distribution/scripts/run-spike-master.sh
+
+  Excludes Felix HTTP/WebConsole so the two app JVMs don't contend for port 8080.
+-->
+<product uid="com.kk.pde.ds.spike.master.product" version="1.0.0.qualifier" type="bundles" includeLaunchers="false" autoIncludeRequirements="true">
+
+   <configIni use="default">
+      <linux>configuration/config.ini</linux>
+      <macosx>configuration/config.ini</macosx>
+      <win32>configuration/config.ini</win32>
+   </configIni>
+
+   <launcherArgs>
+      <programArgs>-consoleLog
+      </programArgs>
+      <vmArgs>-Declipse.ignoreApp=true -Dosgi.noShutdown=true -Dlogback.configurationFile=configuration/logback.xml
+      </vmArgs>
+   </launcherArgs>
+
+   <vm>
+   </vm>
+
+   <plugins>
+      <!-- Demo bundles -->
+      <plugin id="com.kk.pde.ds.spike.api"/>
+      <plugin id="com.kk.pde.ds.spike.master"/>
+      <!-- OSGi framework + DS runtime -->
+      <plugin id="org.eclipse.osgi"/>
+      <plugin id="org.apache.felix.scr"/>
+      <plugin id="org.osgi.service.component"/>
+      <plugin id="org.osgi.service.component.annotations"/>
+      <plugin id="org.osgi.util.function"/>
+      <plugin id="org.osgi.util.promise"/>
+      <plugin id="org.apache.felix.configadmin"/>
+      <!-- EventAdmin (RSA posts remote-service lifecycle events here) -->
+      <plugin id="org.osgi.service.event"/>
+      <plugin id="org.apache.felix.eventadmin"/>
+      <!-- Console -->
+      <plugin id="org.eclipse.equinox.console"/>
+      <plugin id="org.apache.felix.gogo.command"/>
+      <plugin id="org.apache.felix.gogo.runtime"/>
+      <plugin id="org.apache.felix.gogo.shell"/>
+      <!-- Eclipse runtime bundles required by ECF -->
+      <plugin id="org.eclipse.equinox.common"/>
+      <plugin id="org.eclipse.equinox.registry"/>
+      <plugin id="org.eclipse.equinox.concurrent"/>
+      <plugin id="org.eclipse.core.jobs"/>
+      <!-- ECF stack -->
+      <plugin id="org.osgi.service.remoteserviceadmin"/>
+      <plugin id="org.eclipse.ecf"/>
+      <plugin id="org.eclipse.ecf.identity"/>
+      <plugin id="org.eclipse.ecf.remoteservice"/>
+      <plugin id="org.eclipse.ecf.remoteservice.asyncproxy"/>
+      <plugin id="org.eclipse.ecf.discovery"/>
+      <plugin id="org.eclipse.ecf.sharedobject"/>
+      <plugin id="org.eclipse.ecf.provider"/>
+      <plugin id="org.eclipse.ecf.provider.remoteservice"/>
+      <plugin id="org.eclipse.ecf.osgi.services.remoteserviceadmin"/>
+      <plugin id="org.eclipse.ecf.osgi.services.remoteserviceadmin.proxy"/>
+      <plugin id="org.eclipse.ecf.osgi.services.distribution"/>
+   </plugins>
+
+   <configurations>
+      <plugin id="org.eclipse.osgi" autoStart="true" startLevel="1" />
+      <plugin id="org.eclipse.equinox.common" autoStart="true" startLevel="1" />
+      <plugin id="org.eclipse.equinox.registry" autoStart="true" startLevel="1" />
+      <plugin id="org.apache.felix.configadmin" autoStart="true" startLevel="1" />
+      <plugin id="org.osgi.service.event" autoStart="true" startLevel="2" />
+      <plugin id="org.apache.felix.eventadmin" autoStart="true" startLevel="2" />
+      <plugin id="org.apache.felix.scr" autoStart="true" startLevel="2" />
+      <plugin id="org.osgi.service.component" autoStart="true" startLevel="2" />
+      <plugin id="org.osgi.service.component.annotations" autoStart="true" startLevel="2" />
+      <plugin id="org.osgi.util.function" autoStart="true" startLevel="2" />
+      <plugin id="org.osgi.util.promise" autoStart="true" startLevel="2" />
+      <plugin id="org.eclipse.equinox.concurrent" autoStart="true" startLevel="2" />
+      <plugin id="org.eclipse.core.jobs" autoStart="true" startLevel="2" />
+      <plugin id="org.eclipse.equinox.console" autoStart="true" startLevel="3" />
+      <plugin id="org.apache.felix.gogo.command" autoStart="true" startLevel="3" />
+      <plugin id="org.apache.felix.gogo.runtime" autoStart="true" startLevel="3" />
+      <plugin id="org.apache.felix.gogo.shell" autoStart="true" startLevel="3" />
+      <plugin id="org.osgi.service.remoteserviceadmin" autoStart="true" startLevel="3" />
+      <plugin id="org.eclipse.ecf" autoStart="true" startLevel="3" />
+      <plugin id="org.eclipse.ecf.identity" autoStart="true" startLevel="3" />
+      <plugin id="org.eclipse.ecf.remoteservice" autoStart="true" startLevel="3" />
+      <plugin id="org.eclipse.ecf.remoteservice.asyncproxy" autoStart="true" startLevel="3" />
+      <plugin id="org.eclipse.ecf.discovery" autoStart="true" startLevel="3" />
+      <plugin id="org.eclipse.ecf.sharedobject" autoStart="true" startLevel="3" />
+      <plugin id="org.eclipse.ecf.provider" autoStart="true" startLevel="3" />
+      <plugin id="org.eclipse.ecf.provider.remoteservice" autoStart="true" startLevel="3" />
+      <plugin id="org.eclipse.ecf.osgi.services.remoteserviceadmin" autoStart="true" startLevel="3" />
+      <plugin id="org.eclipse.ecf.osgi.services.remoteserviceadmin.proxy" autoStart="true" startLevel="3" />
+      <plugin id="org.eclipse.ecf.osgi.services.distribution" autoStart="true" startLevel="3" />
+      <plugin id="com.kk.pde.ds.spike.api" autoStart="true" startLevel="4" />
+      <plugin id="com.kk.pde.ds.spike.master" autoStart="true" startLevel="4" />
+   </configurations>
+
+</product>

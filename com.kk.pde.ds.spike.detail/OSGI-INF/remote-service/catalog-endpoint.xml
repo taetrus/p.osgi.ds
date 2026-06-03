@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  EDEF discovery for the master's ICatalogService (App-1), reachable at
+  ecftcp://localhost:3289/catalog. Same conventions as the greeting showcase:
+    - ecf.endpoint.id.ns = org.eclipse.ecf.core.identity.StringID
+    - ecf.rsvc.id = 1  (master exports exactly one service → deterministic)
+  If you change the master's port/URI, re-capture these from the master's
+  exported ECFEndpointDescription log line.
+-->
+<endpoint-descriptions xmlns="http://www.osgi.org/xmlns/rsa/v1.0.0">
+   <endpoint-description>
+      <property name="objectClass" value-type="String">
+         <array>
+            <value>com.kk.pde.ds.spike.api.ICatalogService</value>
+         </array>
+      </property>
+      <property name="remote.configs.supported" value-type="String">
+         <array>
+            <value>ecf.generic.server</value>
+         </array>
+      </property>
+      <property name="service.imported.configs" value-type="String">
+         <array>
+            <value>ecf.generic.server</value>
+         </array>
+      </property>
+      <property name="remote.intents.supported" value-type="String">
+         <array>
+            <value>passByValue</value>
+            <value>exactlyOnce</value>
+            <value>ordered</value>
+            <value>osgi.basic</value>
+            <value>osgi.async</value>
+         </array>
+      </property>
+      <property name="service.imported" value-type="String" value="true"/>
+      <property name="endpoint.id" value-type="String" value="ecftcp://localhost:3289/catalog"/>
+      <property name="endpoint.service.id" value-type="Long" value="1"/>
+      <property name="endpoint.framework.uuid" value-type="String" value="spike-master-framework"/>
+      <property name="ecf.endpoint.id" value-type="String" value="ecftcp://localhost:3289/catalog"/>
+      <property name="ecf.endpoint.id.ns" value-type="String" value="org.eclipse.ecf.core.identity.StringID"/>
+      <property name="ecf.endpoint.ts" value-type="Long" value="1"/>
+      <property name="ecf.rsvc.id" value-type="Long" value="1"/>
+   </endpoint-description>
+</endpoint-descriptions>

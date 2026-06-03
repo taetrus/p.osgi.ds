@@ -1,14 +1,12 @@
 #!/bin/bash
-# ECF Remote Services demo — HOST process.
-# Exports IRemoteGreet via ECF Generic provider on ecftcp://localhost:3288/server.
-# Start this FIRST, then run-ecf-consumer.sh in another terminal.
+# Isolation spike — MASTER app (App-1). Owns the catalog + selection; exports
+# ICatalogService on ecftcp://localhost:3289/catalog. Start this FIRST, then
+# run-spike-detail.sh in another terminal.
 
-PRODUCT_UID="com.kk.pde.ds.ecf.host.product"
+PRODUCT_UID="com.kk.pde.ds.spike.master.product"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-# Detect if we're inside a product directory (plugins/ sits next to us)
-# or in the source tree (distribution/scripts/)
 if [ -d "$SCRIPT_DIR/plugins" ]; then
     PRODUCT_DIR="$SCRIPT_DIR"
 else
@@ -21,7 +19,7 @@ else
             PRODUCT_DIR="$BASE_DIR/target/products/$PRODUCT_UID/linux/gtk/x86_64"
             ;;
         *)
-            echo "ERROR: Unsupported OS. On Windows, use run-ecf-host.bat instead."
+            echo "ERROR: Unsupported OS. On Windows, use run-spike-master.bat instead."
             exit 1
             ;;
     esac
@@ -35,6 +33,6 @@ if [ -z "$OSGI_JAR" ]; then
     exit 1
 fi
 
-echo "Starting ECF HOST: $OSGI_JAR"
+echo "Starting spike MASTER (App-1): $OSGI_JAR"
 cd "$PRODUCT_DIR"
 java -jar "$OSGI_JAR" -configuration configuration -console -consoleLog "$@"

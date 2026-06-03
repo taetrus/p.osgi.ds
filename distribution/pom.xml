@@ -119,6 +119,36 @@
 								<chmod perm="755" failonerror="false">
 									<fileset dir="${project.build.directory}/products" includes="**/run-ecf-*.sh"/>
 								</chmod>
+								<!-- Isolation spike products: copy logback.xml + run scripts -->
+								<!-- MASTER product -->
+								<copy file="${project.basedir}/configuration/logback.xml"
+									 todir="${project.build.directory}/products/com.kk.pde.ds.spike.master.product/linux/gtk/x86_64/configuration" failonerror="false"/>
+								<copy file="${project.basedir}/configuration/logback.xml"
+									 todir="${project.build.directory}/products/com.kk.pde.ds.spike.master.product/win32/win32/x86_64/configuration" failonerror="false"/>
+								<copy file="${project.basedir}/configuration/logback.xml"
+									 todir="${project.build.directory}/products/com.kk.pde.ds.spike.master.product/macosx/cocoa/x86_64/Eclipse.app/Contents/Eclipse/configuration" failonerror="false"/>
+								<copy file="${project.basedir}/scripts/run-spike-master.sh"
+									 todir="${project.build.directory}/products/com.kk.pde.ds.spike.master.product/linux/gtk/x86_64" failonerror="false"/>
+								<copy file="${project.basedir}/scripts/run-spike-master.bat"
+									 todir="${project.build.directory}/products/com.kk.pde.ds.spike.master.product/win32/win32/x86_64" failonerror="false"/>
+								<copy file="${project.basedir}/scripts/run-spike-master.sh"
+									 todir="${project.build.directory}/products/com.kk.pde.ds.spike.master.product/macosx/cocoa/x86_64/Eclipse.app/Contents/Eclipse" failonerror="false"/>
+								<!-- DETAIL product -->
+								<copy file="${project.basedir}/configuration/logback.xml"
+									 todir="${project.build.directory}/products/com.kk.pde.ds.spike.detail.product/linux/gtk/x86_64/configuration" failonerror="false"/>
+								<copy file="${project.basedir}/configuration/logback.xml"
+									 todir="${project.build.directory}/products/com.kk.pde.ds.spike.detail.product/win32/win32/x86_64/configuration" failonerror="false"/>
+								<copy file="${project.basedir}/configuration/logback.xml"
+									 todir="${project.build.directory}/products/com.kk.pde.ds.spike.detail.product/macosx/cocoa/x86_64/Eclipse.app/Contents/Eclipse/configuration" failonerror="false"/>
+								<copy file="${project.basedir}/scripts/run-spike-detail.sh"
+									 todir="${project.build.directory}/products/com.kk.pde.ds.spike.detail.product/linux/gtk/x86_64" failonerror="false"/>
+								<copy file="${project.basedir}/scripts/run-spike-detail.bat"
+									 todir="${project.build.directory}/products/com.kk.pde.ds.spike.detail.product/win32/win32/x86_64" failonerror="false"/>
+								<copy file="${project.basedir}/scripts/run-spike-detail.sh"
+									 todir="${project.build.directory}/products/com.kk.pde.ds.spike.detail.product/macosx/cocoa/x86_64/Eclipse.app/Contents/Eclipse" failonerror="false"/>
+								<chmod perm="755" failonerror="false">
+									<fileset dir="${project.build.directory}/products" includes="**/run-spike-*.sh"/>
+								</chmod>
 								<!-- Regenerate archives with fixed config.ini -->
 								<tar destfile="${project.build.directory}/products/com.kk.pde.ds.product-linux.gtk.x86_64.tar.gz"
 									 basedir="${project.build.directory}/products/com.kk.pde.ds.product/linux/gtk/x86_64"

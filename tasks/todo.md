@@ -1,62 +1,57 @@
-# Todo: ECF Remote Services showcase
+# Todo: Combined-UI docking (approach C)
 
-Design spec: `docs/superpowers/specs/2026-05-29-ecf-remote-services-design.md`
+Goal: two isolated JVMs (master, detail) whose borderless windows dock edge-to-edge
+to LOOK like one combined UI showing both panels as real widgets. macOS + Windows.
 
-## Phase 0 — De-risk (do first)
-- [x] Resolve exact ECF 3.14.x bundle versions on Maven Central (Java 8 line)
-- [x] Add ECF `<location type="Maven">` block to target platform
-- [x] Confirm target platform resolves: `mvn clean verify -pl com.kk.pde.ds.target` (or a probe build)
+## API (spike.api)
+- [ ] DockBounds DTO (x,y,width,height) — Serializable
+- [ ] DockState DTO (bounds, closing, selected) — Serializable
+- [ ] ICatalogService: + setHostBounds, setClosing, requestShutdown, getDockState
 
-## Phase 1 — Bundles
-- [x] `com.kk.pde.ds.ecf.api` — IRemoteGreet interface bundle
-- [x] `com.kk.pde.ds.ecf.host` — RemoteGreetImpl @Component with RSA export properties
-- [x] `com.kk.pde.ds.ecf.consumer` — RemoteGreetConsumer @Component + EDEF file + Remote-Service header (+ optional Gogo cmd)
+## Master (anchor)
+- [ ] CatalogServiceImpl: hold hostBounds + closing; implement new methods
+- [ ] MasterApp: undecorated frame, draggable header w/ top-left ✕, push bounds on move/resize
 
-## Phase 2 — Build wiring
-- [x] Add 3 modules to root pom `<modules>`
-- [x] Add 3 demo bundles + ECF stack to feature.xml
-- [x] Add `com.kk.pde.ds.ecf.host.product` + `com.kk.pde.ds.ecf.consumer.product`
-- [x] Add run scripts: run-ecf-host.sh/.bat, run-ecf-consumer.sh/.bat
-- [x] Wire script/logback copies in distribution antrun
+## Detail (follower)
+- [ ] DetailApp: undecorated frame, matching header, poll getDockState ~120ms,
+      dock to master's right edge + match height, exit on closing flag, survive crash (unavailable)
 
-## Phase 3 — Verify
-- [x] `mvn clean verify` clean
-- [x] Run host + consumer in two JVMs; confirm remote greet returns over socket
-- [x] Confirm existing com.kk.pde.ds.product still builds/runs (no regression)
-- [x] Correct EDEF properties by inspecting live exported endpoint if import fails
-
-## Phase 4 — Docs
-- [x] CLAUDE.md module list + ECF section
-- [x] README.md ECF section
-- [x] FOR_Kerem.md ECF section
+## Verify
+- [ ] mvn clean verify
+- [ ] run master + detail; screencapture screen → confirm they read as one window
+- [ ] drag master header → detail follows; ✕ closes both; crash master → detail survives (no dock follow, shows unavailable)
 
 ## Review
 
-All phases complete. ECF Remote Services showcase added and verified end-to-end.
+Built and verified. Two isolated JVMs whose borderless windows dock edge-to-edge into one
+combined UI showing both real panels.
 
-**Pinned ECF 3.14.x set (Java-8 BREE, from Maven Central, groupId `org.eclipse.ecf`):**
-ecf 3.10.0 · identity 3.9.402 · remoteservice 8.14.0 · remoteservice.asyncproxy 2.1.200 ·
-discovery 5.1.1 · sharedobject 2.6.200 · provider 4.9.1 · provider.remoteservice 4.6.1 ·
-osgi.services.remoteserviceadmin 4.9.1 · ...remoteserviceadmin.proxy 1.0.101 ·
-osgi.services.distribution 2.1.600. Plus Equinox common/registry/concurrent + core.jobs,
-and org.osgi:org.osgi.service.remoteserviceadmin 1.1.0.
+- API: DockBounds + DockState DTOs; ICatalogService gained setHostBounds / setClosing /
+  requestShutdown / getDockState.
+- Master = anchor: undecorated frame, draggable header, top-left ● close (calls requestShutdown),
+  publishes live screen bounds on move/resize.
+- Detail = follower: undecorated frame, matching header, polls getDockState ~120ms, docks to the
+  anchor's right edge matched in height, shows the remote selection, exits on the closing flag,
+  survives a crash (shows "host unavailable", stops tracking).
 
-**What was built:**
-- 3 bundles: `com.kk.pde.ds.ecf.api` / `.host` / `.consumer` (DS annotations + checked-in OSGI-INF XML).
-- Host exports `IRemoteGreet` via `service.exported.*` properties (ECF Generic server on :3288).
-- Consumer imports via static EDEF (`OSGI-INF/remote-service/`) + `Remote-Service` header; `@Reference` binds the proxy; Gogo `ecf:greet`.
-- Target platform: new ECF Maven location block.
-- 2 products + 4 run scripts (host/consumer × sh/bat); antrun copies logback + scripts; dropped `archive-products` (multi-product attachId clash).
-- Feature + root pom modules updated.
+Verified (clean build, two JVMs, screen capture):
+- The two windows render as ONE combined UI (master list left + detail right, shared dark theme,
+  flush seam). Selection set in App-1 shows in App-2 ("Hex Bolt M8") over ECF.
+- Crash isolation in docked mode: killed App-1 → App-2 stayed alive, logged "Lost connection",
+  degraded gracefully with no dock exceptions.
 
-**Verification (clean build, two fresh JVMs):**
-- `mvn clean verify` → BUILD SUCCESS; main product archives intact (no regression).
-- Host exported on :3288; consumer logged `Remote response: Hello, ECF! (served remotely by host)`; host's `Remote Request Handler` thread received the call (~11ms round trip). 0 EventAdmin warnings.
+Known limits (accepted): same-display only (screen coords must align); follower rubber-bands
+slightly while dragging (120ms poll); visible header seam (two windows, not one).
 
-**Bugs hit & fixed:**
-1. Missing `asyncproxy` package — surfaced only at product resolution, not compilation.
-2. `archive-products` attachId clash with 3 products — removed the goal (antrun handles main archives).
-3. EDEF `ecf.endpoint.id.ns` was wrong (`ecf.namespace.generic`) → corrected to `org.eclipse.ecf.core.identity.StringID` by reading the host's live exported endpoint.
-4. `pkill -f "...product"` matched nothing (path is cwd, not argv) → matched on `osgi.noShutdown`.
-
-**Docs:** CLAUDE.md (module list + ECF section + tech stack), README.md (ECF section), FOR_Kerem.md (engaging writeup), design spec at `docs/superpowers/specs/2026-05-29-ecf-remote-services-design.md`.
+## Update — multi-panel showcase (each panel badged with its app)
+- Master (App-1, teal "APP-1 · MASTER"): CATALOG (list) · SUMMARY (count+stock) · ACTIVITY
+  (live heartbeat, proves App-1 process alive) · CONTROLS (Freeze/Crash).
+- Detail (App-2, amber "APP-2 · DETAIL"): SELECTED ITEM · INSPECTOR (item id, name/desc length,
+  App-2 uptime ticking) · CONNECTION (dock status) · CONTROLS.
+- Reusable badged() panel helper per app (accent bar + "APP-n · ROLE" tag + panel name),
+  color-coded by process so provenance is obvious in the combined window.
+- Verified via screen capture: 4 panels per app, headers on top, both live clocks running
+  independently, selection flowing master→detail over ECF.
+- Bugs hit & fixed: (1) duplicate `Component` import (java.awt vs OSGi annotation) → use
+  JComponent.LEFT_ALIGNMENT; (2) header added with BorderLayout.NORTH onto a BoxLayout content
+  pane (ignored → rendered at bottom) → wrap in a BorderLayout root (header NORTH, body CENTER).

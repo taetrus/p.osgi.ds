@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Monolith → Isolated Apps · Engineering Journey</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0a0e14;
+    --bg2:#0c111a;
+    --panel:#111824;
+    --ink:#e8eef6;
+    --muted:#7c8a9c;
+    --faint:#465264;
+    --line:rgba(255,255,255,.08);
+    --line2:rgba(255,255,255,.04);
+    --danger:#ff5b39;
+    --danger-dim:rgba(255,91,57,.14);
+    --warn:#ffc14d;
+    --good:#2fd4a7;
+    --good-dim:rgba(47,212,167,.12);
+    --wire:#4f8fd6;
+    --wire-dim:rgba(79,143,214,.14);
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+    --sans:'Archivo',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+    line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+    background-image:
+      linear-gradient(var(--line2) 1px,transparent 1px),
+      linear-gradient(90deg,var(--line2) 1px,transparent 1px);
+    background-size:44px 44px;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:2;
+    background:radial-gradient(120% 80% at 50% -10%,transparent 60%,rgba(0,0,0,.55) 100%);
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:0 28px}
+  section{padding:88px 0;border-top:1px solid var(--line);position:relative}
+  section:first-of-type{border-top:none}
+
+  /* labels / kickers */
+  .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.32em;text-transform:uppercase;color:var(--muted)}
+  .idx{font-family:var(--mono);font-size:12px;color:var(--faint);letter-spacing:.2em}
+  .sechead{display:flex;align-items:baseline;gap:18px;margin-bottom:8px}
+  h2{font-size:clamp(26px,3.6vw,42px);font-weight:800;letter-spacing:-.02em;margin:0 0 10px;line-height:1.04}
+  .lede{color:var(--muted);max-width:60ch;font-size:15px;margin:0 0 38px}
+  .mono{font-family:var(--mono)}
+
+  /* hero */
+  .hero{padding:110px 0 70px;border-top:none}
+  .hero h1{font-size:clamp(40px,8.2vw,104px);font-weight:900;letter-spacing:-.04em;line-height:.92;margin:18px 0 0}
+  .hero h1 .strike{color:var(--danger);position:relative;white-space:nowrap}
+  .hero h1 .strike::after{content:"";position:absolute;left:-2%;right:-2%;top:54%;height:5px;background:var(--danger);transform:scaleX(0);transform-origin:left;animation:strike 1s .9s cubic-bezier(.7,0,.2,1) forwards}
+  @keyframes strike{to{transform:scaleX(1)}}
+  .hero h1 .arrow{color:var(--faint)}
+  .hero h1 .good{color:var(--good)}
+  .hero .sub{margin-top:30px;max-width:64ch;color:var(--muted);font-size:clamp(15px,1.7vw,19px)}
+  .hero .sub b{color:var(--ink);font-weight:600}
+  .stat-row{display:flex;flex-wrap:wrap;gap:14px;margin-top:46px}
+  .stat{flex:1;min-width:150px;border:1px solid var(--line);background:var(--panel);padding:18px 20px;border-radius:10px}
+  .stat .n{font-family:var(--mono);font-size:30px;font-weight:700;letter-spacing:-.02em}
+  .stat .n.bad{color:var(--danger)} .stat .n.ok{color:var(--good)} .stat .n.wire{color:var(--wire)}
+  .stat .l{font-size:12px;color:var(--muted);margin-top:4px}
+
+  /* generic card grid */
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .card{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:20px;position:relative;overflow:hidden}
+  .card .tag{font-family:var(--mono);font-size:11px;color:var(--danger);letter-spacing:.12em}
+  .card h3{font-size:16px;margin:10px 0 6px;font-weight:700}
+  .card p{font-size:13px;color:var(--muted);margin:0}
+  .card .ico{width:34px;height:34px}
+
+  /* blast radius */
+  .blast{display:grid;grid-template-columns:1fr 1fr;gap:30px;align-items:start}
+  .blast .panel-card{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:22px}
+  .blast .panel-card.mono{border-color:rgba(255,91,57,.35)}
+  .blast .panel-card.split{border-color:rgba(47,212,167,.3)}
+  .blast h4{margin:0 0 4px;font-size:15px;font-family:var(--mono);letter-spacing:.04em}
+  .blast .cap{font-size:12px;color:var(--muted);margin:0 0 18px}
+  .grid12{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .cell{aspect-ratio:1/1;border-radius:6px;border:1px solid var(--line);background:#0e151f;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;color:var(--faint)}
+  .panel-card.mono .cell{background:var(--danger-dim);border-color:rgba(255,91,57,.3);color:rgba(255,91,57,.8)}
+  .panel-card.split .cell{background:var(--good-dim);border-color:rgba(47,212,167,.25);color:rgba(47,212,167,.7)}
+  .panel-card.split .cell.hit{background:var(--danger-dim);border-color:var(--danger);color:var(--danger)}
+  .cell.src{box-shadow:0 0 0 2px var(--danger) inset}
+  .impact{display:flex;align-items:baseline;gap:10px;margin-top:18px;font-family:var(--mono)}
+  .impact .big{font-size:34px;font-weight:700}
+  .impact .big.bad{color:var(--danger)} .impact .big.ok{color:var(--good)}
+  .impact .t{font-size:12px;color:var(--muted)}
+
+  /* journey flow */
+  .flow{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel)}
+  .step{padding:24px 22px;border-right:1px solid var(--line);position:relative}
+  .step:last-child{border-right:none;background:linear-gradient(180deg,rgba(47,212,167,.07),transparent)}
+  .step .num{font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.2em}
+  .step .verdict{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em;margin-top:14px;display:inline-flex;align-items:center;gap:7px}
+  .step.no .verdict{color:var(--danger)} .step.yes .verdict{color:var(--good)}
+  .step h3{font-size:16px;margin:10px 0 8px;font-weight:700}
+  .step.no h3{color:var(--muted);text-decoration:line-through;text-decoration-color:rgba(255,91,57,.5)}
+  .step p{font-size:12.5px;color:var(--muted);margin:0}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+  .dot.no{background:var(--danger)} .dot.yes{background:var(--good);box-shadow:0 0 12px var(--good)}
+
+  /* quadrant chart */
+  .quad-wrap{display:grid;grid-template-columns:1.3fr .9fr;gap:34px;align-items:center}
+  .legend{display:flex;flex-direction:column;gap:14px}
+  .leg{display:flex;gap:13px;align-items:flex-start;border-left:2px solid var(--line);padding:2px 0 2px 14px}
+  .leg.sweet{border-left-color:var(--good)}
+  .leg .mk{font-family:var(--mono);font-size:12px;font-weight:700;min-width:20px}
+  .leg h3{font-size:14px;margin:0 0 3px;font-weight:700}
+  .leg p{margin:0;font-size:12px;color:var(--muted)}
+  .leg .v{font-family:var(--mono);font-size:11px;color:var(--danger)}
+  .leg.sweet .v{color:var(--good)}
+
+  /* matrix */
+  .matrix{width:100%;border-collapse:separate;border-spacing:8px}
+  .matrix th{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--muted);text-align:center;padding:6px;letter-spacing:.04em}
+  .matrix th.row{text-align:left;color:var(--ink);font-weight:600;font-family:var(--sans);font-size:14px;width:36%}
+  .matrix td{border-radius:10px;padding:18px;text-align:center;font-family:var(--mono);font-size:13px;border:1px solid var(--line)}
+  .matrix td.bad{background:var(--danger-dim);border-color:rgba(255,91,57,.32);color:var(--danger)}
+  .matrix td.good{background:var(--good-dim);border-color:rgba(47,212,167,.3);color:var(--good)}
+  .matrix td .s{font-size:18px;display:block;margin-bottom:3px}
+
+  /* arch + sequence svg blocks */
+  .svgcard{border:1px solid var(--line);border-radius:12px;background:linear-gradient(180deg,var(--bg2),var(--panel));padding:8px}
+  svg{display:block;width:100%;height:auto}
+  .di-label{font-family:var(--mono);font-size:11px;fill:var(--muted)}
+  .di-title{font-family:var(--sans);font-weight:700;font-size:13px;fill:var(--ink)}
+  .di-sub{font-family:var(--mono);font-size:9.5px;fill:var(--faint)}
+
+  /* proof */
+  .proof{display:grid;grid-template-columns:1.05fr 1fr;gap:30px;align-items:center}
+  .chips{display:flex;flex-direction:column;gap:12px}
+  .chip{display:flex;align-items:center;gap:16px;border:1px solid var(--line);border-radius:10px;padding:16px 18px;background:var(--panel)}
+  .chip .st{font-family:var(--mono);font-weight:700;font-size:20px;width:26px;text-align:center}
+  .chip.ok .st{color:var(--good)} .chip.warn .st{color:var(--warn)}
+  .chip h3{margin:0 0 2px;font-size:15px;font-weight:700}
+  .chip p{margin:0;font-size:12.5px;color:var(--muted)}
+  .chip.ok{border-color:rgba(47,212,167,.25)} .chip.warn{border-color:rgba(255,193,77,.3)}
+
+  /* takeaways */
+  .takes{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  .take{border:1px solid var(--line);border-radius:10px;padding:22px;background:var(--panel);display:flex;gap:18px}
+  .take .k{font-family:var(--mono);font-size:26px;font-weight:700;color:var(--wire);line-height:1}
+  .take p{margin:0;font-size:14px}
+  .take p b{font-weight:700}
+
+  footer{padding:50px 0 70px;color:var(--faint);font-family:var(--mono);font-size:12px;border-top:1px solid var(--line)}
+  footer a{color:var(--muted);text-decoration:none;border-bottom:1px solid var(--line)}
+
+  /* reveal animation */
+  .rise{opacity:0;transform:translateY(22px);animation:rise .7s cubic-bezier(.2,.7,.2,1) forwards}
+  @keyframes rise{to{opacity:1;transform:none}}
+  .d1{animation-delay:.05s}.d2{animation-delay:.15s}.d3{animation-delay:.25s}.d4{animation-delay:.35s}.d5{animation-delay:.45s}.d6{animation-delay:.55s}
+
+  @media(max-width:860px){
+    .cards,.takes{grid-template-columns:1fr 1fr}
+    .blast,.quad-wrap,.proof{grid-template-columns:1fr}
+    .flow{grid-template-columns:1fr 1fr}
+    .step{border-bottom:1px solid var(--line)}
+  }
+  @media(max-width:520px){.cards,.takes,.flow{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- ░░ HERO ░░ -->
+<section class="hero wrap">
+  <div class="kicker rise d1">Engineering Journey · OSGi / Swing / ECF</div>
+  <h1 class="rise d2">
+    One frozen <span class="strike">monolith</span><br/>
+    <span class="arrow">→</span> many <span class="good">isolated apps</span>
+  </h1>
+  <p class="sub rise d4">Hundreds of bundles in <b>one JVM</b>, every team's panels in <b>one window</b>,
+    sharing <b>one event thread</b>, <b>one heap</b>, <b>one process</b>. One mistake froze everyone.
+    Here's how we found a cheap way out — and proved it with running code.</p>
+  <div class="stat-row">
+    <div class="stat rise d3"><div class="n bad">1</div><div class="l">shared JVM &amp; window today</div></div>
+    <div class="stat rise d4"><div class="n bad">100%</div><div class="l">blast radius of one bad panel</div></div>
+    <div class="stat rise d5"><div class="n wire">1</div><div class="l">service contract = the only coupling</div></div>
+    <div class="stat rise d6"><div class="n ok">✓</div><div class="l">isolation proven by a 2-app spike</div></div>
+  </div>
+</section>
+
+<!-- ░░ 01 PROBLEM ░░ -->
+<section class="wrap">
+  <div class="sechead"><span class="idx">01</span><span class="kicker">The problem</span></div>
+  <h2>Everything shared. Everyone exposed.</h2>
+  <p class="lede">When one fault can travel to every team, isolation isn't a feature — it's survival. The picture says it best:</p>
+  <div class="blast">
+    <div class="panel-card mono rise d1">
+      <h4>MONOLITH · 1 JVM</h4>
+      <p class="cap">12 teams' panels · shared EDT · heap · process</p>
+      <div class="grid12">
+        <div class="cell src">★</div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+        <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+        <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+      </div>
+      <div class="impact"><span class="big bad">100%</span><span class="t">one panel hangs / leaks / crashes<br/>→ the whole app goes down</span></div>
+    </div>
+    <div class="panel-card split rise d3">
+      <h4>SPLIT · 1 JVM per group</h4>
+      <p class="cap">separate window · EDT · heap · crash domain</p>
+      <div class="grid12">
+        <div class="cell hit src">★</div><div class="cell">✓</div><div class="cell">✓</div><div class="cell">✓</div>
+        <div class="cell">✓</div><div class="cell">✓</div><div class="cell">✓</div><div class="cell">✓</div>
+        <div class="cell">✓</div><div class="cell">✓</div><div class="cell">✓</div><div class="cell">✓</div>
+      </div>
+      <div class="impact"><span class="big ok">~8%</span><span class="t">the faulty app dies alone<br/>→ supervisor restarts it</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ 02 FOUR FREEZES ░░ -->
+<section class="wrap">
+  <div class="sechead"><span class="idx">02</span><span class="kicker">Root causes</span></div>
+  <h2>Four ways one panel freezes all</h2>
+  <p class="lede">All four were in play — and the bottom three can't be fixed by moving <em>services</em> alone. They need the <em>process</em> split.</p>
+  <div class="cards">
+    <div class="card rise d1">
+      <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#ff5b39" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      <div class="tag">EDT</div><h3>Blocking work</h3><p>A slow call on the shared event thread freezes every panel at once.</p>
+    </div>
+    <div class="card rise d2">
+      <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#ff5b39" stroke-width="1.6"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 6v12M12 6v12M17 6v12"/></svg>
+      <div class="tag">EDT</div><h3>Heavy render</h3><p>A panel's own painting/compute hogs the one UI thread shared by all.</p>
+    </div>
+    <div class="card rise d3">
+      <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#ff5b39" stroke-width="1.6"><path d="M4 18V8l8-4 8 4v10"/><path d="M4 13h16"/></svg>
+      <div class="tag">HEAP</div><h3>GC pressure</h3><p>One bundle's leak triggers stop-the-world pauses across the whole heap.</p>
+    </div>
+    <div class="card rise d4">
+      <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#ff5b39" stroke-width="1.6"><path d="M12 3l9 16H3z"/><path d="M12 9v5M12 17h.01"/></svg>
+      <div class="tag">PROCESS</div><h3>Crashes</h3><p>An exception or deadlock corrupts shared state and takes the app with it.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ 03 JOURNEY ░░ -->
+<section class="wrap">
+  <div class="sechead"><span class="idx">03</span><span class="kicker">The journey</span></div>
+  <h2>Three dead ends, then the reframe</h2>
+  <p class="lede">The instinct — "move a panel to another JVM" — was the wrong question. Each attempt taught a constraint.</p>
+  <div class="flow">
+    <div class="step no rise d1"><div class="num">ATTEMPT 01</div><h3>Send a live JPanel</h3><p>Swing is welded to one JVM. Serialized → a dead snapshot.</p><div class="verdict"><span class="dot no"></span>IMPOSSIBLE</div></div>
+    <div class="step no rise d2"><div class="num">ATTEMPT 02</div><h3>Mirror pixels + clicks</h3><p>Works, but latency, bandwidth, broken popups. Too costly.</p><div class="verdict"><span class="dot no"></span>TOO EXPENSIVE</div></div>
+    <div class="step no rise d3"><div class="num">ATTEMPT 03</div><h3>Rewrite as data model</h3><p>Clean — but means rewriting hundreds of panels. Too late.</p><div class="verdict"><span class="dot no"></span>TOO INVASIVE</div></div>
+    <div class="step yes rise d4"><div class="num">REFRAME</div><h3>Isolate processes</h3><p>Goal was isolation, not transfer. Separate windows are fine.</p><div class="verdict"><span class="dot yes"></span>THE ANSWER</div></div>
+  </div>
+</section>
+
+<!-- ░░ 04 OPTIONS QUADRANT ░░ -->
+<section class="wrap">
+  <div class="sechead"><span class="idx">04</span><span class="kicker">Decision map</span></div>
+  <h2>Effort vs. fit — and the sweet spot</h2>
+  <p class="lede">Plot every option by build effort and how well it fits the goal. One sits alone in the low-effort / high-fit corner.</p>
+  <div class="quad-wrap">
+    <div class="svgcard rise d1">
+      <svg viewBox="0 0 460 360" role="img" aria-label="Quadrant chart of options by effort and fit">
+        <!-- axes -->
+        <defs>
+          <marker id="ah" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#465264"/></marker>
+        </defs>
+        <!-- sweet-spot quadrant highlight (low effort, high fit => top-left) -->
+        <rect x="44" y="28" width="160" height="146" fill="rgba(47,212,167,.07)"/>
+        <text x="52" y="46" class="di-sub" fill="#2fd4a7">SWEET SPOT</text>
+        <!-- grid -->
+        <line x1="44" y1="28" x2="44" y2="320" stroke="#465264" stroke-width="1.2" marker-end="url(#ah)"/>
+        <line x1="44" y1="320" x2="430" y2="320" stroke="#465264" stroke-width="1.2" marker-end="url(#ah)"/>
+        <line x1="204" y1="28" x2="204" y2="320" stroke="rgba(255,255,255,.06)"/>
+        <line x1="44" y1="174" x2="430" y2="174" stroke="rgba(255,255,255,.06)"/>
+        <text x="36" y="24" class="di-label" text-anchor="end" transform="rotate(-90 36 24)" style="transform-box:fill-box"></text>
+        <text x="14" y="180" class="di-label" transform="rotate(-90 14 180)">FIT FOR GOAL →</text>
+        <text x="234" y="342" class="di-label">BUILD EFFORT →</text>
+        <!-- points -->
+        <!-- 1 Send JPanel: impossible -> low fit, low-ish effort, marked X -->
+        <g>
+          <circle cx="92" cy="298" r="9" fill="none" stroke="#ff5b39" stroke-width="1.6"/>
+          <path d="M88 294l8 8M96 294l-8 8" stroke="#ff5b39" stroke-width="1.6"/>
+          <text x="106" y="302" class="di-sub" fill="#ff5b39">01 live panel</text>
+        </g>
+        <!-- 2 Image mirror: high effort, mid fit -->
+        <circle cx="360" cy="150" r="10" fill="rgba(255,91,57,.2)" stroke="#ff5b39" stroke-width="1.6"/>
+        <text x="344" y="134" class="di-sub" fill="#ff8a6e" text-anchor="middle">02 mirror</text>
+        <!-- 3 Data model: high effort, high fit -->
+        <circle cx="338" cy="74" r="10" fill="rgba(255,193,77,.2)" stroke="#ffc14d" stroke-width="1.6"/>
+        <text x="338" y="58" class="di-sub" fill="#ffc14d" text-anchor="middle">03 data model</text>
+        <!-- 4 Process split: low effort, high fit -> highlighted -->
+        <circle cx="118" cy="78" r="15" fill="rgba(47,212,167,.18)" stroke="#2fd4a7" stroke-width="2"/>
+        <circle cx="118" cy="78" r="4" fill="#2fd4a7"/>
+        <text x="140" y="74" class="di-title" fill="#2fd4a7" style="font-size:12px">04 process split</text>
+        <text x="140" y="90" class="di-sub" fill="#2fd4a7">← we are here</text>
+      </svg>
+    </div>
+    <div class="legend">
+      <div class="leg rise d2"><span class="mk" style="color:#ff5b39">01</span><div><h3>Send a live JPanel</h3><p>Can't cross JVMs at all.</p><span class="v">✗ impossible</span></div></div>
+      <div class="leg rise d3"><span class="mk" style="color:#ff8a6e">02</span><div><h3>Image mirror + input</h3><p>View fidelity, but heavy &amp; laggy.</p><span class="v">high effort</span></div></div>
+      <div class="leg rise d4"><span class="mk" style="color:#ffc14d">03</span><div><h3>Remote data model</h3><p>Great fit — rewrites every panel.</p><span class="v">high effort</span></div></div>
+      <div class="leg sweet rise d5"><span class="mk" style="color:#2fd4a7">04</span><div><h3>Process split + ECF</h3><p>Panels unchanged; isolation for free.</p><span class="v">✓ low effort · high fit</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ 05 ARCHITECTURE ░░ -->
+<section class="wrap">
+  <div class="sechead"><span class="idx">05</span><span class="kicker">Target architecture</span></div>
+  <h2>Desktop micro-frontends</h2>
+  <p class="lede">One JVM per panel-group, each in its own window. The only wire between them is a shared service contract on the ECF bus.</p>
+  <div class="svgcard rise d1">
+    <svg viewBox="0 0 1080 430" role="img" aria-label="Architecture diagram">
+      <defs>
+        <marker id="dot2" markerWidth="6" markerHeight="6" refX="3" refY="3"><circle cx="3" cy="3" r="2.4" fill="#4f8fd6"/></marker>
+      </defs>
+      <!-- shell -->
+      <rect x="300" y="22" width="480" height="58" rx="10" fill="rgba(79,143,214,.08)" stroke="#4f8fd6" stroke-width="1.3"/>
+      <text x="540" y="48" class="di-title" text-anchor="middle">SHELL · LAUNCHER</text>
+      <text x="540" y="66" class="di-sub" text-anchor="middle">starts · supervises · restarts · global menu</text>
+
+      <!-- app boxes -->
+      <g>
+        <rect x="60" y="150" width="270" height="120" rx="12" fill="#111824" stroke="rgba(47,212,167,.4)" stroke-width="1.3"/>
+        <text x="80" y="180" class="di-title" fill="#2fd4a7">App A · JVM #1</text>
+        <text x="80" y="202" class="di-sub">own window · own EDT</text>
+        <text x="80" y="218" class="di-sub">own heap · own crash domain</text>
+        <rect x="80" y="232" width="100" height="22" rx="5" fill="rgba(47,212,167,.1)" stroke="rgba(47,212,167,.3)"/>
+        <text x="130" y="247" class="di-sub" fill="#2fd4a7" text-anchor="middle">panels (as-is)</text>
+      </g>
+      <g>
+        <rect x="405" y="150" width="270" height="120" rx="12" fill="#111824" stroke="rgba(47,212,167,.4)" stroke-width="1.3"/>
+        <text x="425" y="180" class="di-title" fill="#2fd4a7">App B · JVM #2</text>
+        <text x="425" y="202" class="di-sub">own window · own EDT</text>
+        <text x="425" y="218" class="di-sub">own heap · own crash domain</text>
+        <rect x="425" y="232" width="100" height="22" rx="5" fill="rgba(47,212,167,.1)" stroke="rgba(47,212,167,.3)"/>
+        <text x="475" y="247" class="di-sub" fill="#2fd4a7" text-anchor="middle">panels (as-is)</text>
+      </g>
+      <g>
+        <rect x="750" y="150" width="270" height="120" rx="12" fill="#111824" stroke="rgba(79,143,214,.45)" stroke-width="1.3"/>
+        <text x="770" y="180" class="di-title" fill="#7fb4ec">Core · Registry JVM</text>
+        <text x="770" y="202" class="di-sub">shared session / selection</text>
+        <text x="770" y="218" class="di-sub">discovery · supervision</text>
+      </g>
+
+      <!-- shell to apps -->
+      <path d="M460 80 L195 150" stroke="#4f8fd6" stroke-width="1.1" stroke-dasharray="3 4"/>
+      <path d="M540 80 L540 150" stroke="#4f8fd6" stroke-width="1.1" stroke-dasharray="3 4"/>
+      <path d="M620 80 L885 150" stroke="#4f8fd6" stroke-width="1.1" stroke-dasharray="3 4"/>
+
+      <!-- ECF bus -->
+      <rect x="60" y="322" width="960" height="40" rx="8" fill="rgba(79,143,214,.07)" stroke="#4f8fd6" stroke-width="1.2"/>
+      <text x="540" y="347" class="di-title" fill="#7fb4ec" text-anchor="middle">ECF REMOTE SERVICE BUS &nbsp;·&nbsp; shared *.api contracts = interfaces + serializable DTOs</text>
+      <path d="M195 270 L195 322" stroke="#4f8fd6" stroke-width="1.4" marker-end="url(#dot2)"/>
+      <path d="M540 270 L540 322" stroke="#4f8fd6" stroke-width="1.4" marker-end="url(#dot2)"/>
+      <path d="M885 270 L885 322" stroke="#4f8fd6" stroke-width="1.4" marker-end="url(#dot2)"/>
+
+      <text x="60" y="404" class="di-sub">coupling allowed: contracts only — never another app's implementation</text>
+    </svg>
+  </div>
+</section>
+
+<!-- ░░ 06 ISOLATION MATRIX ░░ -->
+<section class="wrap">
+  <div class="sechead"><span class="idx">06</span><span class="kicker">Isolation matrix</span></div>
+  <h2>Same failures. Contained.</h2>
+  <p class="lede">Splitting the process flips every red cell green — automatically, with no panel code change.</p>
+  <table class="matrix rise d1">
+    <thead><tr><th class="row">Failure mode</th><th>Monolith · 1 JVM</th><th>Split · N JVMs</th></tr></thead>
+    <tbody>
+      <tr><th class="row">Rendering / compute on EDT</th><td class="bad"><span class="s">✗</span>freezes all</td><td class="good"><span class="s">✓</span>own EDT</td></tr>
+      <tr><th class="row">Blocking backend / IO</th><td class="bad"><span class="s">✗</span>freezes all</td><td class="good"><span class="s">✓</span>async + off-process</td></tr>
+      <tr><th class="row">Memory / GC pressure</th><td class="bad"><span class="s">✗</span>pauses all</td><td class="good"><span class="s">✓</span>own heap</td></tr>
+      <tr><th class="row">Crash / exception</th><td class="bad"><span class="s">✗</span>kills all</td><td class="good"><span class="s">✓</span>restart one</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ░░ 07 PROOF ░░ -->
+<section class="wrap">
+  <div class="sechead"><span class="idx">07</span><span class="kicker">The proof</span></div>
+  <h2>We built it. Two JVMs. One contract.</h2>
+  <p class="lede">A runnable spike: App-1 owns a list &amp; selection and exports a service; App-2, a separate JVM, consumes it. No panel remoting.</p>
+  <div class="proof">
+    <div class="svgcard rise d1">
+      <svg viewBox="0 0 520 250" role="img" aria-label="Sequence: selection flows from App-1 to App-2 over ECF">
+        <text x="120" y="28" class="di-title" fill="#2fd4a7" text-anchor="middle">App-1 · master</text>
+        <text x="400" y="28" class="di-title" fill="#2fd4a7" text-anchor="middle">App-2 · detail</text>
+        <line x1="120" y1="40" x2="120" y2="220" stroke="rgba(47,212,167,.4)" stroke-width="1.3"/>
+        <line x1="400" y1="40" x2="400" y2="220" stroke="rgba(47,212,167,.4)" stroke-width="1.3"/>
+        <!-- select -->
+        <rect x="84" y="58" width="72" height="22" rx="5" fill="rgba(47,212,167,.12)" stroke="rgba(47,212,167,.4)"/>
+        <text x="120" y="73" class="di-sub" fill="#2fd4a7" text-anchor="middle">select item</text>
+        <!-- arrow over ECF -->
+        <line x1="120" y1="108" x2="394" y2="108" stroke="#4f8fd6" stroke-width="1.5"/>
+        <path d="M394 108 l-8 -4 l0 8 z" fill="#4f8fd6"/>
+        <text x="257" y="100" class="di-sub" fill="#7fb4ec" text-anchor="middle">getSelectedItem()  ·  ECF generic transport :3289</text>
+        <!-- return -->
+        <line x1="400" y1="150" x2="126" y2="150" stroke="#4f8fd6" stroke-width="1.5" stroke-dasharray="5 4"/>
+        <path d="M126 150 l8 -4 l0 8 z" fill="#4f8fd6"/>
+        <text x="263" y="142" class="di-sub" fill="#7fb4ec" text-anchor="middle">CatalogItem (serialized)</text>
+        <!-- render -->
+        <rect x="356" y="172" width="92" height="22" rx="5" fill="rgba(47,212,167,.12)" stroke="rgba(47,212,167,.4)"/>
+        <text x="402" y="187" class="di-sub" fill="#2fd4a7" text-anchor="middle">render detail</text>
+        <text x="120" y="240" class="di-sub" text-anchor="middle">state lives here</text>
+        <text x="400" y="240" class="di-sub" text-anchor="middle">view lives here</text>
+      </svg>
+    </div>
+    <div class="chips">
+      <div class="chip ok rise d2"><span class="st">✓</span><div><h3>Cross-JVM coordination</h3><p>Selection set in App-1 arrives in App-2 over the wire.</p></div></div>
+      <div class="chip ok rise d3"><span class="st">✓</span><div><h3>Crash isolation</h3><p>Killed App-1 — App-2 kept running, degraded gracefully.</p></div></div>
+      <div class="chip ok rise d4"><span class="st">✓</span><div><h3>Freeze isolation</h3><p>Freezing one window leaves the other fully responsive.</p></div></div>
+      <div class="chip warn rise d5"><span class="st">!</span><div><h3>Auto-rejoin after restart</h3><p>Static discovery is read-once — needs a discovery provider. The gap the spike surfaced.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ 08 COMBINED UI ░░ -->
+<section class="wrap">
+  <div class="sechead"><span class="idx">08</span><span class="kicker">Final delivery</span></div>
+  <h2>One window. Two processes.</h2>
+  <p class="lede">The last ask: make it look like <em>one</em> UI showing both panels. A Swing widget can't cross processes — so you pick two of three, and dock two borderless windows to fake the third.</p>
+
+  <div class="cards" style="grid-template-columns:repeat(3,1fr);margin-bottom:22px">
+    <div class="card rise d1" style="border-color:rgba(79,143,214,.3)"><div class="tag" style="color:#7fb4ec">WISH 1</div><h3>One window</h3><p>A single combined UI on screen.</p></div>
+    <div class="card rise d2" style="border-color:rgba(47,212,167,.3)"><div class="tag" style="color:#2fd4a7">WISH 2</div><h3>Real panels</h3><p>Actual interactive widgets, as-is.</p></div>
+    <div class="card rise d3" style="border-color:rgba(255,180,84,.3)"><div class="tag" style="color:#ffb454">WISH 3</div><h3>Isolated processes</h3><p>Separate EDT · heap · crash domain.</p></div>
+  </div>
+  <p class="lede" style="margin-bottom:26px">Native embedding gives all three — but only on Linux/Windows, not macOS. So we keep <b style="color:#2fd4a7">2</b>+<b style="color:#ffb454">3</b> (real, isolated) and <b style="color:#7fb4ec">approximate 1</b>: an <b style="color:var(--ink)">anchor</b> window (App-1) publishes its live screen bounds over ECF; a <b style="color:var(--ink)">follower</b> (App-2) glues itself to the right edge. Two windows wearing one skin.</p>
+
+  <div class="svgcard rise d3">
+    <svg viewBox="0 0 900 470" role="img" aria-label="Mock of the docked combined UI with per-app badged panels">
+      <!-- window -->
+      <rect x="2" y="2" width="896" height="466" rx="14" fill="#0c111a" stroke="rgba(255,255,255,.1)"/>
+      <!-- header -->
+      <path d="M2 16 a14 14 0 0 1 14 -14 h868 a14 14 0 0 1 14 14 v20 h-896 z" fill="#16202C"/>
+      <circle cx="22" cy="19" r="5" fill="#ff5b57"/>
+      <text x="40" y="24" class="di-title">▦ Combined Inventory App</text>
+      <text x="846" y="24" class="di-sub" text-anchor="end">detail · App-2</text>
+      <line x1="450" y1="36" x2="450" y2="466" stroke="rgba(255,255,255,.14)"/>
+
+      <!-- LEFT COLUMN · App-1 (teal) -->
+      <g font-family="JetBrains Mono" font-size="9">
+        <!-- panel template repeated -->
+        <!-- CATALOG -->
+        <rect x="16" y="48" width="4" height="96" fill="#2fd4a7"/>
+        <rect x="20" y="48" width="414" height="96" fill="#0f1722"/>
+        <rect x="20" y="48" width="414" height="20" fill="#121b26"/>
+        <text x="30" y="62" fill="#2fd4a7" font-weight="700">APP-1 · MASTER</text>
+        <text x="424" y="62" fill="#7c8a9c" text-anchor="end">CATALOG</text>
+        <text x="30" y="86" fill="#e8eef6" font-size="10">Hex Bolt M8</text>
+        <text x="30" y="102" fill="#9fb0c2" font-size="10">Ball Bearing · O-Ring 12mm</text>
+        <text x="30" y="118" fill="#9fb0c2" font-size="10">Copper Wire · Toggle Switch</text>
+        <!-- SUMMARY -->
+        <rect x="16" y="152" width="4" height="58" fill="#2fd4a7"/>
+        <rect x="20" y="152" width="414" height="58" fill="#0f1722"/>
+        <rect x="20" y="152" width="414" height="20" fill="#121b26"/>
+        <text x="30" y="166" fill="#2fd4a7" font-weight="700">APP-1 · MASTER</text>
+        <text x="424" y="166" fill="#7c8a9c" text-anchor="end">SUMMARY</text>
+        <text x="30" y="194" fill="#e8eef6" font-size="11">5 items · 1799 in stock</text>
+        <!-- ACTIVITY -->
+        <rect x="16" y="218" width="4" height="96" fill="#2fd4a7"/>
+        <rect x="20" y="218" width="414" height="96" fill="#0f1722"/>
+        <rect x="20" y="218" width="414" height="20" fill="#121b26"/>
+        <text x="30" y="232" fill="#2fd4a7" font-weight="700">APP-1 · MASTER</text>
+        <text x="424" y="232" fill="#7c8a9c" text-anchor="end">ACTIVITY</text>
+        <text x="30" y="256" fill="#2fd4a7">App-1 ▸ heartbeat #34</text>
+        <text x="30" y="272" fill="#2fd4a7">App-1 ▸ heartbeat #35</text>
+        <text x="30" y="288" fill="#2fd4a7">App-1 ▸ heartbeat #36</text>
+        <!-- CONTROLS -->
+        <rect x="16" y="322" width="4" height="58" fill="#2fd4a7"/>
+        <rect x="20" y="322" width="414" height="58" fill="#0f1722"/>
+        <rect x="20" y="322" width="414" height="20" fill="#121b26"/>
+        <text x="30" y="336" fill="#2fd4a7" font-weight="700">APP-1 · MASTER</text>
+        <text x="424" y="336" fill="#7c8a9c" text-anchor="end">CONTROLS</text>
+        <rect x="34" y="348" width="180" height="22" rx="4" fill="none" stroke="rgba(255,255,255,.25)"/>
+        <text x="124" y="363" fill="#cdd7e3" text-anchor="middle" font-size="10">Freeze 5s</text>
+        <rect x="232" y="348" width="180" height="22" rx="4" fill="none" stroke="rgba(255,255,255,.25)"/>
+        <text x="322" y="363" fill="#cdd7e3" text-anchor="middle" font-size="10">Crash</text>
+      </g>
+
+      <!-- RIGHT COLUMN · App-2 (amber) -->
+      <g font-family="JetBrains Mono" font-size="9">
+        <!-- SELECTED -->
+        <rect x="462" y="48" width="4" height="96" fill="#ffb454"/>
+        <rect x="466" y="48" width="414" height="96" fill="#0f1722"/>
+        <rect x="466" y="48" width="414" height="20" fill="#121b26"/>
+        <text x="476" y="62" fill="#ffb454" font-weight="700">APP-2 · DETAIL</text>
+        <text x="870" y="62" fill="#7c8a9c" text-anchor="end">SELECTED ITEM</text>
+        <text x="476" y="88" fill="#e8eef6" font-size="13" font-weight="700">Hex Bolt M8</text>
+        <text x="476" y="106" fill="#9fb0c2" font-size="10">In stock: 1240</text>
+        <text x="476" y="122" fill="#9fb0c2" font-size="10">Zinc-plated steel hex bolt, 8mm</text>
+        <!-- INSPECTOR -->
+        <rect x="462" y="152" width="4" height="96" fill="#ffb454"/>
+        <rect x="466" y="152" width="414" height="96" fill="#0f1722"/>
+        <rect x="466" y="152" width="414" height="20" fill="#121b26"/>
+        <text x="476" y="166" fill="#ffb454" font-weight="700">APP-2 · DETAIL</text>
+        <text x="870" y="166" fill="#7c8a9c" text-anchor="end">INSPECTOR</text>
+        <text x="476" y="192" fill="#9fb0c2" font-size="10">item id</text><text x="640" y="192" fill="#e8eef6" font-size="11">p1</text>
+        <text x="476" y="212" fill="#9fb0c2" font-size="10">name / desc length</text><text x="640" y="212" fill="#e8eef6" font-size="11">11 / 38</text>
+        <text x="476" y="232" fill="#9fb0c2" font-size="10">App-2 uptime</text><text x="640" y="232" fill="#e8eef6" font-size="11">23s</text>
+        <!-- CONNECTION -->
+        <rect x="462" y="256" width="4" height="58" fill="#ffb454"/>
+        <rect x="466" y="256" width="414" height="58" fill="#0f1722"/>
+        <rect x="466" y="256" width="414" height="20" fill="#121b26"/>
+        <text x="476" y="270" fill="#ffb454" font-weight="700">APP-2 · DETAIL</text>
+        <text x="870" y="270" fill="#7c8a9c" text-anchor="end">CONNECTION</text>
+        <text x="476" y="298" fill="#2fd4a7" font-size="11">✔ docked to host (App-1)</text>
+        <!-- CONTROLS -->
+        <rect x="462" y="322" width="4" height="58" fill="#ffb454"/>
+        <rect x="466" y="322" width="414" height="58" fill="#0f1722"/>
+        <rect x="466" y="322" width="414" height="20" fill="#121b26"/>
+        <text x="476" y="336" fill="#ffb454" font-weight="700">APP-2 · DETAIL</text>
+        <text x="870" y="336" fill="#7c8a9c" text-anchor="end">CONTROLS</text>
+        <rect x="480" y="348" width="180" height="22" rx="4" fill="none" stroke="rgba(255,255,255,.25)"/>
+        <text x="570" y="363" fill="#cdd7e3" text-anchor="middle" font-size="10">Freeze 5s</text>
+        <rect x="678" y="348" width="180" height="22" rx="4" fill="none" stroke="rgba(255,255,255,.25)"/>
+        <text x="768" y="363" fill="#cdd7e3" text-anchor="middle" font-size="10">Crash</text>
+      </g>
+
+      <text x="16" y="430" class="di-sub">teal = App-1 (JVM #1) · amber = App-2 (JVM #2) · each panel badged with its owning process</text>
+      <text x="16" y="450" class="di-sub">anchor publishes bounds → follower docks · drag moves both · ● closes both · crash one, the other survives</text>
+    </svg>
+  </div>
+</section>
+
+<!-- ░░ 09 TAKEAWAYS ░░ -->
+<section class="wrap">
+  <div class="sechead"><span class="idx">09</span><span class="kicker">Takeaways</span></div>
+  <h2>What carried the day</h2>
+  <div class="takes">
+    <div class="take rise d1"><span class="k">A</span><p><b>Question the means, not the requirement.</b> "Transfer a panel" was an assumption; the goal was isolation.</p></div>
+    <div class="take rise d2"><span class="k">B</span><p><b>One constraint did all the damage.</b> Insisting on a single window forced every expensive path. Dropping it made it cheap.</p></div>
+    <div class="take rise d3"><span class="k">C</span><p><b>Isolation is free; coordination is cheap.</b> Separate processes give it for free; ECF services wire them back up.</p></div>
+    <div class="take rise d4"><span class="k">D</span><p><b>Spike to find the gap.</b> A few hundred lines proved the thesis — and exposed the discovery requirement early.</p></div>
+  </div>
+</section>
+
+<footer class="wrap">
+  Monolith → Multi-JVM · spec: <a href="monolith-to-multi-jvm-migration.md">migration design</a> &nbsp;·&nbsp;
+  proof: <a href="spike-isolation-results.md">spike results</a> &nbsp;·&nbsp; OSGi · ECF Remote Services · Swing
+</footer>
+
+</body>
+</html>
