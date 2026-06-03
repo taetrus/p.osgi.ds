@@ -10,6 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.kk.pde.ds.spike.api.CatalogItem;
+import com.kk.pde.ds.spike.api.DockBounds;
+import com.kk.pde.ds.spike.api.DockState;
 import com.kk.pde.ds.spike.api.ICatalogService;
 
 /**
@@ -41,6 +43,8 @@ public class CatalogServiceImpl implements ICatalogService {
 
 	private final List<CatalogItem> items = new ArrayList<>();
 	private volatile String selectedId;
+	private volatile DockBounds hostBounds;
+	private volatile boolean closing;
 
 	@Activate
 	public void start() {
@@ -81,6 +85,34 @@ public class CatalogServiceImpl implements ICatalogService {
 	@Override
 	public CatalogItem getSelectedItem() {
 		return selectedId == null ? null : getItem(selectedId);
+	}
+
+	@Override
+	public void setHostBounds(DockBounds bounds) {
+		this.hostBounds = bounds;
+	}
+
+	@Override
+	public void setClosing(boolean closing) {
+		this.closing = closing;
+	}
+
+	@Override
+	public void requestShutdown() {
+		log.info("Shutdown requested (combined-app close) — master exiting, detail will follow");
+		this.closing = true;
+		// Give the detail a moment to observe the closing flag, then exit the JVM.
+		Thread t = new Thread(() -> {
+			try { Thread.sleep(450); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
+			System.exit(0);
+		}, "master-shutdown");
+		t.setDaemon(true);
+		t.start();
+	}
+
+	@Override
+	public DockState getDockState() {
+		return new DockState(hostBounds, closing, getSelectedItem());
 	}
 
 	List<CatalogItem> itemsSnapshot() {

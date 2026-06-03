@@ -40,4 +40,21 @@ public interface ICatalogService {
 
 	/** Convenience: @return the currently selected item, or {@code null} if none. */
 	CatalogItem getSelectedItem();
+
+	// --- Combined-UI docking (master writes, detail reads) ---
+
+	/** Master publishes its window's current screen bounds so the detail can dock to it. */
+	void setHostBounds(DockBounds bounds);
+
+	/** Master signals a clean shutdown so the detail closes with it (vs. a crash). */
+	void setClosing(boolean closing);
+
+	/**
+	 * Asks the master (anchor) to close the whole combined app — invoked remotely by
+	 * the detail's close control. The master sets {@link #setClosing(boolean)} and exits.
+	 */
+	void requestShutdown();
+
+	/** One-shot snapshot the detail polls: dock bounds + closing flag + current selection. */
+	DockState getDockState();
 }

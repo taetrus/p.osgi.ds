@@ -1,53 +1,57 @@
-# Todo: Two-app isolation spike
+# Todo: Combined-UI docking (approach C)
 
-Design: `docs/monolith-to-multi-jvm-migration.md` (Recommended PoC section)
+Goal: two isolated JVMs (master, detail) whose borderless windows dock edge-to-edge
+to LOOK like one combined UI showing both panels as real widgets. macOS + Windows.
 
-Goal: two panel-groups in SEPARATE JVMs/windows, coordinated only by a shared ECF
-remote service (no panel remoting), proving fault/perf isolation (freeze/crash one →
-the other survives & recovers).
+## API (spike.api)
+- [ ] DockBounds DTO (x,y,width,height) — Serializable
+- [ ] DockState DTO (bounds, closing, selected) — Serializable
+- [ ] ICatalogService: + setHostBounds, setClosing, requestShutdown, getDockState
 
-## Bundles
-- [ ] `com.kk.pde.ds.spike.api` — ICatalogService + CatalogItem (Serializable DTO)
-- [ ] `com.kk.pde.ds.spike.master` — App-1: JList of items, exports ICatalogService (ECF), sets selection; Freeze/Crash buttons
-- [ ] `com.kk.pde.ds.spike.detail` — App-2: detail panel, consumes ICatalogService (EDEF), polls selection off-EDT, degrades+recovers; Freeze/Crash buttons
+## Master (anchor)
+- [ ] CatalogServiceImpl: hold hostBounds + closing; implement new methods
+- [ ] MasterApp: undecorated frame, draggable header w/ top-left ✕, push bounds on move/resize
 
-## Wiring
-- [ ] root pom modules + feature.xml
-- [ ] 2 products (spike.master.product :3289 catalog, spike.detail.product) + 4 run scripts
-- [ ] detail EDEF -> ecftcp://localhost:3289/catalog (fix ecf.rsvc.id from live export)
-- [ ] antrun: copy logback + scripts into spike products
+## Detail (follower)
+- [ ] DetailApp: undecorated frame, matching header, poll getDockState ~120ms,
+      dock to master's right edge + match height, exit on closing flag, survive crash (unavailable)
 
 ## Verify
 - [ ] mvn clean verify
-- [ ] run master + detail (2 JVMs); select in master -> detail updates across JVMs
-- [ ] Freeze App-2 5s -> App-1 stays responsive (separate EDTs)
-- [ ] Crash App-1 -> App-2 shows "unavailable"; restart App-1 -> App-2 auto-recovers (DS dynamic rebind)
+- [ ] run master + detail; screencapture screen → confirm they read as one window
+- [ ] drag master header → detail follows; ✕ closes both; crash master → detail survives (no dock follow, shows unavailable)
 
 ## Review
 
-Built and verified end-to-end. Two panel-groups in separate JVMs/windows, coordinated
-ONLY by the ECF `ICatalogService` — zero panel remoting.
+Built and verified. Two isolated JVMs whose borderless windows dock edge-to-edge into one
+combined UI showing both real panels.
 
-**Verified (clean build, two JVMs):**
-- Cross-JVM coordination: master sets selection locally; detail (App-2) receives it over the
-  wire — `Detail now showing remote selection: Hex Bolt M8`.
-- Crash isolation: killed App-1; App-2 kept running and degraded gracefully
-  (`Lost connection to master ICatalogService` via DS dynamic unbind) — one crash did NOT take
-  down the other.
-- Manual (buttons present, need a click): "Freeze me 5s" on either app freezes only that app's
-  EDT; the other stays responsive (separate EDTs). App-1's UI freeze does not block App-2 because
-  the service impl answers off-EDT.
+- API: DockBounds + DockState DTOs; ICatalogService gained setHostBounds / setClosing /
+  requestShutdown / getDockState.
+- Master = anchor: undecorated frame, draggable header, top-left ● close (calls requestShutdown),
+  publishes live screen bounds on move/resize.
+- Detail = follower: undecorated frame, matching header, polls getDockState ~120ms, docks to the
+  anchor's right edge matched in height, shows the remote selection, exits on the closing flag,
+  survives a crash (shows "host unavailable", stops tracking).
 
-**Key empirical finding (confirms the migration doc):**
-- After restarting App-1, App-2 did NOT auto-reconnect. ECF's `EndpointDescriptionLocator`
-  processes the static EDEF once at startup and does not re-import when a provider returns. So
-  **restart-rejoin requires a discovery provider** (JmDNS/ZooKeeper) or programmatic re-import —
-  static EDEF is discovery-once. This is the most important input for the real migration.
+Verified (clean build, two JVMs, screen capture):
+- The two windows render as ONE combined UI (master list left + detail right, shared dark theme,
+  flush seam). Selection set in App-1 shows in App-2 ("Hex Bolt M8") over ECF.
+- Crash isolation in docked mode: killed App-1 → App-2 stayed alive, logged "Lost connection",
+  degraded gracefully with no dock exceptions.
 
-**Bug hit & fixed:** `NoClassDefFoundError javax.swing.event.ListSelectionEvent` — OSGi
-Import-Package is per-package; widened both UI bundles to import javax.swing.event/border/text
-(matching the existing `app` bundle).
+Known limits (accepted): same-display only (screen coords must align); follower rubber-bands
+slightly while dragging (120ms poll); visible header seam (two windows, not one).
 
-**Files:** `com.kk.pde.ds.spike.{api,master,detail}`, two products, 4 run scripts, antrun copies,
-root pom + feature wiring. Endpoint on `ecftcp://localhost:3289/catalog` (distinct from the
-greeting demo's :3288).
+## Update — multi-panel showcase (each panel badged with its app)
+- Master (App-1, teal "APP-1 · MASTER"): CATALOG (list) · SUMMARY (count+stock) · ACTIVITY
+  (live heartbeat, proves App-1 process alive) · CONTROLS (Freeze/Crash).
+- Detail (App-2, amber "APP-2 · DETAIL"): SELECTED ITEM · INSPECTOR (item id, name/desc length,
+  App-2 uptime ticking) · CONNECTION (dock status) · CONTROLS.
+- Reusable badged() panel helper per app (accent bar + "APP-n · ROLE" tag + panel name),
+  color-coded by process so provenance is obvious in the combined window.
+- Verified via screen capture: 4 panels per app, headers on top, both live clocks running
+  independently, selection flowing master→detail over ECF.
+- Bugs hit & fixed: (1) duplicate `Component` import (java.awt vs OSGi annotation) → use
+  JComponent.LEFT_ALIGNMENT; (2) header added with BorderLayout.NORTH onto a BoxLayout content
+  pane (ignored → rendered at bottom) → wrap in a BorderLayout root (header NORTH, body CENTER).
