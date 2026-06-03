@@ -1,62 +1,53 @@
-# Todo: ECF Remote Services showcase
+# Todo: Two-app isolation spike
 
-Design spec: `docs/superpowers/specs/2026-05-29-ecf-remote-services-design.md`
+Design: `docs/monolith-to-multi-jvm-migration.md` (Recommended PoC section)
 
-## Phase 0 — De-risk (do first)
-- [x] Resolve exact ECF 3.14.x bundle versions on Maven Central (Java 8 line)
-- [x] Add ECF `<location type="Maven">` block to target platform
-- [x] Confirm target platform resolves: `mvn clean verify -pl com.kk.pde.ds.target` (or a probe build)
+Goal: two panel-groups in SEPARATE JVMs/windows, coordinated only by a shared ECF
+remote service (no panel remoting), proving fault/perf isolation (freeze/crash one →
+the other survives & recovers).
 
-## Phase 1 — Bundles
-- [x] `com.kk.pde.ds.ecf.api` — IRemoteGreet interface bundle
-- [x] `com.kk.pde.ds.ecf.host` — RemoteGreetImpl @Component with RSA export properties
-- [x] `com.kk.pde.ds.ecf.consumer` — RemoteGreetConsumer @Component + EDEF file + Remote-Service header (+ optional Gogo cmd)
+## Bundles
+- [ ] `com.kk.pde.ds.spike.api` — ICatalogService + CatalogItem (Serializable DTO)
+- [ ] `com.kk.pde.ds.spike.master` — App-1: JList of items, exports ICatalogService (ECF), sets selection; Freeze/Crash buttons
+- [ ] `com.kk.pde.ds.spike.detail` — App-2: detail panel, consumes ICatalogService (EDEF), polls selection off-EDT, degrades+recovers; Freeze/Crash buttons
 
-## Phase 2 — Build wiring
-- [x] Add 3 modules to root pom `<modules>`
-- [x] Add 3 demo bundles + ECF stack to feature.xml
-- [x] Add `com.kk.pde.ds.ecf.host.product` + `com.kk.pde.ds.ecf.consumer.product`
-- [x] Add run scripts: run-ecf-host.sh/.bat, run-ecf-consumer.sh/.bat
-- [x] Wire script/logback copies in distribution antrun
+## Wiring
+- [ ] root pom modules + feature.xml
+- [ ] 2 products (spike.master.product :3289 catalog, spike.detail.product) + 4 run scripts
+- [ ] detail EDEF -> ecftcp://localhost:3289/catalog (fix ecf.rsvc.id from live export)
+- [ ] antrun: copy logback + scripts into spike products
 
-## Phase 3 — Verify
-- [x] `mvn clean verify` clean
-- [x] Run host + consumer in two JVMs; confirm remote greet returns over socket
-- [x] Confirm existing com.kk.pde.ds.product still builds/runs (no regression)
-- [x] Correct EDEF properties by inspecting live exported endpoint if import fails
-
-## Phase 4 — Docs
-- [x] CLAUDE.md module list + ECF section
-- [x] README.md ECF section
-- [x] FOR_Kerem.md ECF section
+## Verify
+- [ ] mvn clean verify
+- [ ] run master + detail (2 JVMs); select in master -> detail updates across JVMs
+- [ ] Freeze App-2 5s -> App-1 stays responsive (separate EDTs)
+- [ ] Crash App-1 -> App-2 shows "unavailable"; restart App-1 -> App-2 auto-recovers (DS dynamic rebind)
 
 ## Review
 
-All phases complete. ECF Remote Services showcase added and verified end-to-end.
+Built and verified end-to-end. Two panel-groups in separate JVMs/windows, coordinated
+ONLY by the ECF `ICatalogService` — zero panel remoting.
 
-**Pinned ECF 3.14.x set (Java-8 BREE, from Maven Central, groupId `org.eclipse.ecf`):**
-ecf 3.10.0 · identity 3.9.402 · remoteservice 8.14.0 · remoteservice.asyncproxy 2.1.200 ·
-discovery 5.1.1 · sharedobject 2.6.200 · provider 4.9.1 · provider.remoteservice 4.6.1 ·
-osgi.services.remoteserviceadmin 4.9.1 · ...remoteserviceadmin.proxy 1.0.101 ·
-osgi.services.distribution 2.1.600. Plus Equinox common/registry/concurrent + core.jobs,
-and org.osgi:org.osgi.service.remoteserviceadmin 1.1.0.
+**Verified (clean build, two JVMs):**
+- Cross-JVM coordination: master sets selection locally; detail (App-2) receives it over the
+  wire — `Detail now showing remote selection: Hex Bolt M8`.
+- Crash isolation: killed App-1; App-2 kept running and degraded gracefully
+  (`Lost connection to master ICatalogService` via DS dynamic unbind) — one crash did NOT take
+  down the other.
+- Manual (buttons present, need a click): "Freeze me 5s" on either app freezes only that app's
+  EDT; the other stays responsive (separate EDTs). App-1's UI freeze does not block App-2 because
+  the service impl answers off-EDT.
 
-**What was built:**
-- 3 bundles: `com.kk.pde.ds.ecf.api` / `.host` / `.consumer` (DS annotations + checked-in OSGI-INF XML).
-- Host exports `IRemoteGreet` via `service.exported.*` properties (ECF Generic server on :3288).
-- Consumer imports via static EDEF (`OSGI-INF/remote-service/`) + `Remote-Service` header; `@Reference` binds the proxy; Gogo `ecf:greet`.
-- Target platform: new ECF Maven location block.
-- 2 products + 4 run scripts (host/consumer × sh/bat); antrun copies logback + scripts; dropped `archive-products` (multi-product attachId clash).
-- Feature + root pom modules updated.
+**Key empirical finding (confirms the migration doc):**
+- After restarting App-1, App-2 did NOT auto-reconnect. ECF's `EndpointDescriptionLocator`
+  processes the static EDEF once at startup and does not re-import when a provider returns. So
+  **restart-rejoin requires a discovery provider** (JmDNS/ZooKeeper) or programmatic re-import —
+  static EDEF is discovery-once. This is the most important input for the real migration.
 
-**Verification (clean build, two fresh JVMs):**
-- `mvn clean verify` → BUILD SUCCESS; main product archives intact (no regression).
-- Host exported on :3288; consumer logged `Remote response: Hello, ECF! (served remotely by host)`; host's `Remote Request Handler` thread received the call (~11ms round trip). 0 EventAdmin warnings.
+**Bug hit & fixed:** `NoClassDefFoundError javax.swing.event.ListSelectionEvent` — OSGi
+Import-Package is per-package; widened both UI bundles to import javax.swing.event/border/text
+(matching the existing `app` bundle).
 
-**Bugs hit & fixed:**
-1. Missing `asyncproxy` package — surfaced only at product resolution, not compilation.
-2. `archive-products` attachId clash with 3 products — removed the goal (antrun handles main archives).
-3. EDEF `ecf.endpoint.id.ns` was wrong (`ecf.namespace.generic`) → corrected to `org.eclipse.ecf.core.identity.StringID` by reading the host's live exported endpoint.
-4. `pkill -f "...product"` matched nothing (path is cwd, not argv) → matched on `osgi.noShutdown`.
-
-**Docs:** CLAUDE.md (module list + ECF section + tech stack), README.md (ECF section), FOR_Kerem.md (engaging writeup), design spec at `docs/superpowers/specs/2026-05-29-ecf-remote-services-design.md`.
+**Files:** `com.kk.pde.ds.spike.{api,master,detail}`, two products, 4 run scripts, antrun copies,
+root pom + feature wiring. Endpoint on `ecftcp://localhost:3289/catalog` (distinct from the
+greeting demo's :3288).

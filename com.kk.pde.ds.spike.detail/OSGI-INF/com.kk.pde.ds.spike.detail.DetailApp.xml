@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.1.0" activate="start" deactivate="stop" name="com.kk.pde.ds.spike.detail.DetailApp">
+   <implementation class="com.kk.pde.ds.spike.detail.DetailApp"/>
+   <reference name="catalog"
+              interface="com.kk.pde.ds.spike.api.ICatalogService"
+              cardinality="0..1"
+              policy="dynamic"
+              bind="setCatalog"
+              unbind="unsetCatalog"/>
+</scr:component>
