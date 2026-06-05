@@ -5,6 +5,8 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -32,21 +34,29 @@ import org.slf4j.LoggerFactory;
 
 import com.kk.pde.ds.spike.api.CatalogItem;
 import com.kk.pde.ds.spike.api.DockBounds;
+import com.kk.pde.ds.spike.api.DockLayout;
 import com.kk.pde.ds.spike.api.DockState;
 import com.kk.pde.ds.spike.api.ICatalogService;
 
 /**
- * App-2 ("detail") — docking follower of the combined UI. Hosts several panels, each
- * badged "APP-2 · DETAIL" in an amber accent so its owning process is obvious when
- * docked next to App-1. Glues its borderless window to the master's right edge.
+ * App-2 ("detail") — follower of the combined UI. Opens <em>N</em> borderless windows
+ * tiled into the master's shared grid (odd slots — {@link DockLayout#detailSlot}). Its
+ * panels (SELECTED ITEM, INSPECTOR, CONNECTION, CONTROLS) are split across those frames
+ * so each window shows distinct content. Every frame is badged "APP-2 · DETAIL" in amber.
+ *
+ * <p>
+ * Unlike the master, the detail does <em>not</em> build its windows on activation: it
+ * has no grid yet. It polls {@link ICatalogService#getDockState()} and, on the first
+ * snapshot that carries a {@link DockLayout}, tiles its frames into the same grid. It
+ * trusts {@code layout.framesPerApp} — the master is the single source of truth for N.
+ * Subsequent polls only refresh the live selection and honor the closing flag.
+ * </p>
  */
 @Component
 public class DetailApp {
 
 	private static final Logger log = LoggerFactory.getLogger(DetailApp.class);
 
-	private static final int HEADER_H = 34;     // must match the master's header height
-	private static final int WIDTH = 400;
 	private static final String APP_TAG = "APP-2 · DETAIL";
 	private static final Color ACCENT = new Color(0xFFB454);   // amber = App-2
 	private static final Color HEADER_BG = new Color(0x16202C);
@@ -55,6 +65,7 @@ public class DetailApp {
 	private static final Color INK = new Color(0xE8EEF6);
 	private static final Color MUTED = new Color(0x7C8A9C);
 	private static final Color GOOD = new Color(0x2FD4A7);
+	private static final int HEADER_H = 34;
 
 	private volatile ICatalogService catalog;
 	private final ExecutorService exec = Executors.newSingleThreadExecutor(r -> {
@@ -63,14 +74,22 @@ public class DetailApp {
 		return t;
 	});
 
-	private JFrame frame;
-	private JLabel nameLabel, qtyLabel, statusLabel, headerDot;
+	private final List<JFrame> frames = new ArrayList<>();
+	private final List<JLabel> headerDots = new ArrayList<>();
+	private JLabel nameLabel, qtyLabel, statusLabel;
 	private JLabel idLabel, lenLabel, uptimeLabel;
 	private JTextArea descArea;
 	private Timer poll;
-	private DockBounds lastBounds;
+	private boolean built;
 	private String lastShownId = " ";
 	private int uptime;
+
+	/** A built panel awaiting placement into one of the tiled frames. */
+	private static final class Panel {
+		final String name;
+		final JComponent content;
+		Panel(String name, JComponent content) { this.name = name; this.content = content; }
+	}
 
 	@Reference(policy = ReferencePolicy.DYNAMIC, cardinality = ReferenceCardinality.OPTIONAL)
 	public void setCatalog(ICatalogService catalog) {
@@ -84,99 +103,18 @@ public class DetailApp {
 
 	@Activate
 	public void start() {
-		log.info("DetailApp.start() — launching App-2 follower window");
-		SwingUtilities.invokeLater(this::buildFrame);
+		log.info("DetailApp.start() — waiting for master grid layout before opening windows");
+		SwingUtilities.invokeLater(() -> {
+			poll = new Timer(120, e -> tick());
+			poll.start();
+			log.info("App-2 polling host every 120ms for layout + selection");
+		});
 	}
 
 	@Deactivate
 	public void stop() {
 		if (poll != null) poll.stop();
 		exec.shutdownNow();
-	}
-
-	private void buildFrame() {
-		frame = new JFrame("Detail");
-		frame.setUndecorated(true);
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.setSize(WIDTH, 520 + HEADER_H);
-		frame.setLocation(600, 130); // provisional; first poll docks it
-
-		JPanel root = new JPanel(new BorderLayout());
-		root.add(makeHeader(), BorderLayout.NORTH);
-		root.add(makeBody(), BorderLayout.CENTER);
-		frame.setContentPane(root);
-		frame.setVisible(true);
-
-		// App-2's own uptime — proves it runs independently of App-1
-		new Timer(1000, e -> { uptime++; if (uptimeLabel != null) uptimeLabel.setText(uptime + "s"); }).start();
-
-		poll = new Timer(120, e -> tick());
-		poll.start();
-		log.info("App-2 follower visible; tracking anchor every 120ms");
-	}
-
-	private JPanel makeHeader() {
-		JPanel header = new JPanel(new BorderLayout());
-		header.setBackground(HEADER_BG);
-		header.setBorder(BorderFactory.createEmptyBorder(0, 12, 0, 12));
-		header.setPreferredSize(new Dimension(10, HEADER_H));
-		headerDot = new JLabel("●");
-		headerDot.setForeground(ACCENT);
-		JLabel t = new JLabel("detail · App-2");
-		t.setForeground(MUTED);
-		t.setHorizontalAlignment(SwingConstants.RIGHT);
-		header.add(headerDot, BorderLayout.WEST);
-		header.add(t, BorderLayout.CENTER);
-		return header;
-	}
-
-	private JPanel makeBody() {
-		JPanel body = new JPanel();
-		body.setBackground(BODY_BG);
-		body.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-		body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
-
-		// --- Panel 1: SELECTED ITEM ---
-		nameLabel = ink(new JLabel("—"), 16, true);
-		qtyLabel = muted(new JLabel(" "));
-		descArea = new JTextArea(3, 22);
-		descArea.setEditable(false); descArea.setLineWrap(true); descArea.setWrapStyleWord(true);
-		descArea.setOpaque(false); descArea.setForeground(INK);
-		JPanel sel = col();
-		sel.add(muted(new JLabel("owned by App-1, fetched over ECF:")));
-		sel.add(nameLabel); sel.add(qtyLabel); sel.add(descArea);
-		body.add(badged("SELECTED ITEM", grow(sel, 130)));
-		body.add(Box.createVerticalStrut(8));
-
-		// --- Panel 2: INSPECTOR (derived locally in App-2 + App-2 uptime) ---
-		idLabel = mono(new JLabel("—"));
-		lenLabel = mono(new JLabel("—"));
-		uptimeLabel = mono(new JLabel("0s"));
-		JPanel insp = new JPanel(new GridLayout(0, 2, 6, 4));
-		insp.setOpaque(false);
-		insp.add(muted(new JLabel("item id"))); insp.add(idLabel);
-		insp.add(muted(new JLabel("name / desc length"))); insp.add(lenLabel);
-		insp.add(muted(new JLabel("App-2 uptime"))); insp.add(uptimeLabel);
-		body.add(badged("INSPECTOR", fixed(insp, 84)));
-		body.add(Box.createVerticalStrut(8));
-
-		// --- Panel 3: STATUS ---
-		statusLabel = muted(new JLabel("Waiting for host…"));
-		body.add(badged("CONNECTION", fixed(wrap(statusLabel), 30)));
-		body.add(Box.createVerticalStrut(8));
-
-		// --- Footer: isolation controls (tagged App-2) ---
-		JButton freeze = new JButton("Freeze 5s");
-		freeze.addActionListener(e -> {
-			log.warn("App-2 EDT frozen for 5s (isolation demo)");
-			try { Thread.sleep(5000); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
-		});
-		JButton crash = new JButton("Crash");
-		crash.addActionListener(e -> { log.error("App-2 crashing on purpose — App-1 unaffected"); System.exit(7); });
-		JPanel ctl = new JPanel(new GridLayout(1, 2, 6, 6));
-		ctl.setOpaque(false); ctl.add(freeze); ctl.add(crash);
-		body.add(badged("CONTROLS", fixed(ctl, 36)));
-		return body;
 	}
 
 	/** EDT (Timer) → only submit the remote call to the background executor. */
@@ -198,15 +136,17 @@ public class DetailApp {
 		if (st.isClosing()) {
 			log.info("Host signalled combined close — App-2 exiting too");
 			if (poll != null) poll.stop();
-			frame.dispose();
+			for (JFrame f : frames) f.dispose();
 			System.exit(0);
 			return;
 		}
-		DockBounds b = st.getHostBounds();
-		if (b != null && !b.equals(lastBounds)) {
-			lastBounds = b;
-			frame.setBounds(b.getX() + b.getWidth(), b.getY(), WIDTH, b.getHeight());
+		// First snapshot carrying a layout → tile our frames into the shared grid.
+		if (!built && st.getLayout() != null) {
+			buildFrames(st.getLayout());
+			built = true;
 		}
+		if (!built) return; // layout not published yet; keep waiting
+
 		CatalogItem item = st.getSelected();
 		if (item == null) {
 			nameLabel.setText("(nothing selected)"); qtyLabel.setText(" "); descArea.setText("");
@@ -218,7 +158,7 @@ public class DetailApp {
 			idLabel.setText(item.getId());
 			lenLabel.setText(item.getName().length() + " / " + item.getDescription().length());
 		}
-		headerDot.setForeground(GOOD);
+		for (JLabel dot : headerDots) dot.setForeground(GOOD);
 		statusLabel.setForeground(GOOD);
 		statusLabel.setText("✔ docked to host (App-1)");
 		String id = item == null ? null : item.getId();
@@ -228,13 +168,120 @@ public class DetailApp {
 		}
 	}
 
+	private void buildFrames(DockLayout layout) {
+		int n = Math.max(1, layout.getFramesPerApp());
+		log.info("App-2 building {} frame(s) into the shared grid; {}", n, layout);
+
+		List<Panel> panels = buildPanels();
+		int[] frameForPanel = DockLayout.distribute(panels.size(), n);
+
+		for (int k = 0; k < n; k++) {
+			DockBounds b = layout.slotBounds(DockLayout.detailSlot(k));
+			JFrame frame = new JFrame("Detail · D-" + (k + 1));
+			frame.setUndecorated(true);
+			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+			frame.setBounds(b.getX(), b.getY(), b.getWidth(), b.getHeight());
+
+			JPanel body = bodyPanel();
+			boolean any = false;
+			for (int i = 0; i < panels.size(); i++) {
+				if (frameForPanel[i] == k) {
+					body.add(badged(panels.get(i).name, panels.get(i).content));
+					body.add(Box.createVerticalStrut(8));
+					any = true;
+				}
+			}
+			if (!any) body.add(badged("EXTRA", fixed(wrap(muted(new JLabel("(no panel assigned to this frame)"))), 30)));
+
+			JPanel root = new JPanel(new BorderLayout());
+			root.add(makeHeader("D-" + (k + 1)), BorderLayout.NORTH);
+			root.add(body, BorderLayout.CENTER);
+			frame.setContentPane(root);
+			frame.setVisible(true);
+			frames.add(frame);
+			log.info("App-2 frame {} at slot {} → {},{} {}x{}", "D-" + (k + 1),
+					DockLayout.detailSlot(k), b.getX(), b.getY(), b.getWidth(), b.getHeight());
+		}
+
+		// App-2's own uptime — proves it runs independently of App-1
+		new Timer(1000, e -> { uptime++; if (uptimeLabel != null) uptimeLabel.setText(uptime + "s"); }).start();
+	}
+
+	private JPanel bodyPanel() {
+		JPanel body = new JPanel();
+		body.setBackground(BODY_BG);
+		body.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+		body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
+		return body;
+	}
+
+	/** Builds the four detail panels independently so they can be split across frames. */
+	private List<Panel> buildPanels() {
+		List<Panel> panels = new ArrayList<>();
+
+		// --- SELECTED ITEM (the master's remote selection) ---
+		nameLabel = ink(new JLabel("—"), 16, true);
+		qtyLabel = muted(new JLabel(" "));
+		descArea = new JTextArea(3, 22);
+		descArea.setEditable(false); descArea.setLineWrap(true); descArea.setWrapStyleWord(true);
+		descArea.setOpaque(false); descArea.setForeground(INK);
+		JPanel sel = col();
+		sel.add(muted(new JLabel("owned by App-1, fetched over ECF:")));
+		sel.add(nameLabel); sel.add(qtyLabel); sel.add(descArea);
+		panels.add(new Panel("SELECTED ITEM", grow(sel, 130)));
+
+		// --- INSPECTOR (derived locally in App-2 + App-2 uptime) ---
+		idLabel = mono(new JLabel("—"));
+		lenLabel = mono(new JLabel("—"));
+		uptimeLabel = mono(new JLabel("0s"));
+		JPanel insp = new JPanel(new GridLayout(0, 2, 6, 4));
+		insp.setOpaque(false);
+		insp.add(muted(new JLabel("item id"))); insp.add(idLabel);
+		insp.add(muted(new JLabel("name / desc length"))); insp.add(lenLabel);
+		insp.add(muted(new JLabel("App-2 uptime"))); insp.add(uptimeLabel);
+		panels.add(new Panel("INSPECTOR", fixed(insp, 84)));
+
+		// --- CONNECTION ---
+		statusLabel = muted(new JLabel("Waiting for host…"));
+		panels.add(new Panel("CONNECTION", fixed(wrap(statusLabel), 30)));
+
+		// --- CONTROLS (isolation demo, tagged App-2) ---
+		JButton freeze = new JButton("Freeze 5s");
+		freeze.addActionListener(e -> {
+			log.warn("App-2 EDT frozen for 5s (isolation demo)");
+			try { Thread.sleep(5000); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
+		});
+		JButton crash = new JButton("Crash");
+		crash.addActionListener(e -> { log.error("App-2 crashing on purpose — App-1 unaffected"); System.exit(7); });
+		JPanel ctl = new JPanel(new GridLayout(1, 2, 6, 6));
+		ctl.setOpaque(false); ctl.add(freeze); ctl.add(crash);
+		panels.add(new Panel("CONTROLS", fixed(ctl, 36)));
+
+		return panels;
+	}
+
 	private void showUnavailable() {
-		lastBounds = null;
-		if (headerDot != null) headerDot.setForeground(ACCENT);
+		for (JLabel dot : headerDots) dot.setForeground(ACCENT);
 		if (statusLabel != null) {
 			statusLabel.setForeground(ACCENT);
 			statusLabel.setText("⚠ Host (App-1) unavailable — waiting…");
 		}
+	}
+
+	private JPanel makeHeader(String title) {
+		JPanel header = new JPanel(new BorderLayout());
+		header.setBackground(HEADER_BG);
+		header.setBorder(BorderFactory.createEmptyBorder(0, 12, 0, 12));
+		header.setPreferredSize(new Dimension(10, HEADER_H));
+		JLabel dot = new JLabel("●");
+		dot.setForeground(ACCENT);
+		headerDots.add(dot);
+		JLabel t = new JLabel(title + " · App-2");
+		t.setForeground(MUTED);
+		t.setHorizontalAlignment(SwingConstants.RIGHT);
+		header.add(dot, BorderLayout.WEST);
+		header.add(t, BorderLayout.CENTER);
+		return header;
 	}
 
 	// --- badge + layout helpers (amber accent, "APP-2 · DETAIL") ---

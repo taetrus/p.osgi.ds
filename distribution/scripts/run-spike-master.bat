@@ -3,6 +3,9 @@ setlocal enabledelayedexpansion
 
 rem Isolation spike - MASTER app (App-1). Exports ICatalogService on
 rem ecftcp://localhost:3289/catalog. Start this FIRST, then run-spike-detail.bat.
+rem Multi-frame grid: set SPIKE_FRAMES=N (default 2) to open N tiled windows,
+rem e.g. (set SPIKE_FRAMES=3) then run-spike-master.bat. The detail reads N from
+rem the master, so set it on the master only.
 
 set "PRODUCT_UID=com.kk.pde.ds.spike.master.product"
 

@@ -7,10 +7,10 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.Point;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
+import java.awt.Toolkit;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.BorderFactory;
@@ -38,13 +38,21 @@ import org.slf4j.LoggerFactory;
 
 import com.kk.pde.ds.spike.api.CatalogItem;
 import com.kk.pde.ds.spike.api.DockBounds;
+import com.kk.pde.ds.spike.api.DockLayout;
 import com.kk.pde.ds.spike.api.ICatalogService;
 
 /**
- * App-1 ("master") — docking anchor of the combined UI. Hosts several panels, each
- * badged "APP-1 · MASTER" in a teal accent so its owning process is obvious when the
- * two apps are docked together. Publishes its live screen bounds through
- * {@link ICatalogService} so the detail app glues itself to the right edge.
+ * App-1 ("master") — anchor of the combined UI. Opens <em>N</em> borderless windows
+ * (configurable via {@code -Dspike.frames}, default 2) tiled into a shared grid. The
+ * app's panels (CATALOG, SUMMARY, ACTIVITY, CONTROLS) are split across those frames so
+ * each window shows distinct content. Every frame is badged "APP-1 · MASTER" in teal so
+ * its owning process is obvious when docked next to App-2.
+ *
+ * <p>
+ * The master computes the {@link DockLayout} once and publishes it through
+ * {@link ICatalogService}; the detail app reads it and tiles its own (odd-slot) frames
+ * into the same grid. Master frames take the even slots — {@link DockLayout#masterSlot}.
+ * </p>
  */
 @Component
 public class MasterApp {
@@ -52,6 +60,14 @@ public class MasterApp {
 	private static final Logger log = LoggerFactory.getLogger(MasterApp.class);
 
 	static final int HEADER_H = 34;
+	private static final int TILE_W = 400;
+	private static final int TILE_H = 520 + HEADER_H;
+	private static final int ORIGIN_X = 60;
+	private static final int ORIGIN_Y = 80;
+	private static final int DEFAULT_FRAMES = 2;
+	private static final String FRAMES_PROP = "spike.frames";   // -Dspike.frames=N (must precede -jar)
+	private static final String FRAMES_ENV = "SPIKE_FRAMES";    // SPIKE_FRAMES=N (works via the run scripts)
+
 	private static final String APP_TAG = "APP-1 · MASTER";
 	private static final Color ACCENT = new Color(0x2FD4A7);   // teal = App-1
 	private static final Color HEADER_BG = new Color(0x16202C);
@@ -61,10 +77,16 @@ public class MasterApp {
 	private static final Color MUTED = new Color(0x7C8A9C);
 
 	private volatile ICatalogService catalog;
-	private JFrame frame;
+	private final List<JFrame> frames = new ArrayList<>();
 	private JTextArea activity;
-	private JLabel summary;
 	private int beat;
+
+	/** A built panel awaiting placement into one of the tiled frames. */
+	private static final class Panel {
+		final String name;
+		final JComponent content;
+		Panel(String name, JComponent content) { this.name = name; this.content = content; }
+	}
 
 	@Reference
 	public void setCatalog(ICatalogService catalog) { this.catalog = catalog; }
@@ -75,30 +97,44 @@ public class MasterApp {
 
 	@Activate
 	public void start() {
-		log.info("MasterApp.start() — launching App-1 anchor window");
+		log.info("MasterApp.start() — launching App-1 anchor windows");
 		final ICatalogService svc = this.catalog;
-		SwingUtilities.invokeLater(() -> buildFrame(svc));
+		SwingUtilities.invokeLater(() -> buildFrames(svc));
 	}
 
-	private void buildFrame(ICatalogService svc) {
-		frame = new JFrame("Combined Inventory");
-		frame.setUndecorated(true);
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.setSize(400, 520 + HEADER_H);
-		frame.setLocation(180, 130);
+	private void buildFrames(ICatalogService svc) {
+		int n = frameCount();
+		DockLayout layout = computeLayout(n);
+		svc.setLayout(layout);
+		log.info("App-1 building {} frame(s); {}", n, layout);
 
-		JPanel root = new JPanel(new BorderLayout());
-		root.add(makeHeader(), BorderLayout.NORTH);
-		root.add(makeBody(svc), BorderLayout.CENTER);
-		frame.setContentPane(root);
+		List<Panel> panels = buildPanels(svc);
+		int[] frameForPanel = DockLayout.distribute(panels.size(), n);
 
-		frame.addComponentListener(new ComponentAdapter() {
-			@Override public void componentMoved(ComponentEvent e) { publish(svc); }
-			@Override public void componentResized(ComponentEvent e) { publish(svc); }
-		});
+		for (int k = 0; k < n; k++) {
+			DockBounds b = layout.slotBounds(DockLayout.masterSlot(k));
+			JFrame frame = newFrame("M-" + (k + 1), b);
 
-		frame.setVisible(true);
-		publish(svc);
+			JPanel body = bodyPanel();
+			boolean any = false;
+			for (int i = 0; i < panels.size(); i++) {
+				if (frameForPanel[i] == k) {
+					body.add(badged(panels.get(i).name, panels.get(i).content));
+					body.add(Box.createVerticalStrut(8));
+					any = true;
+				}
+			}
+			if (!any) body.add(badged("EXTRA", fixed(wrap(muted("(no panel assigned to this frame)")), 30)));
+
+			JPanel root = new JPanel(new BorderLayout());
+			root.add(makeHeader(frame, "M-" + (k + 1)), BorderLayout.NORTH);
+			root.add(body, BorderLayout.CENTER);
+			frame.setContentPane(root);
+			frame.setVisible(true);
+			frames.add(frame);
+			log.info("App-1 frame {} at slot {} → {},{} {}x{}", "M-" + (k + 1),
+					DockLayout.masterSlot(k), b.getX(), b.getY(), b.getWidth(), b.getHeight());
+		}
 
 		// live heartbeat — proves App-1 is doing its own work in its own process
 		new Timer(1000, e -> {
@@ -108,17 +144,103 @@ public class MasterApp {
 				activity.setCaretPosition(activity.getDocument().getLength());
 			}
 		}).start();
-
-		log.info("App-1 anchor visible at {},{} {}x{}", frame.getX(), frame.getY(), frame.getWidth(), frame.getHeight());
 	}
 
-	private void publish(ICatalogService svc) {
-		if (svc != null && frame != null) {
-			svc.setHostBounds(new DockBounds(frame.getX(), frame.getY(), frame.getWidth(), frame.getHeight()));
+	/**
+	 * Frame count, in precedence order: {@code SPIKE_FRAMES} env var (the path that
+	 * survives the run scripts), then the {@code -Dspike.frames} system property, then
+	 * the default of {@value #DEFAULT_FRAMES}. Always at least 1.
+	 */
+	private int frameCount() {
+		String env = System.getenv(FRAMES_ENV);
+		if (env != null && !env.trim().isEmpty()) {
+			try {
+				return Math.max(1, Integer.parseInt(env.trim()));
+			} catch (NumberFormatException e) {
+				log.warn("Ignoring non-numeric {}='{}'", FRAMES_ENV, env);
+			}
 		}
+		return Math.max(1, Integer.getInteger(FRAMES_PROP, DEFAULT_FRAMES));
 	}
 
-	private JPanel makeHeader() {
+	/** Computes the shared grid: columns derived from the primary screen width. */
+	private DockLayout computeLayout(int n) {
+		int screenW = Toolkit.getDefaultToolkit().getScreenSize().width;
+		int columns = Math.max(1, (screenW - ORIGIN_X) / TILE_W);
+		return new DockLayout(n, TILE_W, TILE_H, ORIGIN_X, ORIGIN_Y, columns);
+	}
+
+	private JFrame newFrame(String title, DockBounds b) {
+		JFrame frame = new JFrame("Combined Inventory · " + title);
+		frame.setUndecorated(true);
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setBounds(b.getX(), b.getY(), b.getWidth(), b.getHeight());
+		return frame;
+	}
+
+	private JPanel bodyPanel() {
+		JPanel body = new JPanel();
+		body.setBackground(BODY_BG);
+		body.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+		body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
+		return body;
+	}
+
+	/** Builds the four app panels independently so they can be split across frames. */
+	private List<Panel> buildPanels(ICatalogService svc) {
+		List<Panel> panels = new ArrayList<>();
+
+		// --- CATALOG (the list, drives the shared selection) ---
+		DefaultListModel<CatalogItem> model = new DefaultListModel<>();
+		List<CatalogItem> items = svc.listItems();
+		int totalQty = 0;
+		for (CatalogItem it : items) { model.addElement(it); totalQty += it.getQuantity(); }
+		final JList<CatalogItem> list = new JList<>(model);
+		list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		list.addListSelectionListener(e -> {
+			if (!e.getValueIsAdjusting()) {
+				CatalogItem sel = list.getSelectedValue();
+				if (sel != null && catalog != null) catalog.setSelectedId(sel.getId());
+			}
+		});
+		JScrollPane listScroll = new JScrollPane(list);
+		panels.add(new Panel("CATALOG", grow(listScroll, 150)));
+
+		// --- SUMMARY (computed in App-1) ---
+		JLabel summary = new JLabel(items.size() + " items · " + totalQty + " in stock");
+		summary.setForeground(INK);
+		panels.add(new Panel("SUMMARY", fixed(wrap(summary), 30)));
+
+		// --- ACTIVITY (live heartbeat, in App-1's process) ---
+		activity = new JTextArea(4, 22);
+		activity.setEditable(false);
+		activity.setOpaque(false);
+		activity.setForeground(ACCENT);
+		activity.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 11));
+		JScrollPane actScroll = new JScrollPane(activity);
+		actScroll.setBorder(null);
+		actScroll.setOpaque(false);
+		actScroll.getViewport().setOpaque(false);
+		panels.add(new Panel("ACTIVITY", grow(actScroll, 90)));
+
+		// --- CONTROLS (isolation demo, tagged App-1) ---
+		JButton freeze = new JButton("Freeze 5s");
+		freeze.addActionListener(e -> {
+			log.warn("App-1 EDT frozen for 5s — detail stays responsive");
+			try { Thread.sleep(5000); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
+		});
+		JButton crash = new JButton("Crash");
+		crash.addActionListener(e -> { log.error("App-1 crashing on purpose — detail should survive"); System.exit(7); });
+		JPanel ctl = new JPanel(new GridLayout(1, 2, 6, 6));
+		ctl.setOpaque(false);
+		ctl.add(freeze); ctl.add(crash);
+		panels.add(new Panel("CONTROLS", fixed(ctl, 36)));
+
+		if (!items.isEmpty()) list.setSelectedIndex(0);
+		return panels;
+	}
+
+	private JPanel makeHeader(JFrame frame, String title) {
 		JPanel header = new JPanel(new BorderLayout());
 		header.setBackground(HEADER_BG);
 		header.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
@@ -134,12 +256,12 @@ public class MasterApp {
 		close.setToolTipText("Close combined app");
 		close.addActionListener(e -> { if (catalog != null) catalog.requestShutdown(); });
 
-		JLabel title = new JLabel("▦  Combined Inventory App");
-		title.setForeground(INK);
-		title.setHorizontalAlignment(SwingConstants.CENTER);
+		JLabel label = new JLabel("▦  " + title);
+		label.setForeground(INK);
+		label.setHorizontalAlignment(SwingConstants.CENTER);
 
 		header.add(close, BorderLayout.WEST);
-		header.add(title, BorderLayout.CENTER);
+		header.add(label, BorderLayout.CENTER);
 
 		final Point[] a = { null };
 		MouseAdapter drag = new MouseAdapter() {
@@ -151,68 +273,8 @@ public class MasterApp {
 			}
 		};
 		header.addMouseListener(drag); header.addMouseMotionListener(drag);
-		title.addMouseListener(drag); title.addMouseMotionListener(drag);
+		label.addMouseListener(drag); label.addMouseMotionListener(drag);
 		return header;
-	}
-
-	private JPanel makeBody(ICatalogService svc) {
-		JPanel body = new JPanel();
-		body.setBackground(BODY_BG);
-		body.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-		body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
-
-		// --- Panel 1: CATALOG (the list) ---
-		DefaultListModel<CatalogItem> model = new DefaultListModel<>();
-		List<CatalogItem> items = svc.listItems();
-		int totalQty = 0;
-		for (CatalogItem it : items) { model.addElement(it); totalQty += it.getQuantity(); }
-		final JList<CatalogItem> list = new JList<>(model);
-		list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		list.addListSelectionListener(e -> {
-			if (!e.getValueIsAdjusting()) {
-				CatalogItem sel = list.getSelectedValue();
-				if (sel != null && catalog != null) catalog.setSelectedId(sel.getId());
-			}
-		});
-		JScrollPane listScroll = new JScrollPane(list);
-		listScroll.setPreferredSize(new Dimension(360, 150));
-		body.add(badged("CATALOG", grow(listScroll, 150)));
-		body.add(Box.createVerticalStrut(8));
-
-		// --- Panel 2: SUMMARY (computed in App-1) ---
-		summary = new JLabel(items.size() + " items · " + totalQty + " in stock");
-		summary.setForeground(INK);
-		body.add(badged("SUMMARY", fixed(wrap(summary), 30)));
-		body.add(Box.createVerticalStrut(8));
-
-		// --- Panel 3: ACTIVITY (live, in App-1's process) ---
-		activity = new JTextArea(4, 22);
-		activity.setEditable(false);
-		activity.setOpaque(false);
-		activity.setForeground(ACCENT);
-		activity.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 11));
-		JScrollPane actScroll = new JScrollPane(activity);
-		actScroll.setBorder(null);
-		actScroll.setOpaque(false);
-		actScroll.getViewport().setOpaque(false);
-		body.add(badged("ACTIVITY", grow(actScroll, 90)));
-		body.add(Box.createVerticalStrut(8));
-
-		// --- Footer: isolation controls (tagged App-1) ---
-		JButton freeze = new JButton("Freeze 5s");
-		freeze.addActionListener(e -> {
-			log.warn("App-1 EDT frozen for 5s — detail stays responsive");
-			try { Thread.sleep(5000); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
-		});
-		JButton crash = new JButton("Crash");
-		crash.addActionListener(e -> { log.error("App-1 crashing on purpose — detail should survive"); System.exit(7); });
-		JPanel ctl = new JPanel(new GridLayout(1, 2, 6, 6));
-		ctl.setOpaque(false);
-		ctl.add(freeze); ctl.add(crash);
-		body.add(badged("CONTROLS", fixed(ctl, 36)));
-
-		if (!items.isEmpty()) list.setSelectedIndex(0);
-		return body;
 	}
 
 	/** Wraps content in a badged container with a teal accent + "APP-1 · MASTER" tag. */
@@ -236,12 +298,14 @@ public class MasterApp {
 		head.add(nm, BorderLayout.EAST);
 
 		content.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
-		if (content instanceof JComponent) content.setOpaque(false);
+		content.setOpaque(false);
 
 		p.add(head, BorderLayout.NORTH);
 		p.add(content, BorderLayout.CENTER);
 		return p;
 	}
+
+	private JLabel muted(String text) { JLabel l = new JLabel(text); l.setForeground(MUTED); return l; }
 
 	private JComponent wrap(JComponent c) {
 		JPanel w = new JPanel(new BorderLayout());

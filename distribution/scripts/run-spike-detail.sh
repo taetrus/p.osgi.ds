@@ -2,6 +2,10 @@
 # Isolation spike — DETAIL app (App-2). Consumes the master's ICatalogService via
 # the static EDEF and displays the current selection. Start run-spike-master.sh
 # FIRST, then this in another terminal.
+#
+# Multi-frame grid: the detail reads the frame count from the master's published
+# layout, so it tiles N windows automatically. Set SPIKE_FRAMES on the MASTER only
+# — the master is the single source of truth for N.
 
 PRODUCT_UID="com.kk.pde.ds.spike.detail.product"
 

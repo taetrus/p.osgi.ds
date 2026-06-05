@@ -41,10 +41,14 @@ public interface ICatalogService {
 	/** Convenience: @return the currently selected item, or {@code null} if none. */
 	CatalogItem getSelectedItem();
 
-	// --- Combined-UI docking (master writes, detail reads) ---
+	// --- Combined-UI tiling (master writes, detail reads) ---
 
-	/** Master publishes its window's current screen bounds so the detail can dock to it. */
-	void setHostBounds(DockBounds bounds);
+	/**
+	 * Master publishes the shared grid layout once at startup so the detail can compute
+	 * its own (odd) slot positions from the same scheme. Replaces the old single-window
+	 * docking: with multiple frames per app there is no single "host bounds" to follow.
+	 */
+	void setLayout(DockLayout layout);
 
 	/** Master signals a clean shutdown so the detail closes with it (vs. a crash). */
 	void setClosing(boolean closing);
@@ -55,6 +59,6 @@ public interface ICatalogService {
 	 */
 	void requestShutdown();
 
-	/** One-shot snapshot the detail polls: dock bounds + closing flag + current selection. */
+	/** One-shot snapshot the detail polls: grid layout + closing flag + current selection. */
 	DockState getDockState();
 }

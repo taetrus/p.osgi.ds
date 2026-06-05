@@ -3,6 +3,8 @@ setlocal enabledelayedexpansion
 
 rem Isolation spike - DETAIL app (App-2). Consumes the master's ICatalogService
 rem via the static EDEF. Start run-spike-master.bat FIRST, then this.
+rem Multi-frame grid: the detail reads N from the master's published layout and
+rem tiles that many windows automatically. Set SPIKE_FRAMES on the master only.
 
 set "PRODUCT_UID=com.kk.pde.ds.spike.detail.product"
 
