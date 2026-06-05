@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Monolith → Isolated Apps · Engineering Journey</title>
+<title>Monolith → İzole Uygulamalar · Mühendislik Yolculuğu</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
@@ -173,94 +173,94 @@
 
 <!-- ░░ HERO ░░ -->
 <section class="hero wrap">
-  <div class="kicker rise d1">Engineering Journey · OSGi / Swing / ECF</div>
+  <div class="kicker rise d1">Mühendislik Yolculuğu · OSGi / Swing / ECF</div>
   <h1 class="rise d2">
-    One frozen <span class="strike">monolith</span><br/>
-    <span class="arrow">→</span> many <span class="good">isolated apps</span>
+    Donmuş tek bir <span class="strike">monolith</span><br/>
+    <span class="arrow">→</span> birçok <span class="good">izole uygulama</span>
   </h1>
-  <p class="sub rise d4">Hundreds of bundles in <b>one JVM</b>, every team's panels in <b>one window</b>,
-    sharing <b>one event thread</b>, <b>one heap</b>, <b>one process</b>. One mistake froze everyone.
-    Here's how we found a cheap way out — and proved it with running code.</p>
+  <p class="sub rise d4">Tek bir <b>JVM</b> içinde yüzlerce bundle, her ekibin panel'leri tek bir <b>window</b> içinde;
+    <b>tek bir event thread</b>, <b>tek bir heap</b>, <b>tek bir process</b> paylaşılıyor. Tek bir hata herkesi dondurdu.
+    İşte ucuz bir çıkış yolunu nasıl bulduğumuz — ve bunu çalışan kodla nasıl kanıtladığımız.</p>
   <div class="stat-row">
-    <div class="stat rise d3"><div class="n bad">1</div><div class="l">shared JVM &amp; window today</div></div>
-    <div class="stat rise d4"><div class="n bad">100%</div><div class="l">blast radius of one bad panel</div></div>
-    <div class="stat rise d5"><div class="n wire">1</div><div class="l">service contract = the only coupling</div></div>
-    <div class="stat rise d6"><div class="n ok">✓</div><div class="l">isolation proven by a 2-app spike</div></div>
+    <div class="stat rise d3"><div class="n bad">1</div><div class="l">bugün paylaşılan JVM ve window</div></div>
+    <div class="stat rise d4"><div class="n bad">100%</div><div class="l">tek bir hatalı panel'in etki alanı</div></div>
+    <div class="stat rise d5"><div class="n wire">1</div><div class="l">service contract = tek bağımlılık</div></div>
+    <div class="stat rise d6"><div class="n ok">✓</div><div class="l">2 uygulamalı spike ile kanıtlanan isolation</div></div>
   </div>
 </section>
 
 <!-- ░░ 01 PROBLEM ░░ -->
 <section class="wrap">
-  <div class="sechead"><span class="idx">01</span><span class="kicker">The problem</span></div>
-  <h2>Everything shared. Everyone exposed.</h2>
-  <p class="lede">When one fault can travel to every team, isolation isn't a feature — it's survival. The picture says it best:</p>
+  <div class="sechead"><span class="idx">01</span><span class="kicker">Sorun</span></div>
+  <h2>Her şey paylaşılıyor. Herkes açıkta.</h2>
+  <p class="lede">Tek bir hata her ekibe yayılabiliyorsa, isolation bir özellik değil — hayatta kalmanın ta kendisidir. En iyisi resme bakmak:</p>
   <div class="blast">
     <div class="panel-card mono rise d1">
       <h4>MONOLITH · 1 JVM</h4>
-      <p class="cap">12 teams' panels · shared EDT · heap · process</p>
+      <p class="cap">12 ekibin panel'i · paylaşılan EDT · heap · process</p>
       <div class="grid12">
         <div class="cell src">★</div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
         <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
         <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
       </div>
-      <div class="impact"><span class="big bad">100%</span><span class="t">one panel hangs / leaks / crashes<br/>→ the whole app goes down</span></div>
+      <div class="impact"><span class="big bad">100%</span><span class="t">tek bir panel takılır / sızdırır / çöker<br/>→ tüm uygulama düşer</span></div>
     </div>
     <div class="panel-card split rise d3">
-      <h4>SPLIT · 1 JVM per group</h4>
-      <p class="cap">separate window · EDT · heap · crash domain</p>
+      <h4>BÖLÜNMÜŞ · grup başına 1 JVM</h4>
+      <p class="cap">ayrı window · EDT · heap · crash domain</p>
       <div class="grid12">
         <div class="cell hit src">★</div><div class="cell">✓</div><div class="cell">✓</div><div class="cell">✓</div>
         <div class="cell">✓</div><div class="cell">✓</div><div class="cell">✓</div><div class="cell">✓</div>
         <div class="cell">✓</div><div class="cell">✓</div><div class="cell">✓</div><div class="cell">✓</div>
       </div>
-      <div class="impact"><span class="big ok">~8%</span><span class="t">the faulty app dies alone<br/>→ supervisor restarts it</span></div>
+      <div class="impact"><span class="big ok">~8%</span><span class="t">hatalı uygulama tek başına ölür<br/>→ supervisor onu yeniden başlatır</span></div>
     </div>
   </div>
 </section>
 
 <!-- ░░ 02 FOUR FREEZES ░░ -->
 <section class="wrap">
-  <div class="sechead"><span class="idx">02</span><span class="kicker">Root causes</span></div>
-  <h2>Four ways one panel freezes all</h2>
-  <p class="lede">All four were in play — and the bottom three can't be fixed by moving <em>services</em> alone. They need the <em>process</em> split.</p>
+  <div class="sechead"><span class="idx">02</span><span class="kicker">Kök nedenler</span></div>
+  <h2>Tek bir panel'in hepsini dondurmasının dört yolu</h2>
+  <p class="lede">Dördü de devredeydi — ve alttaki üçü yalnızca <em>service</em>'leri taşıyarak çözülemez. Bunlar <em>process</em> bölünmesini gerektirir.</p>
   <div class="cards">
     <div class="card rise d1">
       <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#ff5b39" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-      <div class="tag">EDT</div><h3>Blocking work</h3><p>A slow call on the shared event thread freezes every panel at once.</p>
+      <div class="tag">EDT</div><h3>Bloklayan iş</h3><p>Paylaşılan event thread üzerindeki yavaş bir çağrı tüm panel'leri aynı anda dondurur.</p>
     </div>
     <div class="card rise d2">
       <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#ff5b39" stroke-width="1.6"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 6v12M12 6v12M17 6v12"/></svg>
-      <div class="tag">EDT</div><h3>Heavy render</h3><p>A panel's own painting/compute hogs the one UI thread shared by all.</p>
+      <div class="tag">EDT</div><h3>Ağır render</h3><p>Bir panel'in kendi çizimi/hesabı, herkesin paylaştığı tek UI thread'i işgal eder.</p>
     </div>
     <div class="card rise d3">
       <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#ff5b39" stroke-width="1.6"><path d="M4 18V8l8-4 8 4v10"/><path d="M4 13h16"/></svg>
-      <div class="tag">HEAP</div><h3>GC pressure</h3><p>One bundle's leak triggers stop-the-world pauses across the whole heap.</p>
+      <div class="tag">HEAP</div><h3>GC baskısı</h3><p>Bir bundle'ın sızıntısı, tüm heap genelinde stop-the-world duraklamalarını tetikler.</p>
     </div>
     <div class="card rise d4">
       <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#ff5b39" stroke-width="1.6"><path d="M12 3l9 16H3z"/><path d="M12 9v5M12 17h.01"/></svg>
-      <div class="tag">PROCESS</div><h3>Crashes</h3><p>An exception or deadlock corrupts shared state and takes the app with it.</p>
+      <div class="tag">PROCESS</div><h3>Çökmeler</h3><p>Bir exception ya da deadlock, paylaşılan state'i bozar ve uygulamayı da beraberinde götürür.</p>
     </div>
   </div>
 </section>
 
 <!-- ░░ 03 JOURNEY ░░ -->
 <section class="wrap">
-  <div class="sechead"><span class="idx">03</span><span class="kicker">The journey</span></div>
-  <h2>Three dead ends, then the reframe</h2>
-  <p class="lede">The instinct — "move a panel to another JVM" — was the wrong question. Each attempt taught a constraint.</p>
+  <div class="sechead"><span class="idx">03</span><span class="kicker">Yolculuk</span></div>
+  <h2>Üç çıkmaz sokak, ardından yeniden çerçeveleme</h2>
+  <p class="lede">İçgüdü — "bir panel'i başka bir JVM'e taşı" — yanlış soruydu. Her deneme bir kısıt öğretti.</p>
   <div class="flow">
-    <div class="step no rise d1"><div class="num">ATTEMPT 01</div><h3>Send a live JPanel</h3><p>Swing is welded to one JVM. Serialized → a dead snapshot.</p><div class="verdict"><span class="dot no"></span>IMPOSSIBLE</div></div>
-    <div class="step no rise d2"><div class="num">ATTEMPT 02</div><h3>Mirror pixels + clicks</h3><p>Works, but latency, bandwidth, broken popups. Too costly.</p><div class="verdict"><span class="dot no"></span>TOO EXPENSIVE</div></div>
-    <div class="step no rise d3"><div class="num">ATTEMPT 03</div><h3>Rewrite as data model</h3><p>Clean — but means rewriting hundreds of panels. Too late.</p><div class="verdict"><span class="dot no"></span>TOO INVASIVE</div></div>
-    <div class="step yes rise d4"><div class="num">REFRAME</div><h3>Isolate processes</h3><p>Goal was isolation, not transfer. Separate windows are fine.</p><div class="verdict"><span class="dot yes"></span>THE ANSWER</div></div>
+    <div class="step no rise d1"><div class="num">DENEME 01</div><h3>Canlı bir JPanel gönder</h3><p>Swing tek bir JVM'e kaynaklı. Serialize edilince → ölü bir anlık görüntü.</p><div class="verdict"><span class="dot no"></span>İMKANSIZ</div></div>
+    <div class="step no rise d2"><div class="num">DENEME 02</div><h3>Piksel + tıklamayı yansıt</h3><p>Çalışır, ama gecikme, bant genişliği, bozuk popup'lar. Çok maliyetli.</p><div class="verdict"><span class="dot no"></span>ÇOK PAHALI</div></div>
+    <div class="step no rise d3"><div class="num">DENEME 03</div><h3>Data model olarak yeniden yaz</h3><p>Temiz — ama yüzlerce panel'i yeniden yazmak demek. Çok geç.</p><div class="verdict"><span class="dot no"></span>ÇOK MÜDAHALECİ</div></div>
+    <div class="step yes rise d4"><div class="num">YENİDEN ÇERÇEVELE</div><h3>Process'leri izole et</h3><p>Amaç isolation'dı, taşıma değil. Ayrı window'lar gayet uygun.</p><div class="verdict"><span class="dot yes"></span>CEVAP</div></div>
   </div>
 </section>
 
 <!-- ░░ 04 OPTIONS QUADRANT ░░ -->
 <section class="wrap">
-  <div class="sechead"><span class="idx">04</span><span class="kicker">Decision map</span></div>
-  <h2>Effort vs. fit — and the sweet spot</h2>
-  <p class="lede">Plot every option by build effort and how well it fits the goal. One sits alone in the low-effort / high-fit corner.</p>
+  <div class="sechead"><span class="idx">04</span><span class="kicker">Karar haritası</span></div>
+  <h2>Çaba ve uygunluk — ve ideal nokta</h2>
+  <p class="lede">Her seçeneği yapım çabası ve amaca ne kadar uyduğuna göre yerleştir. Biri, düşük çaba / yüksek uygunluk köşesinde tek başına duruyor.</p>
   <div class="quad-wrap">
     <div class="svgcard rise d1">
       <svg viewBox="0 0 460 360" role="img" aria-label="Quadrant chart of options by effort and fit">
@@ -270,49 +270,49 @@
         </defs>
         <!-- sweet-spot quadrant highlight (low effort, high fit => top-left) -->
         <rect x="44" y="28" width="160" height="146" fill="rgba(47,212,167,.07)"/>
-        <text x="52" y="46" class="di-sub" fill="#2fd4a7">SWEET SPOT</text>
+        <text x="52" y="46" class="di-sub" fill="#2fd4a7">İDEAL NOKTA</text>
         <!-- grid -->
         <line x1="44" y1="28" x2="44" y2="320" stroke="#465264" stroke-width="1.2" marker-end="url(#ah)"/>
         <line x1="44" y1="320" x2="430" y2="320" stroke="#465264" stroke-width="1.2" marker-end="url(#ah)"/>
         <line x1="204" y1="28" x2="204" y2="320" stroke="rgba(255,255,255,.06)"/>
         <line x1="44" y1="174" x2="430" y2="174" stroke="rgba(255,255,255,.06)"/>
         <text x="36" y="24" class="di-label" text-anchor="end" transform="rotate(-90 36 24)" style="transform-box:fill-box"></text>
-        <text x="14" y="180" class="di-label" transform="rotate(-90 14 180)">FIT FOR GOAL →</text>
-        <text x="234" y="342" class="di-label">BUILD EFFORT →</text>
+        <text x="14" y="180" class="di-label" transform="rotate(-90 14 180)">AMACA UYGUNLUK →</text>
+        <text x="234" y="342" class="di-label">YAPIM ÇABASI →</text>
         <!-- points -->
         <!-- 1 Send JPanel: impossible -> low fit, low-ish effort, marked X -->
         <g>
           <circle cx="92" cy="298" r="9" fill="none" stroke="#ff5b39" stroke-width="1.6"/>
           <path d="M88 294l8 8M96 294l-8 8" stroke="#ff5b39" stroke-width="1.6"/>
-          <text x="106" y="302" class="di-sub" fill="#ff5b39">01 live panel</text>
+          <text x="106" y="302" class="di-sub" fill="#ff5b39">01 canlı panel</text>
         </g>
         <!-- 2 Image mirror: high effort, mid fit -->
         <circle cx="360" cy="150" r="10" fill="rgba(255,91,57,.2)" stroke="#ff5b39" stroke-width="1.6"/>
-        <text x="344" y="134" class="di-sub" fill="#ff8a6e" text-anchor="middle">02 mirror</text>
+        <text x="344" y="134" class="di-sub" fill="#ff8a6e" text-anchor="middle">02 yansıtma</text>
         <!-- 3 Data model: high effort, high fit -->
         <circle cx="338" cy="74" r="10" fill="rgba(255,193,77,.2)" stroke="#ffc14d" stroke-width="1.6"/>
         <text x="338" y="58" class="di-sub" fill="#ffc14d" text-anchor="middle">03 data model</text>
         <!-- 4 Process split: low effort, high fit -> highlighted -->
         <circle cx="118" cy="78" r="15" fill="rgba(47,212,167,.18)" stroke="#2fd4a7" stroke-width="2"/>
         <circle cx="118" cy="78" r="4" fill="#2fd4a7"/>
-        <text x="140" y="74" class="di-title" fill="#2fd4a7" style="font-size:12px">04 process split</text>
-        <text x="140" y="90" class="di-sub" fill="#2fd4a7">← we are here</text>
+        <text x="140" y="74" class="di-title" fill="#2fd4a7" style="font-size:12px">04 process bölme</text>
+        <text x="140" y="90" class="di-sub" fill="#2fd4a7">← buradayız</text>
       </svg>
     </div>
     <div class="legend">
-      <div class="leg rise d2"><span class="mk" style="color:#ff5b39">01</span><div><h3>Send a live JPanel</h3><p>Can't cross JVMs at all.</p><span class="v">✗ impossible</span></div></div>
-      <div class="leg rise d3"><span class="mk" style="color:#ff8a6e">02</span><div><h3>Image mirror + input</h3><p>View fidelity, but heavy &amp; laggy.</p><span class="v">high effort</span></div></div>
-      <div class="leg rise d4"><span class="mk" style="color:#ffc14d">03</span><div><h3>Remote data model</h3><p>Great fit — rewrites every panel.</p><span class="v">high effort</span></div></div>
-      <div class="leg sweet rise d5"><span class="mk" style="color:#2fd4a7">04</span><div><h3>Process split + ECF</h3><p>Panels unchanged; isolation for free.</p><span class="v">✓ low effort · high fit</span></div></div>
+      <div class="leg rise d2"><span class="mk" style="color:#ff5b39">01</span><div><h3>Canlı bir JPanel gönder</h3><p>JVM'leri hiç geçemez.</p><span class="v">✗ imkansız</span></div></div>
+      <div class="leg rise d3"><span class="mk" style="color:#ff8a6e">02</span><div><h3>Görüntü yansıtma + giriş</h3><p>Görüntü sadık, ama ağır ve gecikmeli.</p><span class="v">yüksek çaba</span></div></div>
+      <div class="leg rise d4"><span class="mk" style="color:#ffc14d">03</span><div><h3>Uzak data model</h3><p>Harika uyum — her panel'i yeniden yazdırır.</p><span class="v">yüksek çaba</span></div></div>
+      <div class="leg sweet rise d5"><span class="mk" style="color:#2fd4a7">04</span><div><h3>Process bölme + ECF</h3><p>Panel'ler değişmez; isolation bedava.</p><span class="v">✓ düşük çaba · yüksek uygunluk</span></div></div>
     </div>
   </div>
 </section>
 
 <!-- ░░ 05 ARCHITECTURE ░░ -->
 <section class="wrap">
-  <div class="sechead"><span class="idx">05</span><span class="kicker">Target architecture</span></div>
-  <h2>Desktop micro-frontends</h2>
-  <p class="lede">One JVM per panel-group, each in its own window. The only wire between them is a shared service contract on the ECF bus.</p>
+  <div class="sechead"><span class="idx">05</span><span class="kicker">Hedef mimari</span></div>
+  <h2>Masaüstü micro-frontend'ler</h2>
+  <p class="lede">Panel grubu başına bir JVM, her biri kendi window'unda. Aralarındaki tek bağlantı, ECF bus üzerindeki paylaşılan bir service contract.</p>
   <div class="svgcard rise d1">
     <svg viewBox="0 0 1080 430" role="img" aria-label="Architecture diagram">
       <defs>
@@ -320,31 +320,31 @@
       </defs>
       <!-- shell -->
       <rect x="300" y="22" width="480" height="58" rx="10" fill="rgba(79,143,214,.08)" stroke="#4f8fd6" stroke-width="1.3"/>
-      <text x="540" y="48" class="di-title" text-anchor="middle">SHELL · LAUNCHER</text>
-      <text x="540" y="66" class="di-sub" text-anchor="middle">starts · supervises · restarts · global menu</text>
+      <text x="540" y="48" class="di-title" text-anchor="middle">SHELL · BAŞLATICI</text>
+      <text x="540" y="66" class="di-sub" text-anchor="middle">başlatır · denetler · yeniden başlatır · global menü</text>
 
       <!-- app boxes -->
       <g>
         <rect x="60" y="150" width="270" height="120" rx="12" fill="#111824" stroke="rgba(47,212,167,.4)" stroke-width="1.3"/>
         <text x="80" y="180" class="di-title" fill="#2fd4a7">App A · JVM #1</text>
-        <text x="80" y="202" class="di-sub">own window · own EDT</text>
-        <text x="80" y="218" class="di-sub">own heap · own crash domain</text>
+        <text x="80" y="202" class="di-sub">kendi window'u · kendi EDT'si</text>
+        <text x="80" y="218" class="di-sub">kendi heap'i · kendi crash domain'i</text>
         <rect x="80" y="232" width="100" height="22" rx="5" fill="rgba(47,212,167,.1)" stroke="rgba(47,212,167,.3)"/>
-        <text x="130" y="247" class="di-sub" fill="#2fd4a7" text-anchor="middle">panels (as-is)</text>
+        <text x="130" y="247" class="di-sub" fill="#2fd4a7" text-anchor="middle">panel'ler (olduğu gibi)</text>
       </g>
       <g>
         <rect x="405" y="150" width="270" height="120" rx="12" fill="#111824" stroke="rgba(47,212,167,.4)" stroke-width="1.3"/>
         <text x="425" y="180" class="di-title" fill="#2fd4a7">App B · JVM #2</text>
-        <text x="425" y="202" class="di-sub">own window · own EDT</text>
-        <text x="425" y="218" class="di-sub">own heap · own crash domain</text>
+        <text x="425" y="202" class="di-sub">kendi window'u · kendi EDT'si</text>
+        <text x="425" y="218" class="di-sub">kendi heap'i · kendi crash domain'i</text>
         <rect x="425" y="232" width="100" height="22" rx="5" fill="rgba(47,212,167,.1)" stroke="rgba(47,212,167,.3)"/>
-        <text x="475" y="247" class="di-sub" fill="#2fd4a7" text-anchor="middle">panels (as-is)</text>
+        <text x="475" y="247" class="di-sub" fill="#2fd4a7" text-anchor="middle">panel'ler (olduğu gibi)</text>
       </g>
       <g>
         <rect x="750" y="150" width="270" height="120" rx="12" fill="#111824" stroke="rgba(79,143,214,.45)" stroke-width="1.3"/>
         <text x="770" y="180" class="di-title" fill="#7fb4ec">Core · Registry JVM</text>
-        <text x="770" y="202" class="di-sub">shared session / selection</text>
-        <text x="770" y="218" class="di-sub">discovery · supervision</text>
+        <text x="770" y="202" class="di-sub">paylaşılan session / seçim</text>
+        <text x="770" y="218" class="di-sub">discovery · denetim</text>
       </g>
 
       <!-- shell to apps -->
@@ -354,37 +354,37 @@
 
       <!-- ECF bus -->
       <rect x="60" y="322" width="960" height="40" rx="8" fill="rgba(79,143,214,.07)" stroke="#4f8fd6" stroke-width="1.2"/>
-      <text x="540" y="347" class="di-title" fill="#7fb4ec" text-anchor="middle">ECF REMOTE SERVICE BUS &nbsp;·&nbsp; shared *.api contracts = interfaces + serializable DTOs</text>
+      <text x="540" y="347" class="di-title" fill="#7fb4ec" text-anchor="middle">ECF REMOTE SERVICE BUS &nbsp;·&nbsp; paylaşılan *.api contract'ları = interface'ler + serializable DTO'lar</text>
       <path d="M195 270 L195 322" stroke="#4f8fd6" stroke-width="1.4" marker-end="url(#dot2)"/>
       <path d="M540 270 L540 322" stroke="#4f8fd6" stroke-width="1.4" marker-end="url(#dot2)"/>
       <path d="M885 270 L885 322" stroke="#4f8fd6" stroke-width="1.4" marker-end="url(#dot2)"/>
 
-      <text x="60" y="404" class="di-sub">coupling allowed: contracts only — never another app's implementation</text>
+      <text x="60" y="404" class="di-sub">izin verilen bağımlılık: yalnızca contract'lar — asla başka bir uygulamanın implementation'ı</text>
     </svg>
   </div>
 </section>
 
 <!-- ░░ 06 ISOLATION MATRIX ░░ -->
 <section class="wrap">
-  <div class="sechead"><span class="idx">06</span><span class="kicker">Isolation matrix</span></div>
-  <h2>Same failures. Contained.</h2>
-  <p class="lede">Splitting the process flips every red cell green — automatically, with no panel code change.</p>
+  <div class="sechead"><span class="idx">06</span><span class="kicker">Isolation matrisi</span></div>
+  <h2>Aynı arızalar. Sınırlandı.</h2>
+  <p class="lede">Process'i bölmek her kırmızı hücreyi yeşile çevirir — otomatik olarak, panel kodunu değiştirmeden.</p>
   <table class="matrix rise d1">
-    <thead><tr><th class="row">Failure mode</th><th>Monolith · 1 JVM</th><th>Split · N JVMs</th></tr></thead>
+    <thead><tr><th class="row">Arıza türü</th><th>Monolith · 1 JVM</th><th>Bölünmüş · N JVM</th></tr></thead>
     <tbody>
-      <tr><th class="row">Rendering / compute on EDT</th><td class="bad"><span class="s">✗</span>freezes all</td><td class="good"><span class="s">✓</span>own EDT</td></tr>
-      <tr><th class="row">Blocking backend / IO</th><td class="bad"><span class="s">✗</span>freezes all</td><td class="good"><span class="s">✓</span>async + off-process</td></tr>
-      <tr><th class="row">Memory / GC pressure</th><td class="bad"><span class="s">✗</span>pauses all</td><td class="good"><span class="s">✓</span>own heap</td></tr>
-      <tr><th class="row">Crash / exception</th><td class="bad"><span class="s">✗</span>kills all</td><td class="good"><span class="s">✓</span>restart one</td></tr>
+      <tr><th class="row">EDT üzerinde render / hesap</th><td class="bad"><span class="s">✗</span>hepsini dondurur</td><td class="good"><span class="s">✓</span>kendi EDT'si</td></tr>
+      <tr><th class="row">Bloklayan backend / IO</th><td class="bad"><span class="s">✗</span>hepsini dondurur</td><td class="good"><span class="s">✓</span>async + process dışı</td></tr>
+      <tr><th class="row">Bellek / GC baskısı</th><td class="bad"><span class="s">✗</span>hepsini duraklatır</td><td class="good"><span class="s">✓</span>kendi heap'i</td></tr>
+      <tr><th class="row">Çökme / exception</th><td class="bad"><span class="s">✗</span>hepsini öldürür</td><td class="good"><span class="s">✓</span>birini yeniden başlat</td></tr>
     </tbody>
   </table>
 </section>
 
 <!-- ░░ 07 PROOF ░░ -->
 <section class="wrap">
-  <div class="sechead"><span class="idx">07</span><span class="kicker">The proof</span></div>
-  <h2>We built it. Two JVMs. One contract.</h2>
-  <p class="lede">A runnable spike: App-1 owns a list &amp; selection and exports a service; App-2, a separate JVM, consumes it. No panel remoting.</p>
+  <div class="sechead"><span class="idx">07</span><span class="kicker">Kanıt</span></div>
+  <h2>İnşa ettik. İki JVM. Tek contract.</h2>
+  <p class="lede">Çalıştırılabilir bir spike: App-1 bir liste ve seçime sahip olup bir service export eder; ayrı bir JVM olan App-2 bunu tüketir. Panel remoting yok.</p>
   <div class="proof">
     <div class="svgcard rise d1">
       <svg viewBox="0 0 520 250" role="img" aria-label="Sequence: selection flows from App-1 to App-2 over ECF">
@@ -394,7 +394,7 @@
         <line x1="400" y1="40" x2="400" y2="220" stroke="rgba(47,212,167,.4)" stroke-width="1.3"/>
         <!-- select -->
         <rect x="84" y="58" width="72" height="22" rx="5" fill="rgba(47,212,167,.12)" stroke="rgba(47,212,167,.4)"/>
-        <text x="120" y="73" class="di-sub" fill="#2fd4a7" text-anchor="middle">select item</text>
+        <text x="120" y="73" class="di-sub" fill="#2fd4a7" text-anchor="middle">öğe seç</text>
         <!-- arrow over ECF -->
         <line x1="120" y1="108" x2="394" y2="108" stroke="#4f8fd6" stroke-width="1.5"/>
         <path d="M394 108 l-8 -4 l0 8 z" fill="#4f8fd6"/>
@@ -402,35 +402,35 @@
         <!-- return -->
         <line x1="400" y1="150" x2="126" y2="150" stroke="#4f8fd6" stroke-width="1.5" stroke-dasharray="5 4"/>
         <path d="M126 150 l8 -4 l0 8 z" fill="#4f8fd6"/>
-        <text x="263" y="142" class="di-sub" fill="#7fb4ec" text-anchor="middle">CatalogItem (serialized)</text>
+        <text x="263" y="142" class="di-sub" fill="#7fb4ec" text-anchor="middle">CatalogItem (serialize edilmiş)</text>
         <!-- render -->
         <rect x="356" y="172" width="92" height="22" rx="5" fill="rgba(47,212,167,.12)" stroke="rgba(47,212,167,.4)"/>
-        <text x="402" y="187" class="di-sub" fill="#2fd4a7" text-anchor="middle">render detail</text>
-        <text x="120" y="240" class="di-sub" text-anchor="middle">state lives here</text>
-        <text x="400" y="240" class="di-sub" text-anchor="middle">view lives here</text>
+        <text x="402" y="187" class="di-sub" fill="#2fd4a7" text-anchor="middle">detay'ı render et</text>
+        <text x="120" y="240" class="di-sub" text-anchor="middle">state burada yaşar</text>
+        <text x="400" y="240" class="di-sub" text-anchor="middle">view burada yaşar</text>
       </svg>
     </div>
     <div class="chips">
-      <div class="chip ok rise d2"><span class="st">✓</span><div><h3>Cross-JVM coordination</h3><p>Selection set in App-1 arrives in App-2 over the wire.</p></div></div>
-      <div class="chip ok rise d3"><span class="st">✓</span><div><h3>Crash isolation</h3><p>Killed App-1 — App-2 kept running, degraded gracefully.</p></div></div>
-      <div class="chip ok rise d4"><span class="st">✓</span><div><h3>Freeze isolation</h3><p>Freezing one window leaves the other fully responsive.</p></div></div>
-      <div class="chip warn rise d5"><span class="st">!</span><div><h3>Auto-rejoin after restart</h3><p>Static discovery is read-once — needs a discovery provider. The gap the spike surfaced.</p></div></div>
+      <div class="chip ok rise d2"><span class="st">✓</span><div><h3>JVM'ler arası koordinasyon</h3><p>App-1'de yapılan seçim, App-2'ye ağ üzerinden ulaşır.</p></div></div>
+      <div class="chip ok rise d3"><span class="st">✓</span><div><h3>Crash isolation</h3><p>App-1'i öldürdük — App-2 çalışmaya devam etti, zarif şekilde geriledi.</p></div></div>
+      <div class="chip ok rise d4"><span class="st">✓</span><div><h3>Freeze isolation</h3><p>Bir window'u dondurmak diğerini tamamen yanıt verir bırakır.</p></div></div>
+      <div class="chip warn rise d5"><span class="st">!</span><div><h3>Yeniden başlatma sonrası otomatik yeniden katılım</h3><p>Statik discovery tek seferlik okunur — bir discovery provider gerektirir. Spike'ın ortaya çıkardığı boşluk.</p></div></div>
     </div>
   </div>
 </section>
 
 <!-- ░░ 08 COMBINED UI ░░ -->
 <section class="wrap">
-  <div class="sechead"><span class="idx">08</span><span class="kicker">Final delivery</span></div>
-  <h2>One window. Two processes.</h2>
-  <p class="lede">The last ask: make it look like <em>one</em> UI showing both panels. A Swing widget can't cross processes — so you pick two of three, and dock two borderless windows to fake the third.</p>
+  <div class="sechead"><span class="idx">08</span><span class="kicker">Son teslimat</span></div>
+  <h2>Tek window. İki process.</h2>
+  <p class="lede">Son istek: iki panel'i gösteren <em>tek</em> bir UI gibi görünmesini sağlamak. Bir Swing widget'ı process'leri geçemez — bu yüzden üçten ikisini seçer, üçüncüsünü taklit etmek için kenarlıksız iki window'u yan yana kenetlersin.</p>
 
   <div class="cards" style="grid-template-columns:repeat(3,1fr);margin-bottom:22px">
-    <div class="card rise d1" style="border-color:rgba(79,143,214,.3)"><div class="tag" style="color:#7fb4ec">WISH 1</div><h3>One window</h3><p>A single combined UI on screen.</p></div>
-    <div class="card rise d2" style="border-color:rgba(47,212,167,.3)"><div class="tag" style="color:#2fd4a7">WISH 2</div><h3>Real panels</h3><p>Actual interactive widgets, as-is.</p></div>
-    <div class="card rise d3" style="border-color:rgba(255,180,84,.3)"><div class="tag" style="color:#ffb454">WISH 3</div><h3>Isolated processes</h3><p>Separate EDT · heap · crash domain.</p></div>
+    <div class="card rise d1" style="border-color:rgba(79,143,214,.3)"><div class="tag" style="color:#7fb4ec">İSTEK 1</div><h3>Tek window</h3><p>Ekranda tek bir birleşik UI.</p></div>
+    <div class="card rise d2" style="border-color:rgba(47,212,167,.3)"><div class="tag" style="color:#2fd4a7">İSTEK 2</div><h3>Gerçek panel'ler</h3><p>Gerçek etkileşimli widget'lar, olduğu gibi.</p></div>
+    <div class="card rise d3" style="border-color:rgba(255,180,84,.3)"><div class="tag" style="color:#ffb454">İSTEK 3</div><h3>İzole process'ler</h3><p>Ayrı EDT · heap · crash domain.</p></div>
   </div>
-  <p class="lede" style="margin-bottom:26px">Native embedding gives all three — but only on Linux/Windows, not macOS. So we keep <b style="color:#2fd4a7">2</b>+<b style="color:#ffb454">3</b> (real, isolated) and <b style="color:#7fb4ec">approximate 1</b>: an <b style="color:var(--ink)">anchor</b> window (App-1) publishes its live screen bounds over ECF; a <b style="color:var(--ink)">follower</b> (App-2) glues itself to the right edge. Two windows wearing one skin.</p>
+  <p class="lede" style="margin-bottom:26px">Native embedding üçünü de verir — ama yalnızca Linux/Windows'ta, macOS'ta değil. Bu yüzden <b style="color:#2fd4a7">2</b>+<b style="color:#ffb454">3</b>'ü (gerçek, izole) korur ve <b style="color:#7fb4ec">1'e yaklaşırız</b>: bir <b style="color:var(--ink)">anchor</b> window (App-1) canlı ekran bounds'unu ECF üzerinden yayınlar; bir <b style="color:var(--ink)">follower</b> (App-2) kendini sağ kenara yapıştırır. Tek bir deri giymiş iki window.</p>
 
   <div class="svgcard rise d3">
     <svg viewBox="0 0 900 470" role="img" aria-label="Mock of the docked combined UI with per-app badged panels">
@@ -439,7 +439,7 @@
       <!-- header -->
       <path d="M2 16 a14 14 0 0 1 14 -14 h868 a14 14 0 0 1 14 14 v20 h-896 z" fill="#16202C"/>
       <circle cx="22" cy="19" r="5" fill="#ff5b57"/>
-      <text x="40" y="24" class="di-title">▦ Combined Inventory App</text>
+      <text x="40" y="24" class="di-title">▦ Birleşik Envanter Uygulaması</text>
       <text x="846" y="24" class="di-sub" text-anchor="end">detail · App-2</text>
       <line x1="450" y1="36" x2="450" y2="466" stroke="rgba(255,255,255,.14)"/>
 
@@ -522,20 +522,20 @@
         <text x="768" y="363" fill="#cdd7e3" text-anchor="middle" font-size="10">Crash</text>
       </g>
 
-      <text x="16" y="430" class="di-sub">teal = App-1 (JVM #1) · amber = App-2 (JVM #2) · each panel badged with its owning process</text>
-      <text x="16" y="450" class="di-sub">anchor publishes bounds → follower docks · drag moves both · ● closes both · crash one, the other survives</text>
+      <text x="16" y="430" class="di-sub">teal = App-1 (JVM #1) · amber = App-2 (JVM #2) · her panel sahibi process ile rozetlenir</text>
+      <text x="16" y="450" class="di-sub">anchor bounds yayınlar → follower kenetlenir · sürüklemek ikisini de taşır · ● ikisini de kapatır · birini çökert, diğeri hayatta kalır</text>
     </svg>
   </div>
 </section>
 
 <!-- ░░ 09 TILED GRID ░░ -->
 <section class="wrap">
-  <div class="sechead"><span class="idx">09</span><span class="kicker">The grid</span></div>
-  <h2>From two windows to a tiled grid</h2>
-  <p class="lede">The dock proved isolation with <em>one</em> window each. The next step generalised it:
-    each app opens <b style="color:var(--ink)">N</b> windows, and both apps tile into <em>one</em> shared grid —
-    master frames in <b style="color:#2fd4a7">teal</b>, detail in <b style="color:#ffb454">amber</b>, interleaved and wrapping.
-    Same <span class="mono">@Reference</span> story, now multiplied.</p>
+  <div class="sechead"><span class="idx">09</span><span class="kicker">Grid</span></div>
+  <h2>İki window'dan döşeli bir grid'e</h2>
+  <p class="lede">Dock, her biri tek window ile isolation'ı kanıtladı. Sonraki adım bunu genelleştirdi:
+    her uygulama <b style="color:var(--ink)">N</b> window açar ve iki uygulama da <em>tek</em> bir paylaşılan grid'e döşenir —
+    master frame'leri <b style="color:#2fd4a7">teal</b>, detail <b style="color:#ffb454">amber</b> renkte, iç içe geçmiş ve satır kaydırarak.
+    Aynı <span class="mono">@Reference</span> hikâyesi, şimdi çoğaltılmış.</p>
 
   <div class="svgcard rise d1">
     <svg viewBox="0 0 1080 566" role="img" aria-label="N frames per app tiled into one interleaved grid">
@@ -545,7 +545,7 @@
       </defs>
 
       <!-- fill-order hint -->
-      <text x="24" y="40" class="di-sub" fill="#465264">FILL ORDER · even slots → App-1 · odd slots → App-2</text>
+      <text x="24" y="40" class="di-sub" fill="#465264">DOLDURMA SIRASI · çift slot'lar → App-1 · tek slot'lar → App-2</text>
       <line x1="320" y1="36" x2="470" y2="36" stroke="#465264" stroke-width="1" marker-end="url(#fillh)"/>
 
       <!-- ===== ROW 0 ===== -->
@@ -594,7 +594,7 @@
 
       <!-- wrap arrow: end of row 0 → start of row 1 -->
       <path d="M952 286 C 952 312, 150 300, 144 322" fill="none" stroke="#4f8fd6" stroke-width="1.3" stroke-dasharray="4 4" marker-end="url(#wraph)"/>
-      <text x="548" y="306" class="di-sub" fill="#7fb4ec" text-anchor="middle">wrap at columns = 4</text>
+      <text x="548" y="306" class="di-sub" fill="#7fb4ec" text-anchor="middle">columns = 4'te satır kaydır</text>
 
       <!-- ===== ROW 1 ===== -->
       <!-- M-3 · slot 4 -->
@@ -621,61 +621,61 @@
       <g>
         <rect x="552" y="326" width="240" height="196" rx="10" fill="none" stroke="rgba(255,255,255,.08)" stroke-dasharray="5 6"/>
         <text x="672" y="420" class="di-sub" fill="#465264" text-anchor="middle">slot 6</text>
-        <text x="672" y="438" class="di-sub" fill="#3a4453" text-anchor="middle">(next master)</text>
+        <text x="672" y="438" class="di-sub" fill="#3a4453" text-anchor="middle">(sonraki master)</text>
       </g>
       <g>
         <rect x="816" y="326" width="240" height="196" rx="10" fill="none" stroke="rgba(255,255,255,.08)" stroke-dasharray="5 6"/>
         <text x="936" y="420" class="di-sub" fill="#465264" text-anchor="middle">slot 7</text>
-        <text x="936" y="438" class="di-sub" fill="#3a4453" text-anchor="middle">(next detail)</text>
+        <text x="936" y="438" class="di-sub" fill="#3a4453" text-anchor="middle">(sonraki detail)</text>
       </g>
 
-      <text x="24" y="552" class="di-sub">N = 3 per app · fill left-to-right, wrap at the column count · each app's panels split across its frames by a balanced partition</text>
+      <text x="24" y="552" class="di-sub">uygulama başına N = 3 · soldan sağa doldur, column sayısında satır kaydır · her uygulamanın panel'leri frame'lerine dengeli bir bölümlemeyle dağıtılır</text>
     </svg>
   </div>
 
   <div class="cards" style="margin-top:22px">
     <div class="card rise d1" style="border-color:rgba(79,143,214,.3)">
-      <div class="tag" style="color:#7fb4ec">SLOT MATH</div>
-      <h3>Even ↔ odd interleave</h3>
+      <div class="tag" style="color:#7fb4ec">SLOT MATEMATİĞİ</div>
+      <h3>Çift ↔ tek geçişme</h3>
       <p class="mono" style="color:#7fb4ec;font-size:12px;margin:0 0 8px">masterSlot(k)=2k<br/>detailSlot(k)=2k+1</p>
-      <p>One global slot sequence; master takes the evens, detail the odds. Fill order alternates M, D, M, D…</p>
+      <p>Tek bir global slot dizisi; master çiftleri, detail tekleri alır. Doldurma sırası M, D, M, D… diye değişir.</p>
     </div>
     <div class="card rise d2" style="border-color:rgba(47,212,167,.3)">
-      <div class="tag" style="color:#2fd4a7">COORDINATION</div>
-      <h3>One DockLayout</h3>
-      <p>The master computes the grid once and publishes it over ECF. The detail reads it back and runs the <em>identical</em> <span class="mono" style="font-size:11px">slotBounds()</span>. <b style="color:var(--ink)">Shared parameters, not shared state</b> — no per-frame messaging.</p>
+      <div class="tag" style="color:#2fd4a7">KOORDİNASYON</div>
+      <h3>Tek DockLayout</h3>
+      <p>Master grid'i bir kez hesaplar ve ECF üzerinden yayınlar. Detail bunu geri okur ve <em>aynı</em> <span class="mono" style="font-size:11px">slotBounds()</span>'u çalıştırır. <b style="color:var(--ink)">Paylaşılan parametreler, paylaşılan state değil</b> — frame başına mesajlaşma yok.</p>
     </div>
     <div class="card rise d3" style="border-color:rgba(255,180,84,.3)">
-      <div class="tag" style="color:#ffb454">PANELS</div>
-      <h3>Split per frame</h3>
-      <p><span class="mono" style="font-size:11px">distribute()</span> spreads each app's panels across its frames as balanced contiguous chunks. <b style="color:var(--ink)">N = 1</b> collapses back to chapter 08's single window — no regression.</p>
+      <div class="tag" style="color:#ffb454">PANEL'LER</div>
+      <h3>Frame başına böl</h3>
+      <p><span class="mono" style="font-size:11px">distribute()</span> her uygulamanın panel'lerini frame'lerine dengeli ve bitişik parçalar hâlinde dağıtır. <b style="color:var(--ink)">N = 1</b>, bölüm 08'in tek window'una geri iner — regresyon yok.</p>
     </div>
     <div class="card rise d4" style="border-color:rgba(47,212,167,.3)">
-      <div class="tag" style="color:#2fd4a7">PROVEN LIVE</div>
-      <h3>Two JVMs, tiled</h3>
+      <div class="tag" style="color:#2fd4a7">CANLI KANITLANDI</div>
+      <h3>İki JVM, döşeli</h3>
       <p class="mono" style="color:#2fd4a7;font-size:12px;margin:0 0 8px">SPIKE_FRAMES=3</p>
-      <p>Master frames landed at slots 0·2·4, detail at 1·3·5, wrapping at column 4 — captured from a real run.</p>
+      <p>Master frame'leri 0·2·4 slot'larına, detail 1·3·5'e düştü, column 4'te satır kaydırarak — gerçek bir çalıştırmadan yakalandı.</p>
     </div>
   </div>
 </section>
 
 <!-- ░░ 10 TAKEAWAYS ░░ -->
 <section class="wrap">
-  <div class="sechead"><span class="idx">10</span><span class="kicker">Takeaways</span></div>
-  <h2>What carried the day</h2>
+  <div class="sechead"><span class="idx">10</span><span class="kicker">Çıkarımlar</span></div>
+  <h2>Günü kurtaran neydi</h2>
   <div class="takes">
-    <div class="take rise d1"><span class="k">A</span><p><b>Question the means, not the requirement.</b> "Transfer a panel" was an assumption; the goal was isolation.</p></div>
-    <div class="take rise d2"><span class="k">B</span><p><b>One constraint did all the damage.</b> Insisting on a single window forced every expensive path. Dropping it made it cheap.</p></div>
-    <div class="take rise d3"><span class="k">C</span><p><b>Isolation is free; coordination is cheap.</b> Separate processes give it for free; ECF services wire them back up.</p></div>
-    <div class="take rise d4"><span class="k">D</span><p><b>Spike to find the gap.</b> A few hundred lines proved the thesis — and exposed the discovery requirement early.</p></div>
-    <div class="take rise d5"><span class="k">E</span><p><b>Generalise once it's proven.</b> The dock became an <b>N</b>-frame grid by parameterising one layout — shared numbers, not new coupling.</p></div>
+    <div class="take rise d1"><span class="k">A</span><p><b>Aracı sorgula, gereksinimi değil.</b> "Bir panel'i taşı" bir varsayımdı; amaç isolation'dı.</p></div>
+    <div class="take rise d2"><span class="k">B</span><p><b>Tüm hasarı tek bir kısıt yaptı.</b> Tek bir window'da ısrar etmek her pahalı yolu zorladı. Ondan vazgeçmek işi ucuzlattı.</p></div>
+    <div class="take rise d3"><span class="k">C</span><p><b>Isolation bedava; koordinasyon ucuz.</b> Ayrı process'ler onu bedava verir; ECF service'leri onları yeniden bağlar.</p></div>
+    <div class="take rise d4"><span class="k">D</span><p><b>Boşluğu bulmak için spike yap.</b> Birkaç yüz satır tezi kanıtladı — ve discovery gereksinimini erkenden ortaya çıkardı.</p></div>
+    <div class="take rise d5"><span class="k">E</span><p><b>Kanıtlandıktan sonra genelleştir.</b> Dock, tek bir layout'u parametreleştirerek <b>N</b>-frame'lik bir grid'e dönüştü — paylaşılan sayılar, yeni bağımlılık değil.</p></div>
   </div>
 </section>
 
 <footer class="wrap">
-  Monolith → Multi-JVM · spec: <a href="monolith-to-multi-jvm-migration.md">migration design</a> &nbsp;·&nbsp;
-  proof: <a href="spike-isolation-results.md">spike results</a> &nbsp;·&nbsp;
-  grid: <a href="superpowers/specs/2026-06-05-spike-multi-frame-grid-design.md">tiled-grid design</a> &nbsp;·&nbsp; OSGi · ECF Remote Services · Swing
+  Monolith → Multi-JVM · spec: <a href="monolith-to-multi-jvm-migration.md">geçiş tasarımı</a> &nbsp;·&nbsp;
+  kanıt: <a href="spike-isolation-results.md">spike sonuçları</a> &nbsp;·&nbsp;
+  grid: <a href="superpowers/specs/2026-06-05-spike-multi-frame-grid-design.md">döşeli grid tasarımı</a> &nbsp;·&nbsp; OSGi · ECF Remote Services · Swing
 </footer>
 
 </body>
