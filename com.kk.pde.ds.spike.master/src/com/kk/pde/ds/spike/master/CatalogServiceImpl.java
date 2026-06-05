@@ -10,7 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.kk.pde.ds.spike.api.CatalogItem;
-import com.kk.pde.ds.spike.api.DockBounds;
+import com.kk.pde.ds.spike.api.DockLayout;
 import com.kk.pde.ds.spike.api.DockState;
 import com.kk.pde.ds.spike.api.ICatalogService;
 
@@ -43,7 +43,7 @@ public class CatalogServiceImpl implements ICatalogService {
 
 	private final List<CatalogItem> items = new ArrayList<>();
 	private volatile String selectedId;
-	private volatile DockBounds hostBounds;
+	private volatile DockLayout layout;
 	private volatile boolean closing;
 
 	@Activate
@@ -88,8 +88,9 @@ public class CatalogServiceImpl implements ICatalogService {
 	}
 
 	@Override
-	public void setHostBounds(DockBounds bounds) {
-		this.hostBounds = bounds;
+	public void setLayout(DockLayout layout) {
+		this.layout = layout;
+		log.info("Published grid layout for the combined UI: {}", layout);
 	}
 
 	@Override
@@ -112,7 +113,7 @@ public class CatalogServiceImpl implements ICatalogService {
 
 	@Override
 	public DockState getDockState() {
-		return new DockState(hostBounds, closing, getSelectedItem());
+		return new DockState(layout, closing, getSelectedItem());
 	}
 
 	List<CatalogItem> itemsSnapshot() {

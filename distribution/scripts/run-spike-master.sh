@@ -2,6 +2,13 @@
 # Isolation spike — MASTER app (App-1). Owns the catalog + selection; exports
 # ICatalogService on ecftcp://localhost:3289/catalog. Start this FIRST, then
 # run-spike-detail.sh in another terminal.
+#
+# Multi-frame grid: set SPIKE_FRAMES=N (default 2) to open N tiled master windows.
+# The detail reads N from the master's published layout, so only set it here, e.g.:
+#   SPIKE_FRAMES=3 ./run-spike-master.sh
+#   ./run-spike-detail.sh
+# (-Dspike.frames=N also works, but only if placed BEFORE -jar — the env var is the
+#  supported path since these scripts append args after -jar.)
 
 PRODUCT_UID="com.kk.pde.ds.spike.master.product"
 
