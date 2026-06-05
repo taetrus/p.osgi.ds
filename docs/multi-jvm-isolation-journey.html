@@ -528,21 +528,154 @@
   </div>
 </section>
 
-<!-- ░░ 09 TAKEAWAYS ░░ -->
+<!-- ░░ 09 TILED GRID ░░ -->
 <section class="wrap">
-  <div class="sechead"><span class="idx">09</span><span class="kicker">Takeaways</span></div>
+  <div class="sechead"><span class="idx">09</span><span class="kicker">The grid</span></div>
+  <h2>From two windows to a tiled grid</h2>
+  <p class="lede">The dock proved isolation with <em>one</em> window each. The next step generalised it:
+    each app opens <b style="color:var(--ink)">N</b> windows, and both apps tile into <em>one</em> shared grid —
+    master frames in <b style="color:#2fd4a7">teal</b>, detail in <b style="color:#ffb454">amber</b>, interleaved and wrapping.
+    Same <span class="mono">@Reference</span> story, now multiplied.</p>
+
+  <div class="svgcard rise d1">
+    <svg viewBox="0 0 1080 566" role="img" aria-label="N frames per app tiled into one interleaved grid">
+      <defs>
+        <marker id="wraph" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#4f8fd6"/></marker>
+        <marker id="fillh" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#465264"/></marker>
+      </defs>
+
+      <!-- fill-order hint -->
+      <text x="24" y="40" class="di-sub" fill="#465264">FILL ORDER · even slots → App-1 · odd slots → App-2</text>
+      <line x1="320" y1="36" x2="470" y2="36" stroke="#465264" stroke-width="1" marker-end="url(#fillh)"/>
+
+      <!-- ===== ROW 0 ===== -->
+      <!-- M-1 · slot 0 -->
+      <g>
+        <rect x="24" y="78" width="240" height="196" rx="10" fill="#0f1722" stroke="rgba(47,212,167,.4)"/>
+        <rect x="24" y="78" width="4" height="196" fill="#2fd4a7"/>
+        <rect x="28" y="79" width="235" height="27" fill="#16202C"/>
+        <text x="42" y="97" class="di-title" fill="#2fd4a7">M-1</text>
+        <text x="250" y="96" class="di-sub" text-anchor="end">slot 0</text>
+        <rect x="40" y="118" width="208" height="34" rx="6" fill="#0e151f" stroke="rgba(47,212,167,.22)"/><rect x="40" y="118" width="3" height="34" fill="#2fd4a7"/><circle cx="56" cy="135" r="3" fill="#2fd4a7"/><text x="67" y="139" class="di-sub" fill="#cdd7e3">CATALOG</text>
+        <rect x="40" y="162" width="208" height="34" rx="6" fill="#0e151f" stroke="rgba(47,212,167,.22)"/><rect x="40" y="162" width="3" height="34" fill="#2fd4a7"/><circle cx="56" cy="179" r="3" fill="#2fd4a7"/><text x="67" y="183" class="di-sub" fill="#cdd7e3">SUMMARY</text>
+        <text x="144" y="256" class="di-sub" fill="rgba(47,212,167,.6)" text-anchor="middle">APP-1 · MASTER</text>
+      </g>
+      <!-- D-1 · slot 1 -->
+      <g>
+        <rect x="288" y="78" width="240" height="196" rx="10" fill="#0f1722" stroke="rgba(255,180,84,.4)"/>
+        <rect x="288" y="78" width="4" height="196" fill="#ffb454"/>
+        <rect x="292" y="79" width="235" height="27" fill="#16202C"/>
+        <text x="306" y="97" class="di-title" fill="#ffb454">D-1</text>
+        <text x="514" y="96" class="di-sub" text-anchor="end">slot 1</text>
+        <rect x="304" y="118" width="208" height="34" rx="6" fill="#0e151f" stroke="rgba(255,180,84,.22)"/><rect x="304" y="118" width="3" height="34" fill="#ffb454"/><circle cx="320" cy="135" r="3" fill="#ffb454"/><text x="331" y="139" class="di-sub" fill="#cdd7e3">SELECTED ITEM</text>
+        <rect x="304" y="162" width="208" height="34" rx="6" fill="#0e151f" stroke="rgba(255,180,84,.22)"/><rect x="304" y="162" width="3" height="34" fill="#ffb454"/><circle cx="320" cy="179" r="3" fill="#ffb454"/><text x="331" y="183" class="di-sub" fill="#cdd7e3">INSPECTOR</text>
+        <text x="408" y="256" class="di-sub" fill="rgba(255,180,84,.6)" text-anchor="middle">APP-2 · DETAIL</text>
+      </g>
+      <!-- M-2 · slot 2 -->
+      <g>
+        <rect x="552" y="78" width="240" height="196" rx="10" fill="#0f1722" stroke="rgba(47,212,167,.4)"/>
+        <rect x="552" y="78" width="4" height="196" fill="#2fd4a7"/>
+        <rect x="556" y="79" width="235" height="27" fill="#16202C"/>
+        <text x="570" y="97" class="di-title" fill="#2fd4a7">M-2</text>
+        <text x="778" y="96" class="di-sub" text-anchor="end">slot 2</text>
+        <rect x="568" y="118" width="208" height="34" rx="6" fill="#0e151f" stroke="rgba(47,212,167,.22)"/><rect x="568" y="118" width="3" height="34" fill="#2fd4a7"/><circle cx="584" cy="135" r="3" fill="#2fd4a7"/><text x="595" y="139" class="di-sub" fill="#cdd7e3">ACTIVITY</text>
+        <text x="672" y="256" class="di-sub" fill="rgba(47,212,167,.6)" text-anchor="middle">APP-1 · MASTER</text>
+      </g>
+      <!-- D-2 · slot 3 -->
+      <g>
+        <rect x="816" y="78" width="240" height="196" rx="10" fill="#0f1722" stroke="rgba(255,180,84,.4)"/>
+        <rect x="816" y="78" width="4" height="196" fill="#ffb454"/>
+        <rect x="820" y="79" width="235" height="27" fill="#16202C"/>
+        <text x="834" y="97" class="di-title" fill="#ffb454">D-2</text>
+        <text x="1042" y="96" class="di-sub" text-anchor="end">slot 3</text>
+        <rect x="832" y="118" width="208" height="34" rx="6" fill="#0e151f" stroke="rgba(255,180,84,.22)"/><rect x="832" y="118" width="3" height="34" fill="#ffb454"/><circle cx="848" cy="135" r="3" fill="#ffb454"/><text x="859" y="139" class="di-sub" fill="#cdd7e3">CONNECTION</text>
+        <text x="936" y="256" class="di-sub" fill="rgba(255,180,84,.6)" text-anchor="middle">APP-2 · DETAIL</text>
+      </g>
+
+      <!-- wrap arrow: end of row 0 → start of row 1 -->
+      <path d="M952 286 C 952 312, 150 300, 144 322" fill="none" stroke="#4f8fd6" stroke-width="1.3" stroke-dasharray="4 4" marker-end="url(#wraph)"/>
+      <text x="548" y="306" class="di-sub" fill="#7fb4ec" text-anchor="middle">wrap at columns = 4</text>
+
+      <!-- ===== ROW 1 ===== -->
+      <!-- M-3 · slot 4 -->
+      <g>
+        <rect x="24" y="326" width="240" height="196" rx="10" fill="#0f1722" stroke="rgba(47,212,167,.4)"/>
+        <rect x="24" y="326" width="4" height="196" fill="#2fd4a7"/>
+        <rect x="28" y="327" width="235" height="27" fill="#16202C"/>
+        <text x="42" y="345" class="di-title" fill="#2fd4a7">M-3</text>
+        <text x="250" y="344" class="di-sub" text-anchor="end">slot 4</text>
+        <rect x="40" y="366" width="208" height="34" rx="6" fill="#0e151f" stroke="rgba(47,212,167,.22)"/><rect x="40" y="366" width="3" height="34" fill="#2fd4a7"/><circle cx="56" cy="383" r="3" fill="#2fd4a7"/><text x="67" y="387" class="di-sub" fill="#cdd7e3">CONTROLS</text>
+        <text x="144" y="504" class="di-sub" fill="rgba(47,212,167,.6)" text-anchor="middle">APP-1 · MASTER</text>
+      </g>
+      <!-- D-3 · slot 5 -->
+      <g>
+        <rect x="288" y="326" width="240" height="196" rx="10" fill="#0f1722" stroke="rgba(255,180,84,.4)"/>
+        <rect x="288" y="326" width="4" height="196" fill="#ffb454"/>
+        <rect x="292" y="327" width="235" height="27" fill="#16202C"/>
+        <text x="306" y="345" class="di-title" fill="#ffb454">D-3</text>
+        <text x="514" y="344" class="di-sub" text-anchor="end">slot 5</text>
+        <rect x="304" y="366" width="208" height="34" rx="6" fill="#0e151f" stroke="rgba(255,180,84,.22)"/><rect x="304" y="366" width="3" height="34" fill="#ffb454"/><circle cx="320" cy="383" r="3" fill="#ffb454"/><text x="331" y="387" class="di-sub" fill="#cdd7e3">CONTROLS</text>
+        <text x="408" y="504" class="di-sub" fill="rgba(255,180,84,.6)" text-anchor="middle">APP-2 · DETAIL</text>
+      </g>
+      <!-- empty next slots -->
+      <g>
+        <rect x="552" y="326" width="240" height="196" rx="10" fill="none" stroke="rgba(255,255,255,.08)" stroke-dasharray="5 6"/>
+        <text x="672" y="420" class="di-sub" fill="#465264" text-anchor="middle">slot 6</text>
+        <text x="672" y="438" class="di-sub" fill="#3a4453" text-anchor="middle">(next master)</text>
+      </g>
+      <g>
+        <rect x="816" y="326" width="240" height="196" rx="10" fill="none" stroke="rgba(255,255,255,.08)" stroke-dasharray="5 6"/>
+        <text x="936" y="420" class="di-sub" fill="#465264" text-anchor="middle">slot 7</text>
+        <text x="936" y="438" class="di-sub" fill="#3a4453" text-anchor="middle">(next detail)</text>
+      </g>
+
+      <text x="24" y="552" class="di-sub">N = 3 per app · fill left-to-right, wrap at the column count · each app's panels split across its frames by a balanced partition</text>
+    </svg>
+  </div>
+
+  <div class="cards" style="margin-top:22px">
+    <div class="card rise d1" style="border-color:rgba(79,143,214,.3)">
+      <div class="tag" style="color:#7fb4ec">SLOT MATH</div>
+      <h3>Even ↔ odd interleave</h3>
+      <p class="mono" style="color:#7fb4ec;font-size:12px;margin:0 0 8px">masterSlot(k)=2k<br/>detailSlot(k)=2k+1</p>
+      <p>One global slot sequence; master takes the evens, detail the odds. Fill order alternates M, D, M, D…</p>
+    </div>
+    <div class="card rise d2" style="border-color:rgba(47,212,167,.3)">
+      <div class="tag" style="color:#2fd4a7">COORDINATION</div>
+      <h3>One DockLayout</h3>
+      <p>The master computes the grid once and publishes it over ECF. The detail reads it back and runs the <em>identical</em> <span class="mono" style="font-size:11px">slotBounds()</span>. <b style="color:var(--ink)">Shared parameters, not shared state</b> — no per-frame messaging.</p>
+    </div>
+    <div class="card rise d3" style="border-color:rgba(255,180,84,.3)">
+      <div class="tag" style="color:#ffb454">PANELS</div>
+      <h3>Split per frame</h3>
+      <p><span class="mono" style="font-size:11px">distribute()</span> spreads each app's panels across its frames as balanced contiguous chunks. <b style="color:var(--ink)">N = 1</b> collapses back to chapter 08's single window — no regression.</p>
+    </div>
+    <div class="card rise d4" style="border-color:rgba(47,212,167,.3)">
+      <div class="tag" style="color:#2fd4a7">PROVEN LIVE</div>
+      <h3>Two JVMs, tiled</h3>
+      <p class="mono" style="color:#2fd4a7;font-size:12px;margin:0 0 8px">SPIKE_FRAMES=3</p>
+      <p>Master frames landed at slots 0·2·4, detail at 1·3·5, wrapping at column 4 — captured from a real run.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ 10 TAKEAWAYS ░░ -->
+<section class="wrap">
+  <div class="sechead"><span class="idx">10</span><span class="kicker">Takeaways</span></div>
   <h2>What carried the day</h2>
   <div class="takes">
     <div class="take rise d1"><span class="k">A</span><p><b>Question the means, not the requirement.</b> "Transfer a panel" was an assumption; the goal was isolation.</p></div>
     <div class="take rise d2"><span class="k">B</span><p><b>One constraint did all the damage.</b> Insisting on a single window forced every expensive path. Dropping it made it cheap.</p></div>
     <div class="take rise d3"><span class="k">C</span><p><b>Isolation is free; coordination is cheap.</b> Separate processes give it for free; ECF services wire them back up.</p></div>
     <div class="take rise d4"><span class="k">D</span><p><b>Spike to find the gap.</b> A few hundred lines proved the thesis — and exposed the discovery requirement early.</p></div>
+    <div class="take rise d5"><span class="k">E</span><p><b>Generalise once it's proven.</b> The dock became an <b>N</b>-frame grid by parameterising one layout — shared numbers, not new coupling.</p></div>
   </div>
 </section>
 
 <footer class="wrap">
   Monolith → Multi-JVM · spec: <a href="monolith-to-multi-jvm-migration.md">migration design</a> &nbsp;·&nbsp;
-  proof: <a href="spike-isolation-results.md">spike results</a> &nbsp;·&nbsp; OSGi · ECF Remote Services · Swing
+  proof: <a href="spike-isolation-results.md">spike results</a> &nbsp;·&nbsp;
+  grid: <a href="superpowers/specs/2026-06-05-spike-multi-frame-grid-design.md">tiled-grid design</a> &nbsp;·&nbsp; OSGi · ECF Remote Services · Swing
 </footer>
 
 </body>
