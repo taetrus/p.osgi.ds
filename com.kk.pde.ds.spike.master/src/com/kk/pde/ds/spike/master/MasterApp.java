@@ -36,6 +36,7 @@ import org.osgi.service.component.annotations.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.kk.pde.ds.spike.api.AnchorState;
 import com.kk.pde.ds.spike.api.CatalogItem;
 import com.kk.pde.ds.spike.api.DockBounds;
 import com.kk.pde.ds.spike.api.DockLayout;
@@ -77,15 +78,31 @@ public class MasterApp {
 	private static final Color MUTED = new Color(0x7C8A9C);
 
 	private volatile ICatalogService catalog;
-	private final List<JFrame> frames = new ArrayList<>();
+	private final List<FrameSlot> slots = new ArrayList<>();
 	private JTextArea activity;
 	private int beat;
+
+	// --- anchor (M-1) state: the one frame the user can drag/minimize ---
+	private JFrame anchorFrame;          // the slot-0 frame; null until built
+	private DockBounds anchorHome;       // its layout-computed home bounds
+	private JButton minBtn;              // minimize/restore toggle in the anchor header
+	private int offsetX, offsetY;        // how far the anchor has been dragged from home
+	private boolean minimized;           // whole-constellation collapsed?
+	private int anchorExpandedHeight;    // remembered so restore can re-expand the anchor
 
 	/** A built panel awaiting placement into one of the tiled frames. */
 	private static final class Panel {
 		final String name;
 		final JComponent content;
 		Panel(String name, JComponent content) { this.name = name; this.content = content; }
+	}
+
+	/** A frame paired with its home (un-dragged) bounds, so followers can re-home at home+offset. */
+	private static final class FrameSlot {
+		final JFrame frame;
+		final DockBounds home;
+		final boolean anchor;
+		FrameSlot(JFrame frame, DockBounds home, boolean anchor) { this.frame = frame; this.home = home; this.anchor = anchor; }
 	}
 
 	@Reference
@@ -112,8 +129,10 @@ public class MasterApp {
 		int[] frameForPanel = DockLayout.distribute(panels.size(), n);
 
 		for (int k = 0; k < n; k++) {
+			boolean isAnchor = (k == 0);              // M-1 is the draggable/minimizable anchor
 			DockBounds b = layout.slotBounds(DockLayout.masterSlot(k));
-			JFrame frame = newFrame("M-" + (k + 1), b);
+			String title = "M-" + (k + 1);
+			JFrame frame = newFrame(title, b);
 
 			JPanel body = bodyPanel();
 			boolean any = false;
@@ -127,14 +146,17 @@ public class MasterApp {
 			if (!any) body.add(badged("EXTRA", fixed(wrap(muted("(no panel assigned to this frame)")), 30)));
 
 			JPanel root = new JPanel(new BorderLayout());
-			root.add(makeHeader(frame, "M-" + (k + 1)), BorderLayout.NORTH);
+			root.add(makeHeader(frame, isAnchor ? title + " ⚓" : title, isAnchor, b), BorderLayout.NORTH);
 			root.add(body, BorderLayout.CENTER);
 			frame.setContentPane(root);
 			frame.setVisible(true);
-			frames.add(frame);
-			log.info("App-1 frame {} at slot {} → {},{} {}x{}", "M-" + (k + 1),
+			slots.add(new FrameSlot(frame, b, isAnchor));
+			if (isAnchor) { anchorFrame = frame; anchorHome = b; anchorExpandedHeight = b.getHeight(); }
+			log.info("App-1 frame {}{} at slot {} → {},{} {}x{}", title, isAnchor ? " (anchor)" : "",
 					DockLayout.masterSlot(k), b.getX(), b.getY(), b.getWidth(), b.getHeight());
 		}
+		// Publish the neutral anchor state so the detail starts aligned (offset 0,0; not minimized).
+		if (svc != null) svc.setAnchor(AnchorState.HOME);
 
 		// live heartbeat — proves App-1 is doing its own work in its own process
 		new Timer(1000, e -> {
@@ -240,41 +262,117 @@ public class MasterApp {
 		return panels;
 	}
 
-	private JPanel makeHeader(JFrame frame, String title) {
+	/**
+	 * Builds a frame's title strip. The anchor frame ({@code isAnchor}) gets a minimize
+	 * toggle plus a drag handler that moves the <em>whole</em> constellation; follower
+	 * frames get a locked header (no drag) so the group keeps its relative layout.
+	 */
+	private JPanel makeHeader(JFrame frame, String title, boolean isAnchor, DockBounds home) {
 		JPanel header = new JPanel(new BorderLayout());
 		header.setBackground(HEADER_BG);
 		header.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
 		header.setPreferredSize(new Dimension(10, HEADER_H));
 
-		JButton close = new JButton("●");
-		close.setForeground(new Color(0xFF5B57));
-		close.setBackground(HEADER_BG);
-		close.setBorder(BorderFactory.createEmptyBorder());
-		close.setFocusPainted(false);
-		close.setOpaque(true);
-		close.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-		close.setToolTipText("Close combined app");
+		JButton close = iconButton("●", new Color(0xFF5B57), "Close combined app");
 		close.addActionListener(e -> { if (catalog != null) catalog.requestShutdown(); });
+
+		JPanel controls = new JPanel();
+		controls.setOpaque(false);
+		controls.setLayout(new BoxLayout(controls, BoxLayout.X_AXIS));
+		controls.add(close);
+		if (isAnchor) {
+			minBtn = iconButton("–", MUTED, "Minimize the whole combined app");
+			minBtn.addActionListener(e -> toggleMinimize());
+			controls.add(Box.createHorizontalStrut(6));
+			controls.add(minBtn);
+		}
 
 		JLabel label = new JLabel("▦  " + title);
 		label.setForeground(INK);
 		label.setHorizontalAlignment(SwingConstants.CENTER);
 
-		header.add(close, BorderLayout.WEST);
+		header.add(controls, BorderLayout.WEST);
 		header.add(label, BorderLayout.CENTER);
 
-		final Point[] a = { null };
-		MouseAdapter drag = new MouseAdapter() {
-			@Override public void mousePressed(MouseEvent e) { a[0] = e.getPoint(); }
-			@Override public void mouseReleased(MouseEvent e) { a[0] = null; }
-			@Override public void mouseDragged(MouseEvent e) {
-				Point p = a[0];
-				if (p != null) frame.setLocation(frame.getX() + e.getX() - p.x, frame.getY() + e.getY() - p.y);
-			}
-		};
-		header.addMouseListener(drag); header.addMouseMotionListener(drag);
-		label.addMouseListener(drag); label.addMouseMotionListener(drag);
+		if (isAnchor) {
+			// Only the anchor is draggable; dragging it re-homes every follower at home+offset.
+			final Point[] a = { null };
+			MouseAdapter drag = new MouseAdapter() {
+				@Override public void mousePressed(MouseEvent e) { a[0] = e.getPoint(); }
+				@Override public void mouseReleased(MouseEvent e) { a[0] = null; }
+				@Override public void mouseDragged(MouseEvent e) {
+					Point p = a[0];
+					if (p == null) return;
+					frame.setLocation(frame.getX() + e.getX() - p.x, frame.getY() + e.getY() - p.y);
+					onAnchorMoved();
+				}
+			};
+			header.addMouseListener(drag); header.addMouseMotionListener(drag);
+			label.addMouseListener(drag); label.addMouseMotionListener(drag);
+			label.setCursor(Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR));
+		}
 		return header;
+	}
+
+	/** A flat, borderless icon button styled for the dark header. */
+	private JButton iconButton(String glyph, Color fg, String tip) {
+		JButton b = new JButton(glyph);
+		b.setForeground(fg);
+		b.setBackground(HEADER_BG);
+		b.setBorder(BorderFactory.createEmptyBorder());
+		b.setFocusPainted(false);
+		b.setOpaque(true);
+		b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+		b.setToolTipText(tip);
+		return b;
+	}
+
+	/** Anchor dragged: recompute its offset from home, push it to followers + the detail. */
+	private void onAnchorMoved() {
+		if (anchorFrame == null || anchorHome == null) return;
+		offsetX = anchorFrame.getX() - anchorHome.getX();
+		offsetY = anchorFrame.getY() - anchorHome.getY();
+		repositionFollowers();
+		publishAnchor();
+	}
+
+	/** Move every non-anchor master frame to its home position shifted by the current offset. */
+	private void repositionFollowers() {
+		for (FrameSlot s : slots) {
+			if (s.anchor) continue;
+			s.frame.setLocation(s.home.getX() + offsetX, s.home.getY() + offsetY);
+		}
+	}
+
+	/** Publish the live anchor offset + minimize flag so the detail JVM can follow. */
+	private void publishAnchor() {
+		ICatalogService svc = this.catalog;
+		if (svc != null) svc.setAnchor(new AnchorState(offsetX, offsetY, minimized));
+	}
+
+	/**
+	 * Minimize/restore the whole combined UI. Borderless frames can't OS-iconify reliably,
+	 * so minimize collapses the anchor to just its header strip (still draggable, still
+	 * holding the restore button) and hides every follower; restore reverses both.
+	 */
+	private void toggleMinimize() {
+		if (anchorFrame == null) return;
+		minimized = !minimized;
+		if (minimized) {
+			anchorExpandedHeight = anchorFrame.getHeight();
+			anchorFrame.setSize(anchorFrame.getWidth(), HEADER_H);
+			for (FrameSlot s : slots) if (!s.anchor) s.frame.setVisible(false);
+			minBtn.setText("□");
+			minBtn.setToolTipText("Restore the combined app");
+		} else {
+			anchorFrame.setSize(anchorFrame.getWidth(), anchorExpandedHeight);
+			repositionFollowers();
+			for (FrameSlot s : slots) if (!s.anchor) s.frame.setVisible(true);
+			minBtn.setText("–");
+			minBtn.setToolTipText("Minimize the whole combined app");
+		}
+		anchorFrame.validate();
+		publishAnchor();
 	}
 
 	/** Wraps content in a badged container with a teal accent + "APP-1 · MASTER" tag. */
