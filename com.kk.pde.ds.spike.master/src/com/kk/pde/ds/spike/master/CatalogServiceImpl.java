@@ -9,6 +9,7 @@ import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.kk.pde.ds.spike.api.AnchorState;
 import com.kk.pde.ds.spike.api.CatalogItem;
 import com.kk.pde.ds.spike.api.DockLayout;
 import com.kk.pde.ds.spike.api.DockState;
@@ -44,6 +45,7 @@ public class CatalogServiceImpl implements ICatalogService {
 	private final List<CatalogItem> items = new ArrayList<>();
 	private volatile String selectedId;
 	private volatile DockLayout layout;
+	private volatile AnchorState anchor = AnchorState.HOME;
 	private volatile boolean closing;
 
 	@Activate
@@ -94,6 +96,20 @@ public class CatalogServiceImpl implements ICatalogService {
 	}
 
 	@Override
+	public void setAnchor(AnchorState anchor) {
+		AnchorState next = anchor == null ? AnchorState.HOME : anchor;
+		AnchorState prev = this.anchor;
+		this.anchor = next;
+		// Offset updates fire on every drag event — only log the (rare) minimize toggle.
+		if (prev.isMinimized() != next.isMinimized()) {
+			log.info("Anchor {} — followers will {} (offset {},{})",
+					next.isMinimized() ? "minimized" : "restored",
+					next.isMinimized() ? "hide" : "reappear",
+					next.getOffsetX(), next.getOffsetY());
+		}
+	}
+
+	@Override
 	public void setClosing(boolean closing) {
 		this.closing = closing;
 	}
@@ -113,7 +129,7 @@ public class CatalogServiceImpl implements ICatalogService {
 
 	@Override
 	public DockState getDockState() {
-		return new DockState(layout, closing, getSelectedItem());
+		return new DockState(layout, closing, getSelectedItem(), anchor);
 	}
 
 	List<CatalogItem> itemsSnapshot() {

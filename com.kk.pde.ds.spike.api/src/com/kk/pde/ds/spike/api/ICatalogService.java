@@ -50,6 +50,15 @@ public interface ICatalogService {
 	 */
 	void setLayout(DockLayout layout);
 
+	/**
+	 * Master publishes the live anchor state — the {@code (offsetX, offsetY)} the
+	 * draggable anchor frame has been moved from its home slot, plus whether the whole
+	 * combined UI is minimized. The detail reads this each poll and shifts/hides its own
+	 * frames to stay aligned. Called frequently (once per drag event), so it must be cheap:
+	 * within the master JVM this is a local call that just stores a field.
+	 */
+	void setAnchor(AnchorState anchor);
+
 	/** Master signals a clean shutdown so the detail closes with it (vs. a crash). */
 	void setClosing(boolean closing);
 
@@ -59,6 +68,6 @@ public interface ICatalogService {
 	 */
 	void requestShutdown();
 
-	/** One-shot snapshot the detail polls: grid layout + closing flag + current selection. */
+	/** One-shot snapshot the detail polls: grid layout + closing flag + selection + anchor state. */
 	DockState getDockState();
 }

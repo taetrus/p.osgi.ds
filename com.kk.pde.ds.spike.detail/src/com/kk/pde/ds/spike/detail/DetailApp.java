@@ -32,6 +32,7 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.kk.pde.ds.spike.api.AnchorState;
 import com.kk.pde.ds.spike.api.CatalogItem;
 import com.kk.pde.ds.spike.api.DockBounds;
 import com.kk.pde.ds.spike.api.DockLayout;
@@ -75,6 +76,8 @@ public class DetailApp {
 	});
 
 	private final List<JFrame> frames = new ArrayList<>();
+	private final List<DockBounds> homeBounds = new ArrayList<>();   // each frame's un-shifted slot bounds
+	private AnchorState lastAnchor = AnchorState.HOME;               // last anchor state we acted on
 	private final List<JLabel> headerDots = new ArrayList<>();
 	private JLabel nameLabel, qtyLabel, statusLabel;
 	private JLabel idLabel, lenLabel, uptimeLabel;
@@ -147,6 +150,8 @@ public class DetailApp {
 		}
 		if (!built) return; // layout not published yet; keep waiting
 
+		applyAnchor(st.getAnchor()); // follow the master's draggable/minimizable anchor
+
 		CatalogItem item = st.getSelected();
 		if (item == null) {
 			nameLabel.setText("(nothing selected)"); qtyLabel.setText(" "); descArea.setText("");
@@ -166,6 +171,25 @@ public class DetailApp {
 			lastShownId = id;
 			log.info("Detail now showing remote selection: {}", item == null ? "(none)" : item.getName());
 		}
+	}
+
+	/**
+	 * Follow the master's anchor: shift every detail frame to {@code home + offset} and
+	 * hide/show them with the minimize flag. Cheap-guarded — we only touch the windows
+	 * when the anchor state actually changed (it's unchanged on almost every 120ms poll).
+	 */
+	private void applyAnchor(AnchorState a) {
+		if (a == null) a = AnchorState.HOME;
+		if (a.equals(lastAnchor)) return;          // nothing moved or toggled since last tick
+		lastAnchor = a;
+		for (int k = 0; k < frames.size(); k++) {
+			DockBounds home = homeBounds.get(k);
+			JFrame f = frames.get(k);
+			f.setLocation(home.getX() + a.getOffsetX(), home.getY() + a.getOffsetY());
+			f.setVisible(!a.isMinimized());
+		}
+		log.info("Followed anchor → offset {},{} {}", a.getOffsetX(), a.getOffsetY(),
+				a.isMinimized() ? "(minimized — frames hidden)" : "(visible)");
 	}
 
 	private void buildFrames(DockLayout layout) {
@@ -199,6 +223,7 @@ public class DetailApp {
 			frame.setContentPane(root);
 			frame.setVisible(true);
 			frames.add(frame);
+			homeBounds.add(b);
 			log.info("App-2 frame {} at slot {} → {},{} {}x{}", "D-" + (k + 1),
 					DockLayout.detailSlot(k), b.getX(), b.getY(), b.getWidth(), b.getHeight());
 		}
