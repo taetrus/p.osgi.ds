@@ -1,57 +1,75 @@
-# Todo: Combined-UI docking (approach C)
+# RAG document Q&A for the chatbot
 
-Goal: two isolated JVMs (master, detail) whose borderless windows dock edge-to-edge
-to LOOK like one combined UI showing both panels as real widgets. macOS + Windows.
+Spec: Obsidian `Inbox/p.osgi.ds RAG support.md`. Search-as-tool retrieval grounded in
+local documents (.pdf/.docx/.pptx/.txt/.html), airgapped-friendly.
 
-## API (spike.api)
-- [ ] DockBounds DTO (x,y,width,height) — Serializable
-- [ ] DockState DTO (bounds, closing, selected) — Serializable
-- [ ] ICatalogService: + setHostBounds, setClosing, requestShutdown, getDockState
+## Approved decisions
+- Tika: `org.apache.tika:tika-bundle-standard:3.3.1` (OSGi uber-bundle).
+- Ingestion: auto-scan `-Drag.docs.dir` at startup + `ingest_documents` MCP tool.
+- Embeddings default: `intfloat/multilingual-e5-large` (overridable). e5 role prefixes applied.
+- One new bundle `com.kk.pde.ds.rag`, exports `…rag.api` (interfaces), impls internal.
 
-## Master (anchor)
-- [ ] CatalogServiceImpl: hold hostBounds + closing; implement new methods
-- [ ] MasterApp: undecorated frame, draggable header w/ top-left ✕, push bounds on move/resize
+## Plan
+- [x] 1. Add `tika-bundle-standard:3.3.1` Maven location to the `.target`.
+- [ ] 2. Scaffold module `com.kk.pde.ds.rag` (pom, build.properties, MANIFEST, OSGI-INF/).
+- [ ] 3. API package: `Chunk`, `ScoredChunk`, `DocumentParser`, `TextChunker`,
+        `EmbeddingClient`, `VectorStore`, `DocumentIngestionService`.
+- [ ] 4. `Json` util (tiny recursive-descent parser/writer for embeddings I/O).
+- [ ] 5. `TikaDocumentParser` (AutoDetectParser, BodyContentHandler, offline-safe).
+- [ ] 6. `SlidingWindowChunker` (~400 tok target, ~12% overlap, para/sentence boundaries).
+- [ ] 7. `OpenAiEmbeddingClient` (HttpURLConnection → {baseUrl}/embeddings, e5 prefixes).
+- [ ] 8. `InMemoryVectorStore` (brute-force cosine over float[]).
+- [ ] 9. `DocumentIngestionServiceImpl` (parse→chunk→embed→store; search; startup auto-scan).
+- [ ] 10. Tools: `DocumentSearchTool` + `IngestDocumentsTool` (IMcpTool).
+- [ ] 11. Hand-write each `OSGI-INF/*.xml` SCR descriptor.
+- [ ] 12. Wire module into root pom, feature.xml, p2.product; offline XML flags in run scripts.
+- [ ] 13. `mvn clean verify` green; document manual e2e.
 
-## Detail (follower)
-- [ ] DetailApp: undecorated frame, matching header, poll getDockState ~120ms,
-      dock to master's right edge + match height, exit on closing flag, survive crash (unavailable)
+## PIVOT (user decision): drop Tika, parse directly — keep slf4j 1.7 stack
+- Tika (any version) hard-requires slf4j 2.0, which cascaded into logback 1.3 + SPI Fly +
+  breaking Felix Health Check (slf4j.helpers pinned [1.7,2.0)). User chose to avoid the churn.
+- Reverted: logback back to 1.2.11; removed SPI Fly + Tika from target/product.
+- New parser `MultiFormatDocumentParser`:
+  - .pdf  -> Apache PDFBox 2.0.32 (+ fontbox 2.0.32, + commons-logging 1.3.5 — JCL, not slf4j).
+  - .docx/.pptx -> read OOXML zip directly, strip XML (no POI, zero extra deps).
+  - .html/.htm -> tag strip + entity decode;  .txt/.md -> UTF-8.
+- Three new bundles only (pdfbox, fontbox, commons-logging); slf4j/logback/Felix HC untouched.
 
-## Verify
-- [ ] mvn clean verify
-- [ ] run master + detail; screencapture screen → confirm they read as one window
-- [ ] drag master header → detail follows; ✕ closes both; crash master → detail survives (no dock follow, shows unavailable)
+## Earlier Tika detour (superseded by the pivot above)
+- tika-bundle-standard exports only `org.apache.tika.parser.internal`; it IMPORTS tika-core
+  API + registers DefaultParser/DefaultDetector as OSGi services via its Activator.
+  → Added tika-core 3.3.1; TikaDocumentParser now @References Parser+Detector and wraps in
+    AutoDetectParser (no `new AutoDetectParser()` — that hits the ServiceLoader/classloader trap).
+- Tika (3.3.1 AND 2.9.4) hard-requires slf4j [2.0,3). Project had slf4j 1.7.32 / logback 1.2.11.
+  → Bumped logback to 1.3.14 (Java-8 line on slf4j 2.0).
+- slf4j 2.0 + logback 1.3 need an osgi.serviceloader extender (processor/registrar).
+  → Added Apache Aries SPI Fly 1.3.7 (self-contained, embeds ASM); started at level 1 so its
+    weaving hook is live before anything logs; logback started at level 1 for the registrar.
 
-## Review
+## Review — DONE
+New bundle `com.kk.pde.ds.rag`: search-as-tool RAG over local docs, wired into the
+existing IMcpTool registry. No changes to existing modules' code.
 
-Built and verified. Two isolated JVMs whose borderless windows dock edge-to-edge into one
-combined UI showing both real panels.
+Pipeline: MultiFormatDocumentParser (PDFBox for PDF; direct OOXML-zip for docx/pptx;
+tag-strip for html; UTF-8 for txt/md) → SlidingWindowChunker (~400 tok, ~12% overlap,
+para/sentence boundaries) → OpenAiEmbeddingClient (/v1/embeddings, mirrors chat-client
+config, E5 query/passage prefixes) → InMemoryVectorStore (brute-force cosine, behind
+swappable VectorStore iface). Two tools: document_search, ingest_documents. Auto-scan
+via -Drag.docs.dir at startup (daemon thread).
 
-- API: DockBounds + DockState DTOs; ICatalogService gained setHostBounds / setClosing /
-  requestShutdown / getDockState.
-- Master = anchor: undecorated frame, draggable header, top-left ● close (calls requestShutdown),
-  publishes live screen bounds on move/resize.
-- Detail = follower: undecorated frame, matching header, polls getDockState ~120ms, docks to the
-  anchor's right edge matched in height, shows the remote selection, exits on the closing flag,
-  survives a crash (shows "host unavailable", stops tracking).
+Deps added: pdfbox 2.0.32 + fontbox 2.0.32 + commons-logging 1.3.5 (JCL, not slf4j —
+existing slf4j 1.7 / Logback 1.2 / Felix Health Check untouched). Tika abandoned after
+it forced a project-wide slf4j-2.0 migration (user decision).
 
-Verified (clean build, two JVMs, screen capture):
-- The two windows render as ONE combined UI (master list left + detail right, shared dark theme,
-  flush seam). Selection set in App-1 shows in App-2 ("Hex Bolt M8") over ECF.
-- Crash isolation in docked mode: killed App-1 → App-2 stayed alive, logged "Lost connection",
-  degraded gracefully with no dock exceptions.
+Also fixed: run.sh/run.bat passed -D flags AFTER -jar (ignored by JVM) → moved before
+-jar. Offline XML-access flags added for the airgap.
 
-Known limits (accepted): same-display only (screen coords must align); follower rubber-bands
-slightly while dragging (120ms poll); visible header seam (two windows, not one).
-
-## Update — multi-panel showcase (each panel badged with its app)
-- Master (App-1, teal "APP-1 · MASTER"): CATALOG (list) · SUMMARY (count+stock) · ACTIVITY
-  (live heartbeat, proves App-1 process alive) · CONTROLS (Freeze/Crash).
-- Detail (App-2, amber "APP-2 · DETAIL"): SELECTED ITEM · INSPECTOR (item id, name/desc length,
-  App-2 uptime ticking) · CONNECTION (dock status) · CONTROLS.
-- Reusable badged() panel helper per app (accent bar + "APP-n · ROLE" tag + panel name),
-  color-coded by process so provenance is obvious in the combined window.
-- Verified via screen capture: 4 panels per app, headers on top, both live clocks running
-  independently, selection flowing master→detail over ECF.
-- Bugs hit & fixed: (1) duplicate `Component` import (java.awt vs OSGi annotation) → use
-  JComponent.LEFT_ALIGNMENT; (2) header added with BorderLayout.NORTH onto a BoxLayout content
-  pane (ignored → rendered at bottom) → wrap in a BorderLayout root (header NORTH, body CENTER).
+Verified:
+- mvn clean verify: full reactor + product assembly GREEN.
+- Runtime: all 7 DS components activate; document_search + ingest_documents register
+  and appear in MCP tools/list; Logback logging not regressed (no SLF4J NOP).
+- Offline logic: parser (txt/html/docx), chunker overlap+citations, cosine ranking.
+- End-to-end vs mock /v1/embeddings: auto-ingest "Ingested 3 file(s), 0 failed, 3
+  chunk(s)"; document_search returned passages with citations + scores.
+- Graceful no-API-key handling.
+- NOT verified (env limit): semantic ranking quality with the real e5/qwen3 endpoint.

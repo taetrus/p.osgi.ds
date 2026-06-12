@@ -116,6 +116,7 @@
 		<module>com.kk.pde.ds.mcp.client</module>
 		<module>com.kk.pde.ds.mcp.llm</module>
 		<module>com.kk.pde.ds.chatbot</module>
+		<module>com.kk.pde.ds.rag</module>
 		<module>com.kk.pde.ds.ecf.api</module>
 		<module>com.kk.pde.ds.ecf.host</module>
 		<module>com.kk.pde.ds.ecf.consumer</module>

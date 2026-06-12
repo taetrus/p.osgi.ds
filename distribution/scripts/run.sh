@@ -34,4 +34,9 @@ fi
 
 echo "Starting OSGi framework: $OSGI_JAR"
 cd "$PRODUCT_DIR"
-java -jar "$OSGI_JAR" -configuration configuration -console -consoleLog "$@"
+# Airgapped safety: forbid any external DTD/schema/stylesheet fetching during XML
+# parsing (Tika/PDFBox/POI). Keeps document parsing fully offline.
+OFFLINE_XML="-Djavax.xml.accessExternalDTD= -Djavax.xml.accessExternalSchema= -Djavax.xml.accessExternalStylesheet="
+# "$@" carries caller -D flags (e.g. -Dopenrouter.api.key, -Drag.docs.dir); they must precede
+# -jar to reach the JVM as system properties. Equinox launcher args stay after the jar.
+java $OFFLINE_XML "$@" -jar "$OSGI_JAR" -configuration configuration -console -consoleLog

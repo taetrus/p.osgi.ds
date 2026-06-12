@@ -37,6 +37,10 @@
       <plugin id="com.kk.pde.ds.mcp.client"/>
       <plugin id="com.kk.pde.ds.mcp.llm"/>
       <plugin id="com.kk.pde.ds.chatbot"/>
+      <plugin id="com.kk.pde.ds.rag"/>
+      <plugin id="org.apache.pdfbox"/>
+      <plugin id="org.apache.pdfbox.fontbox"/>
+      <plugin id="org.apache.commons.commons-logging"/>
       <plugin id="org.apache.commons.commons-fileupload"/>
       <plugin id="org.apache.commons.commons-io"/>
       <plugin id="org.apache.felix.gogo.command"/>
@@ -75,6 +79,10 @@
       <plugin id="com.kk.pde.ds.mcp.client" autoStart="true" startLevel="4" />
       <plugin id="com.kk.pde.ds.mcp.llm" autoStart="true" startLevel="4" />
       <plugin id="com.kk.pde.ds.chatbot" autoStart="true" startLevel="4" />
+      <plugin id="com.kk.pde.ds.rag" autoStart="true" startLevel="4" />
+      <plugin id="org.apache.pdfbox" autoStart="false" startLevel="4" />
+      <plugin id="org.apache.pdfbox.fontbox" autoStart="false" startLevel="4" />
+      <plugin id="org.apache.commons.commons-logging" autoStart="false" startLevel="4" />
       <plugin id="org.apache.felix.gogo.command" autoStart="true" startLevel="3" />
       <plugin id="org.apache.felix.gogo.runtime" autoStart="true" startLevel="3" />
       <plugin id="org.apache.felix.gogo.shell" autoStart="true" startLevel="3" />

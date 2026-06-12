@@ -300,5 +300,33 @@
 				</dependency>
 			</dependencies>
 		</location>
+		<!-- Document text extraction for RAG. Apache PDFBox 2.0.x handles PDF; it is a
+		     self-contained OSGi bundle pair (pdfbox + fontbox) that logs via commons-logging
+		     (JCL), NOT slf4j — so it does not disturb the project's slf4j 1.7 / Logback 1.2
+		     stack. Office (.docx/.pptx) and .html/.txt are extracted directly in our bundle
+		     (OOXML is zipped XML), needing no further libraries. -->
+		<location includeDependencyDepth="none" includeDependencyScopes="compile" missingManifest="error" type="Maven">
+			<dependencies>
+				<dependency>
+					<groupId>org.apache.pdfbox</groupId>
+					<artifactId>pdfbox</artifactId>
+					<version>2.0.32</version>
+					<type>jar</type>
+				</dependency>
+				<dependency>
+					<groupId>org.apache.pdfbox</groupId>
+					<artifactId>fontbox</artifactId>
+					<version>2.0.32</version>
+					<type>jar</type>
+				</dependency>
+				<!-- commons-logging backend for PDFBox/fontbox (JCL). -->
+				<dependency>
+					<groupId>commons-logging</groupId>
+					<artifactId>commons-logging</artifactId>
+					<version>1.3.5</version>
+					<type>jar</type>
+				</dependency>
+			</dependencies>
+		</location>
 	</locations>
 </target>

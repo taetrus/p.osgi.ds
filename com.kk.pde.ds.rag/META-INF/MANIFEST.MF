@@ -1,0 +1,16 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: com.kk.pde.ds.rag
+Bundle-SymbolicName: com.kk.pde.ds.rag
+Bundle-Version: 1.0.0.qualifier
+Import-Package: com.kk.pde.ds.mcp.api,
+ org.apache.pdfbox.pdmodel;version="[2.0,3)",
+ org.apache.pdfbox.text;version="[2.0,3)",
+ org.osgi.service.component.annotations;version="1.5.1";resolution:=optional,
+ org.slf4j;version="1.7.32"
+Export-Package: com.kk.pde.ds.rag.api
+Service-Component: OSGI-INF/*.xml
+Bundle-Vendor: KK
+Automatic-Module-Name: com.kk.pde.ds.rag
+Bundle-ActivationPolicy: lazy
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
