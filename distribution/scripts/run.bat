@@ -26,4 +26,8 @@ if not defined OSGI_JAR (
 
 echo Starting OSGi framework: %OSGI_JAR%
 cd /d "!PRODUCT_DIR!"
-java -jar "%OSGI_JAR%" -configuration configuration -console -consoleLog %*
+rem Airgapped safety: forbid external DTD/schema/stylesheet fetching during XML parsing.
+set "OFFLINE_XML=-Djavax.xml.accessExternalDTD= -Djavax.xml.accessExternalSchema= -Djavax.xml.accessExternalStylesheet="
+rem %* carries caller -D flags (e.g. -Dopenrouter.api.key, -Drag.docs.dir); they must precede
+rem -jar to reach the JVM as system properties. Equinox launcher args stay after the jar.
+java %OFFLINE_XML% %* -jar "%OSGI_JAR%" -configuration configuration -console -consoleLog

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.1.0" activate="activate" name="com.kk.pde.ds.rag.internal.SlidingWindowChunker">
+   <service>
+      <provide interface="com.kk.pde.ds.rag.api.TextChunker"/>
+   </service>
+   <implementation class="com.kk.pde.ds.rag.internal.SlidingWindowChunker"/>
+</scr:component>
