@@ -57,6 +57,18 @@ distribution\scripts\run.bat
 
 The API key can also be passed as a system property: `./distribution/scripts/run.sh -Dopenrouter.api.key=your_key`
 
+Any `-D` flags you pass to `run.sh`/`run.bat` are forwarded to the JVM (they are placed
+**before** `-jar`, where JVM system properties must go). For example, to enable Document
+Q&A and auto-ingest a folder of documents at startup:
+
+```bash
+export OPENROUTER_API_KEY=your_key_here
+./distribution/scripts/run.sh \
+    -Dopenrouter.base.url=https://your-embeddings-proxy/v1 \
+    -Dopenrouter.embeddings.model=intfloat/multilingual-e5-large \
+    -Drag.docs.dir=/path/to/your/documents
+```
+
 **Or from inside the built product directory:**
 
 macOS product is wrapped in an `.app` bundle:
@@ -100,6 +112,7 @@ com.kk.pde.ds.mcp.server → MCP server (HTTP servlet + tool registry + built-in
 com.kk.pde.ds.mcp.client → MCP client (tests server via HTTP/JSON-RPC)
 com.kk.pde.ds.mcp.llm  → OpenRouter LLM bridge (agent loop with tool calls)
 com.kk.pde.ds.chatbot  → Swing chatbot UI (model selection, chat history, LLM integration)
+com.kk.pde.ds.rag      → Document Q&A (RAG): parse/chunk/embed/store + search-as-tool
 com.kk.pde.ds.ecf.api      → IRemoteGreet contract (ECF remote service interface)
 com.kk.pde.ds.ecf.host     → RemoteGreetImpl exported as a remote service (ECF RSA)
 com.kk.pde.ds.ecf.consumer → Imports IRemoteGreet via EDEF, @Reference injection
@@ -160,6 +173,66 @@ The `com.kk.pde.ds.chatbot` bundle provides a Swing-based chat interface for int
 2. `ChatService` injects `OpenRouterAgent` for LLM communication
 3. `App` injects `ChatService` and launches `ChatFrame` on the EDT
 4. `ChatFrame` uses `SwingWorker` for non-blocking LLM calls
+
+## Document Q&A (RAG)
+
+The `com.kk.pde.ds.rag` bundle adds **retrieval-augmented generation**: it ingests local
+documents and exposes retrieval to the LLM **as a tool** (`document_search`), so the
+existing chat/tool loop decides when to retrieve. There is no always-on inject-then-answer
+pipeline. The two tools register through the same `IMcpToolRegistry` as the built-in tools,
+so **no existing module changed**.
+
+**Pipeline (each stage an OSGi service behind an interface in `com.kk.pde.ds.rag.api`):**
+
+| Component | Role |
+|-----------|------|
+| `MultiFormatDocumentParser` | PDF → Apache PDFBox; `.docx`/`.pptx` → read the OOXML zip directly; `.html`/`.htm` → tag-strip; `.txt`/`.md` → UTF-8 |
+| `SlidingWindowChunker` | ~400-token chunks, ~12% overlap, paragraph/sentence boundaries (kept under E5's 512-token window) |
+| `OpenAiEmbeddingClient` | POSTs `/v1/embeddings`, mirrors the chat client's config; applies E5 `query:`/`passage:` role prefixes |
+| `InMemoryVectorStore` | brute-force cosine over `float[]`, behind a swappable `VectorStore` interface (pgvector-ready) |
+| `DocumentIngestionService` | orchestrates parse → chunk → embed → store, and answers `search` |
+| `DocumentSearchTool` / `IngestDocumentsTool` | the two `IMcpTool`s the LLM can call |
+
+**Supported formats:** `.pdf`, `.docx`, `.pptx`, `.html`/`.htm`, `.txt`/`.md`.
+
+**Configuration (system properties / env vars):**
+
+| Property | Env var | Default | Purpose |
+|----------|---------|---------|---------|
+| `openrouter.api.key` | `OPENROUTER_API_KEY` | — | API key (shared with the chat client) |
+| `openrouter.base.url` | — | `https://openrouter.ai/api/v1` | embeddings POSTed to `{base}/embeddings` |
+| `openrouter.embeddings.model` | `OPENROUTER_EMBEDDINGS_MODEL` | `intfloat/multilingual-e5-large` | embedding model |
+| `rag.docs.dir` | — | — | folder auto-ingested at startup (recursive, daemon thread) |
+| `rag.embedding.query.prefix` | — | `query: ` | E5 query prefix (blank it for non-E5 models like qwen3) |
+| `rag.embedding.passage.prefix` | — | `passage: ` | E5 passage prefix |
+| `rag.chunk.target.tokens` | — | `400` | chunk size |
+| `rag.chunk.overlap.tokens` | — | `50` | chunk overlap |
+
+**Use it:** set `-Drag.docs.dir` at startup (see "Running the Application"), or ingest at
+runtime via the chatbot (the model calls `ingest_documents`) or directly over the MCP HTTP
+endpoint:
+
+```bash
+# Ingest a folder
+curl -s -X POST http://localhost:8080/mcp -H 'Content-Type: application/json' -d \
+ '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"ingest_documents","arguments":{"path":"/path/to/docs"}}}'
+
+# Search (the LLM normally calls this itself during a chat)
+curl -s -X POST http://localhost:8080/mcp -H 'Content-Type: application/json' -d \
+ '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"document_search","arguments":{"query":"your question","top_k":"5"}}}'
+```
+
+**Key facts / pitfalls:**
+- **No Apache Tika.** Tika (every version) hard-requires slf4j 2.0, which cascades into a
+  project-wide logging migration (Logback 1.3 + Aries SPI Fly) and breaks Felix Health Check
+  (`org.slf4j.helpers [1.7,2.0)`). PDFBox logs via commons-logging (JCL), so the slf4j 1.7 /
+  Logback 1.2 stack is untouched. `.docx`/`.pptx` are read as OOXML zips (no Apache POI).
+- The embeddings client reuses the chat client's exact config source (`openrouter.*`), so the
+  embeddings endpoint uses the same base URL and key.
+- E5 models are asymmetric and prefix-sensitive, and truncate at 512 tokens — hence the role
+  prefixes and the 400-token chunk default.
+- See `com.kk.pde.ds.rag/README.md` for the full verification record and `FOR_Kerem_RAG.md`
+  for the design narrative.
 
 ## ECF Remote Services
 
@@ -227,4 +300,5 @@ consumer's `osgi>` prompt, `ecf:greet World` re-invokes on demand.
 - **Felix HTTP Jetty** with HTTP Whiteboard for REST API
 - **Felix WebConsole** with DS plugin
 - **Eclipse Communication Framework (ECF) 3.14.x** for OSGi Remote Services (RSA) with the Generic provider
+- **Apache PDFBox 2.0.x** (+ fontbox, commons-logging) for PDF text extraction in the RAG bundle
 - **Logback** for logging (default level: INFO)
