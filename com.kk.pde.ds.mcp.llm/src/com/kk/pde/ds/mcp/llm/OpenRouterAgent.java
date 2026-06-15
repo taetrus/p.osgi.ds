@@ -7,8 +7,12 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -34,14 +38,21 @@ import com.kk.pde.ds.mcp.api.IMcpToolRegistry;
  * Configuration via system properties (set with -D at startup):
  *   openrouter.api.key   — required; your OpenRouter API key
  *   openrouter.model     — optional; model ID (default: google/gemini-flash-1.5)
+ *   openrouter.base.url  — optional; API base URL (default: https://openrouter.ai/api/v1)
  */
 @Component(service = OpenRouterAgent.class)
 public class OpenRouterAgent {
 
 	private static final Logger LOG = LoggerFactory.getLogger(OpenRouterAgent.class);
-	private static final String OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+	private static final String DEFAULT_BASE_URL = "https://openrouter.ai/api/v1";
 	private static final String DEFAULT_MODEL = "google/gemini-flash-1.5";
 	private static final int MAX_TURNS = 10;
+
+	/** Name of the RAG retrieval tool whose results carry document citations. */
+	private static final String DOC_SEARCH_TOOL = "document_search";
+
+	/** A citation line emitted by document_search, e.g. "[1] report.pdf (chunk 2)  (score 0.812)". */
+	private static final Pattern CITATION_LINE = Pattern.compile("^\\s*\\[\\d+\\]\\s+(.*)$");
 
 	private IMcpToolRegistry registry;
 	private String apiKeyOverride;
@@ -62,7 +73,10 @@ public class OpenRouterAgent {
 		this.apiKeyOverride = apiKey;
 	}
 
-	/** Set a base URL override (takes priority over the default OPENROUTER_URL). */
+	/**
+	 * Set a base URL override. Takes priority over the {@code openrouter.base.url}
+	 * system property and the built-in default.
+	 */
 	public void setBaseUrl(String baseUrl) {
 		this.baseUrlOverride = baseUrl;
 	}
@@ -115,6 +129,9 @@ public class OpenRouterAgent {
 		LOG.info("Chat with history: model={}, messages={}, tools={}",
 			model, messages.size(), registry.getTools().size());
 
+		// Documents cited via document_search during this answer (insertion-ordered, deduped).
+		Set<String> referencedDocs = new LinkedHashSet<String>();
+
 		for (int turn = 0; turn < MAX_TURNS; turn++) {
 			String requestBody = buildRequest(model, messages, toolsJson);
 			String response = post(apiKey, requestBody);
@@ -146,7 +163,8 @@ public class OpenRouterAgent {
 					messages.add("{\"role\":\"assistant\",\"content\":\""
 						+ LlmJsonUtil.escape(content) + "\"}");
 				}
-				return content != null ? content : "(no content in response)";
+				String answer = content != null ? content : "(no content in response)";
+				return appendReferences(answer, referencedDocs);
 			}
 
 			if ("tool_calls".equals(finishReason)) {
@@ -166,6 +184,10 @@ public class OpenRouterAgent {
 
 				String toolResult = executeTool(toolName, argsJson);
 				LOG.info("Tool result for {}: {}", toolName, toolResult);
+
+				if (DOC_SEARCH_TOOL.equals(toolName)) {
+					collectDocumentReferences(toolResult, referencedDocs);
+				}
 
 				messages.add("{\"role\":\"tool\",\"tool_call_id\":\""
 					+ LlmJsonUtil.escape(callId) + "\",\"content\":\""
@@ -191,6 +213,56 @@ public class OpenRouterAgent {
 			LOG.error("Tool execution failed: {}", toolName, e);
 			return "Error executing tool '" + toolName + "': " + e.getMessage();
 		}
+	}
+
+	/**
+	 * Pull source document names out of a document_search result and add them to
+	 * {@code out} (deduped, insertion-ordered). The tool emits one citation line per
+	 * hit: {@code "[1] report.pdf (chunk 2)  (score 0.812)"}. We strip the
+	 * {@code "[n] "} prefix, then strip the trailing {@code "  (score …)"} and the
+	 * trailing {@code " (location)"} group, leaving the source filename.
+	 *
+	 * <p>Coupled to {@code DocumentSearchTool.execute}'s output format. The stripping
+	 * is deliberately tolerant (it removes trailing parenthesised groups rather than
+	 * matching "chunk"/"score" literals), so wording tweaks there won't break it. If
+	 * that citation line is ever redesigned, update this method.</p>
+	 */
+	private void collectDocumentReferences(String toolResult, Set<String> out) {
+		if (toolResult == null || toolResult.isEmpty()) {
+			return;
+		}
+		for (String line : toolResult.split("\n")) {
+			Matcher m = CITATION_LINE.matcher(line);
+			if (!m.matches()) {
+				continue;
+			}
+			String rest = m.group(1).trim();                 // "report.pdf (chunk 2)  (score 0.812)"
+			rest = rest.replaceFirst("\\s*\\([^()]*\\)\\s*$", ""); // drop "  (score 0.812)"
+			rest = rest.replaceFirst("\\s*\\([^()]*\\)\\s*$", ""); // drop " (chunk 2)"
+			String source = rest.trim();
+			if (!source.isEmpty()) {
+				out.add(source);
+			}
+		}
+	}
+
+	/**
+	 * Append a References footer to the answer. Lists the cited document names, or
+	 * "none" when the answer used no documents. Added to the returned text only —
+	 * never to the conversation history.
+	 */
+	private String appendReferences(String answer, Set<String> docs) {
+		StringBuilder sb = new StringBuilder(answer == null ? "" : answer);
+		sb.append("\n\n---\n**References:** ");
+		if (docs.isEmpty()) {
+			sb.append("none");
+		} else {
+			sb.append("\n");
+			for (String doc : docs) {
+				sb.append("- ").append(doc).append("\n");
+			}
+		}
+		return sb.toString();
 	}
 
 	private String buildToolsJson() {
@@ -274,13 +346,23 @@ public class OpenRouterAgent {
 		return key;
 	}
 
+	/**
+	 * Resolve the API base URL. Priority: programmatic override (set by ChatService)
+	 * &rarr; {@code -Dopenrouter.base.url} system property &rarr; built-in default.
+	 * Mirrors the embeddings client and ChatConfig so the REST endpoint honours the
+	 * same base URL as the Swing chatbot. A trailing slash is tolerated.
+	 */
+	private String resolveBaseUrl() {
+		String base = (baseUrlOverride != null && !baseUrlOverride.isEmpty())
+			? baseUrlOverride
+			: System.getProperty("openrouter.base.url", DEFAULT_BASE_URL);
+		return base.endsWith("/") ? base.substring(0, base.length() - 1) : base;
+	}
+
 	private String post(String apiKey, String jsonBody) {
 		HttpURLConnection conn = null;
 		try {
-			String targetUrl = (baseUrlOverride != null && !baseUrlOverride.isEmpty())
-				? baseUrlOverride + "/chat/completions"
-				: OPENROUTER_URL;
-			URL url = new URL(targetUrl);
+			URL url = new URL(resolveBaseUrl() + "/chat/completions");
 			conn = (HttpURLConnection) url.openConnection();
 			conn.setRequestMethod("POST");
 			conn.setRequestProperty("Content-Type", "application/json");
