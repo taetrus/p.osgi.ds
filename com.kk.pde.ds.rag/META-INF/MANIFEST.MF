@@ -4,7 +4,12 @@ Bundle-Name: com.kk.pde.ds.rag
 Bundle-SymbolicName: com.kk.pde.ds.rag
 Bundle-Version: 1.0.0.qualifier
 Import-Package: com.kk.pde.ds.mcp.api,
+ org.apache.pdfbox.cos;version="[2.0,3)",
  org.apache.pdfbox.pdmodel;version="[2.0,3)",
+ org.apache.pdfbox.pdmodel.graphics;version="[2.0,3)",
+ org.apache.pdfbox.pdmodel.graphics.form;version="[2.0,3)",
+ org.apache.pdfbox.pdmodel.graphics.image;version="[2.0,3)",
+ org.apache.pdfbox.rendering;version="[2.0,3)",
  org.apache.pdfbox.text;version="[2.0,3)",
  org.osgi.service.component.annotations;version="1.5.1";resolution:=optional,
  org.slf4j;version="1.7.32"

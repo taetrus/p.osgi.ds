@@ -3,5 +3,6 @@
    <service>
       <provide interface="com.kk.pde.ds.rag.api.DocumentParser"/>
    </service>
+   <reference bind="setOcr" interface="com.kk.pde.ds.rag.api.OcrEngine" name="Ocr"/>
    <implementation class="com.kk.pde.ds.rag.internal.MultiFormatDocumentParser"/>
 </scr:component>

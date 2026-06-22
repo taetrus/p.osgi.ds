@@ -207,6 +207,13 @@ so **no existing module changed**.
 | `rag.embedding.passage.prefix` | — | `passage: ` | E5 passage prefix |
 | `rag.chunk.target.tokens` | — | `400` | chunk size |
 | `rag.chunk.overlap.tokens` | — | `50` | chunk overlap |
+| `rag.ocr.enabled` | `RAG_OCR_ENABLED` | `true` | OCR master switch (see OCR section below) |
+| `rag.ocr.binary` | — | `tesseract` | path to the Tesseract binary |
+| `rag.ocr.lang` | — | `eng` | Tesseract `-l` value, e.g. `eng+tur` |
+| `rag.ocr.dpi` | — | `300` | raster DPI for scanned PDF pages |
+| `rag.ocr.min.chars.per.page` | — | `16` | below this a PDF page is treated as a scan |
+| `rag.ocr.timeout.seconds` | — | `60` | per-image OCR subprocess timeout |
+| `rag.ocr.max.images.per.doc` | — | `200` | per-document embedded-image cap |
 
 **Use it:** set `-Drag.docs.dir` at startup (see "Running the Application"), or ingest at
 runtime via the chatbot (the model calls `ingest_documents`) or directly over the MCP HTTP
@@ -222,11 +229,27 @@ curl -s -X POST http://localhost:8080/mcp -H 'Content-Type: application/json' -d
  '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"document_search","arguments":{"query":"your question","top_k":"5"}}}'
 ```
 
+**OCR (text-on-images & scanned PDFs):** the parser recovers text rendered as pixels when a
+Tesseract binary is available. Per PDF page: if the text layer is empty/sparse
+(< `rag.ocr.min.chars.per.page`) the page is treated as a **scan** — rasterized via PDFBox
+`PDFRenderer` at `rag.ocr.dpi` and OCR'd whole; otherwise its text is kept and each embedded
+raster image on the page is OCR'd and appended. For `.docx`, images under `word/media/` are
+OCR'd too. (`.pptx` embedded-image OCR is not yet implemented.) OCR is the **only** step that
+shells out — `OcrEngine`/`TesseractCliOcrEngine` invoke `tesseract <img> stdout -l <lang>` as
+a subprocess (no Tess4J/JNA, no new bundle deps). Requires the binary on the host
+(`brew install tesseract` / `apt install tesseract-ocr`); if it is absent or
+`rag.ocr.enabled=false`, ingestion silently falls back to text-only. Use
+`-Djava.awt.headless=true` for server runs (PDFBox/ImageIO use AWT).
+
 **Key facts / pitfalls:**
 - **No Apache Tika.** Tika (every version) hard-requires slf4j 2.0, which cascades into a
   project-wide logging migration (Logback 1.3 + Aries SPI Fly) and breaks Felix Health Check
   (`org.slf4j.helpers [1.7,2.0)`). PDFBox logs via commons-logging (JCL), so the slf4j 1.7 /
   Logback 1.2 stack is untouched. `.docx`/`.pptx` are read as OOXML zips (no Apache POI).
+- **OCR via the Tesseract CLI, not Tess4J.** The subprocess approach adds zero Java/OSGi
+  dependencies and no slf4j transitive — same dependency-minimalism that ruled out Tika. The
+  trade-off is an external binary requirement. Rasterization needs no extra dependency:
+  PDFBox 2.0.32 already ships `PDFRenderer`.
 - The embeddings client reuses the chat client's exact config source (`openrouter.*`), so the
   embeddings endpoint uses the same base URL and key.
 - E5 models are asymmetric and prefix-sensitive, and truncate at 512 tokens — hence the role
