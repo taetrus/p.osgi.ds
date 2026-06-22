@@ -1,9 +1,12 @@
 package com.kk.pde.ds.rag.internal;
 
 import java.io.IOException;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -182,14 +185,24 @@ public class DocumentIngestionServiceImpl implements DocumentIngestionService {
 			}
 			return;
 		}
-		// try-with-resources: Files.walk holds an open directory handle.
-		try (java.util.stream.Stream<Path> walk = Files.walk(root)) {
-			for (Path p : (Iterable<Path>) walk::iterator) {
-				if (Files.isRegularFile(p) && parser.supports(p)) {
+		// walkFileTree (not Files.walk) so a single unreadable file or directory
+		// is logged and skipped instead of aborting the entire ingestion.
+		Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
+			@Override
+			public FileVisitResult visitFile(Path p, BasicFileAttributes attrs) {
+				if (attrs.isRegularFile() && parser.supports(p)) {
 					out.add(p);
 				}
+				return FileVisitResult.CONTINUE;
 			}
-		}
+
+			@Override
+			public FileVisitResult visitFileFailed(Path p, IOException exc) {
+				// Skip the unreadable entry but keep walking the rest of the tree.
+				LOG.warn("Skipping unreadable path during ingestion: {} ({})", p, exc.getMessage());
+				return FileVisitResult.CONTINUE;
+			}
+		});
 		// Deterministic order for reproducible chunk ids.
 		Collections.sort(out, new Comparator<Path>() {
 			@Override
