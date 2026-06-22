@@ -1,5 +1,6 @@
 package com.kk.pde.ds.rag.internal;
 
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,6 +17,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -35,29 +37,54 @@ import com.kk.pde.ds.rag.api.DocumentParser;
  *       heavyweight office library (and avoids POI's large dependency tree).</li>
  *   <li><b>.html / .htm</b> — strip tags and decode entities.</li>
  *   <li><b>.txt / .md</b> — read as UTF-8.</li>
+ *   <li><b>image files</b> (.png/.jpg/.jpeg/.tif/.tiff/.bmp/.gif) — OCR via
+ *       {@link OcrEngine}.</li>
  * </ul>
+ *
+ * <p><b>Text inside images</b> is recovered through OCR (see {@link OcrEngine}):
+ * scanned/image-only PDF pages are rasterised and OCR'd, embedded OOXML media
+ * parts are OCR'd, and standalone image files are read directly. Scope is limited
+ * to <em>reading text out of images</em> — no figure/diagram description. When OCR
+ * is unavailable (Tesseract not installed, or {@code -Drag.ocr.enabled=false}) the
+ * parser silently falls back to text-layer-only extraction.</p>
  *
  * <p>PDFBox logs via commons-logging (JCL), not slf4j, so it does not perturb the
  * project's slf4j 1.7 / Logback stack. Everything else here is dependency-free.
  * No network access occurs during parsing — the airgap requirement is met by
- * construction.</p>
+ * construction (OCR shells out to a local {@code tesseract} binary).</p>
  */
 @Component(service = DocumentParser.class)
 public class MultiFormatDocumentParser implements DocumentParser {
 
 	private static final Logger LOG = LoggerFactory.getLogger(MultiFormatDocumentParser.class);
 
-	private static final Set<String> SUPPORTED_EXTENSIONS = new HashSet<String>(Arrays.asList(
+	private static final Set<String> TEXT_EXTENSIONS = new HashSet<String>(Arrays.asList(
 		"pdf", "docx", "pptx", "txt", "md", "html", "htm"));
+
+	/** Standalone raster image formats handled purely by OCR. */
+	private static final Set<String> IMAGE_EXTENSIONS = new HashSet<String>(Arrays.asList(
+		"png", "jpg", "jpeg", "tif", "tiff", "bmp", "gif"));
+
+	/** A PDF page whose text layer has fewer than this many non-whitespace
+	 *  characters is treated as image-only and sent to OCR. */
+	private static final int DEFAULT_PDF_MIN_CHARS_PER_PAGE = 16;
+
+	private OcrEngine ocr;
+	private int pdfMinCharsPerPage;
 
 	@Activate
 	public void activate() {
-		LOG.info("MultiFormatDocumentParser activated (PDFBox + direct OOXML/HTML/text)");
+		this.ocr = new OcrEngine();
+		this.pdfMinCharsPerPage = parseInt(
+			System.getProperty("rag.ocr.pdf.min.chars.per.page"), DEFAULT_PDF_MIN_CHARS_PER_PAGE);
+		LOG.info("MultiFormatDocumentParser activated (PDFBox + direct OOXML/HTML/text; OCR {})",
+			ocr.isEnabled() ? "enabled" : "disabled");
 	}
 
 	@Override
 	public boolean supports(Path file) {
-		return SUPPORTED_EXTENSIONS.contains(extension(file));
+		String ext = extension(file);
+		return TEXT_EXTENSIONS.contains(ext) || IMAGE_EXTENSIONS.contains(ext);
 	}
 
 	@Override
@@ -75,8 +102,22 @@ public class MultiFormatDocumentParser implements DocumentParser {
 		if ("html".equals(ext) || "htm".equals(ext)) {
 			return htmlToText(readUtf8(file));
 		}
+		if (IMAGE_EXTENSIONS.contains(ext)) {
+			return extractImage(file);
+		}
 		// txt, md, and anything else supported: plain UTF-8.
 		return readUtf8(file);
+	}
+
+	// ---- standalone images -------------------------------------------------
+
+	private String extractImage(Path file) throws IOException {
+		String text = ocr.ocr(Files.readAllBytes(file));
+		if (text.isEmpty() && !ocr.isAvailable()) {
+			LOG.warn("Image '{}' yielded no text: OCR is unavailable, so its content "
+				+ "cannot be indexed.", file.getFileName());
+		}
+		return text;
 	}
 
 	// ---- PDF ---------------------------------------------------------------
@@ -86,7 +127,41 @@ public class MultiFormatDocumentParser implements DocumentParser {
 		try {
 			PDFTextStripper stripper = new PDFTextStripper();
 			stripper.setSortByPosition(true);
-			return stripper.getText(doc);
+
+			// Fast path: no OCR available -> single pass over the whole document,
+			// identical to the original behaviour.
+			if (!ocr.isAvailable()) {
+				return stripper.getText(doc);
+			}
+
+			// OCR path: walk page by page so we only rasterise pages that lack a
+			// real text layer (scanned / image-only pages).
+			int pages = doc.getNumberOfPages();
+			PDFRenderer renderer = new PDFRenderer(doc);
+			StringBuilder out = new StringBuilder();
+			int ocrPages = 0;
+			for (int i = 0; i < pages; i++) {
+				stripper.setStartPage(i + 1);
+				stripper.setEndPage(i + 1);
+				String pageText = stripper.getText(doc);
+				if (nonWhitespaceCount(pageText) >= pdfMinCharsPerPage) {
+					out.append(pageText);
+					continue;
+				}
+				// Sparse/empty text layer: treat as an image page and OCR it.
+				BufferedImage img = renderer.renderImageWithDPI(i, ocr.dpi());
+				String ocrText = ocr.ocr(img);
+				if (!ocrText.isEmpty()) {
+					out.append(ocrText).append("\n\n");
+					ocrPages++;
+				} else if (!pageText.isEmpty()) {
+					out.append(pageText);
+				}
+			}
+			if (ocrPages > 0) {
+				LOG.info("OCR recovered text from {} image-only page(s) in {}", ocrPages, file.getFileName());
+			}
+			return out.toString();
 		} finally {
 			doc.close();
 		}
@@ -103,6 +178,8 @@ public class MultiFormatDocumentParser implements DocumentParser {
 	 */
 	private String extractOoxml(Path file, String exactEntry, String entryPrefix) throws IOException {
 		StringBuilder out = new StringBuilder();
+		boolean doOcr = ocr.isAvailable();
+		List<String> imageTexts = new ArrayList<String>(); // OCR'd media, appended last
 		InputStream fis = Files.newInputStream(file);
 		try {
 			ZipInputStream zip = new ZipInputStream(fis);
@@ -115,6 +192,11 @@ public class MultiFormatDocumentParser implements DocumentParser {
 					out.append(ooxmlXmlToText(readEntry(zip)));
 				} else if (entryPrefix != null && name.startsWith(entryPrefix) && name.endsWith(".xml")) {
 					slideParts.add(new String[] { name, readEntry(zip) });
+				} else if (doOcr && isOoxmlImage(name)) {
+					String t = ocr.ocr(readEntryBytes(zip));
+					if (!t.isEmpty()) {
+						imageTexts.add(t.trim());
+					}
 				}
 				zip.closeEntry();
 			}
@@ -127,11 +209,25 @@ public class MultiFormatDocumentParser implements DocumentParser {
 					}
 				}
 			}
+			// Append text recovered from embedded images after the body text.
+			for (String t : imageTexts) {
+				out.append(t).append("\n\n");
+			}
 			zip.close();
 		} finally {
 			fis.close();
 		}
 		return out.toString();
+	}
+
+	/** True for OOXML media parts that {@link OcrEngine} can plausibly decode. */
+	private static boolean isOoxmlImage(String entryName) {
+		String lower = entryName.toLowerCase(Locale.ROOT);
+		if (lower.indexOf("/media/") < 0) {
+			return false;
+		}
+		int dot = lower.lastIndexOf('.');
+		return dot >= 0 && IMAGE_EXTENSIONS.contains(lower.substring(dot + 1));
 	}
 
 	/**
@@ -194,13 +290,42 @@ public class MultiFormatDocumentParser implements DocumentParser {
 	}
 
 	private static String readEntry(ZipInputStream zip) throws IOException {
+		return new String(readEntryBytes(zip), StandardCharsets.UTF_8);
+	}
+
+	private static byte[] readEntryBytes(ZipInputStream zip) throws IOException {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		byte[] buf = new byte[8192];
 		int n;
 		while ((n = zip.read(buf)) != -1) {
 			bos.write(buf, 0, n);
 		}
-		return new String(bos.toByteArray(), StandardCharsets.UTF_8);
+		return bos.toByteArray();
+	}
+
+	/** Count of non-whitespace characters; used to decide if a PDF page has a real text layer. */
+	private static int nonWhitespaceCount(String s) {
+		if (s == null) {
+			return 0;
+		}
+		int count = 0;
+		for (int i = 0; i < s.length(); i++) {
+			if (!Character.isWhitespace(s.charAt(i))) {
+				count++;
+			}
+		}
+		return count;
+	}
+
+	private static int parseInt(String s, int def) {
+		if (s == null || s.isEmpty()) {
+			return def;
+		}
+		try {
+			return Integer.parseInt(s.trim());
+		} catch (NumberFormatException e) {
+			return def;
+		}
 	}
 
 	/** Decode the small set of XML/HTML entities that appear in document text. */

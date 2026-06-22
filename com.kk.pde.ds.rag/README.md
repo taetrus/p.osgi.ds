@@ -23,7 +23,30 @@ piece (notably `VectorStore` → pgvector) can be swapped without touching calle
 ## Supported formats
 
 `.pdf` (Apache PDFBox 2.0.x) · `.docx` / `.pptx` (read directly from the OOXML zip —
-no Apache POI, no extra dependencies) · `.html` / `.htm` · `.txt` / `.md`.
+no Apache POI, no extra dependencies) · `.html` / `.htm` · `.txt` / `.md` ·
+image files `.png` / `.jpg` / `.jpeg` / `.tif` / `.tiff` / `.bmp` / `.gif` (OCR).
+
+## Text inside images (OCR)
+
+Text that lives **inside images** — scanned PDF pages, embedded screenshots,
+standalone image files — is recovered with OCR so it can be chunked and indexed
+like any other text. Scope is intentionally limited to *reading text out of
+images*; there is no figure/diagram description.
+
+- **PDF:** each page's text layer is read first; only pages with essentially no
+  text (scanned / image-only pages) are rasterised and OCR'd. Born-digital pages
+  skip OCR, so cost is proportional to how "scanned" a document is.
+- **.docx / .pptx:** embedded media parts (`*/media/*.png|jpg|…`) are OCR'd and
+  their text appended after the body text.
+- **standalone images:** OCR'd directly.
+
+OCR shells out to a local **`tesseract`** binary (no network — the airgap holds),
+which keeps this bundle's dependency tree free of a Java OCR library (Tess4J would
+drag in a second slf4j, the same collision that ruled out Apache Tika). **If
+`tesseract` is not installed, or `-Drag.ocr.enabled=false`, the parser silently
+falls back to text-layer-only extraction** — image text is simply skipped, with a
+one-time warning. Install Tesseract (`apt install tesseract-ocr`, `brew install
+tesseract`) and the language packs you need to enable it.
 
 ## Configuration (system properties / env vars)
 
@@ -40,6 +63,11 @@ Mirrors the existing chat client exactly, so the embeddings endpoint uses the
 | `rag.embedding.passage.prefix` | — | `passage: ` | E5 passage role prefix |
 | `rag.chunk.target.tokens` | — | `400` | chunk size (kept < E5's 512 window) |
 | `rag.chunk.overlap.tokens` | — | `50` | chunk overlap (~12%) |
+| `rag.ocr.enabled` | — | `true` | master switch for OCR of text inside images |
+| `rag.ocr.tesseract.path` | — | `tesseract` | binary name or absolute path |
+| `rag.ocr.language` | — | `eng` | Tesseract language pack(s), e.g. `eng+deu` |
+| `rag.ocr.dpi` | — | `300` | render/OCR resolution for rasterised PDF pages |
+| `rag.ocr.pdf.min.chars.per.page` | — | `16` | text-layer chars below which a PDF page is OCR'd as image-only |
 
 > **E5 note:** `multilingual-e5-large` is asymmetric and prefix-sensitive — queries
 > get `query: `, passages get `passage: `. It also truncates at 512 tokens, so the

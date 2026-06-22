@@ -186,14 +186,16 @@ so **no existing module changed**.
 
 | Component | Role |
 |-----------|------|
-| `MultiFormatDocumentParser` | PDF → Apache PDFBox; `.docx`/`.pptx` → read the OOXML zip directly; `.html`/`.htm` → tag-strip; `.txt`/`.md` → UTF-8 |
+| `MultiFormatDocumentParser` | PDF → Apache PDFBox; `.docx`/`.pptx` → read the OOXML zip directly; `.html`/`.htm` → tag-strip; `.txt`/`.md` → UTF-8; **text inside images** (scanned PDF pages, embedded media, standalone image files) → OCR via `OcrEngine` |
+| `OcrEngine` | shells out to a local `tesseract` binary to read text out of images (scope: text only, no figure/diagram description); degrades silently to text-only when Tesseract is absent or `rag.ocr.enabled=false` |
 | `SlidingWindowChunker` | ~400-token chunks, ~12% overlap, paragraph/sentence boundaries (kept under E5's 512-token window) |
 | `OpenAiEmbeddingClient` | POSTs `/v1/embeddings`, mirrors the chat client's config; applies E5 `query:`/`passage:` role prefixes |
 | `InMemoryVectorStore` | brute-force cosine over `float[]`, behind a swappable `VectorStore` interface (pgvector-ready) |
 | `DocumentIngestionService` | orchestrates parse → chunk → embed → store, and answers `search` |
 | `DocumentSearchTool` / `IngestDocumentsTool` | the two `IMcpTool`s the LLM can call |
 
-**Supported formats:** `.pdf`, `.docx`, `.pptx`, `.html`/`.htm`, `.txt`/`.md`.
+**Supported formats:** `.pdf`, `.docx`, `.pptx`, `.html`/`.htm`, `.txt`/`.md`, and image
+files `.png`/`.jpg`/`.jpeg`/`.tif`/`.tiff`/`.bmp`/`.gif` (OCR).
 
 **Configuration (system properties / env vars):**
 
@@ -207,6 +209,11 @@ so **no existing module changed**.
 | `rag.embedding.passage.prefix` | — | `passage: ` | E5 passage prefix |
 | `rag.chunk.target.tokens` | — | `400` | chunk size |
 | `rag.chunk.overlap.tokens` | — | `50` | chunk overlap |
+| `rag.ocr.enabled` | — | `true` | master switch for OCR of text inside images |
+| `rag.ocr.tesseract.path` | — | `tesseract` | OCR binary name or absolute path |
+| `rag.ocr.language` | — | `eng` | Tesseract language pack(s), e.g. `eng+deu` |
+| `rag.ocr.dpi` | — | `300` | render/OCR resolution for rasterised PDF pages |
+| `rag.ocr.pdf.min.chars.per.page` | — | `16` | text-layer chars below which a PDF page is OCR'd as image-only |
 
 **Use it:** set `-Drag.docs.dir` at startup (see "Running the Application"), or ingest at
 runtime via the chatbot (the model calls `ingest_documents`) or directly over the MCP HTTP
@@ -231,6 +238,14 @@ curl -s -X POST http://localhost:8080/mcp -H 'Content-Type: application/json' -d
   embeddings endpoint uses the same base URL and key.
 - E5 models are asymmetric and prefix-sensitive, and truncate at 512 tokens — hence the role
   prefixes and the 400-token chunk default.
+- **OCR (text inside images) shells out to the `tesseract` CLI**, not a Java OCR library:
+  Tess4J would pull in a second slf4j (the same collision that ruled out Tika). Tesseract must
+  be installed on the host (`apt install tesseract-ocr` / `brew install tesseract`) plus the
+  needed language packs; if it is missing, the parser silently degrades to text-layer-only
+  extraction (one-time warning). PDF pages are OCR'd only when their text layer is essentially
+  empty (scanned/image-only pages), so OCR cost is proportional to how "scanned" a doc is.
+  Scope is limited to reading text out of images — no figure/diagram description. PDF page
+  rasterisation uses PDFBox's `org.apache.pdfbox.rendering.PDFRenderer`.
 - See `com.kk.pde.ds.rag/README.md` for the full verification record and `FOR_Kerem_RAG.md`
   for the design narrative.
 
@@ -300,5 +315,6 @@ consumer's `osgi>` prompt, `ecf:greet World` re-invokes on demand.
 - **Felix HTTP Jetty** with HTTP Whiteboard for REST API
 - **Felix WebConsole** with DS plugin
 - **Eclipse Communication Framework (ECF) 3.14.x** for OSGi Remote Services (RSA) with the Generic provider
-- **Apache PDFBox 2.0.x** (+ fontbox, commons-logging) for PDF text extraction in the RAG bundle
+- **Apache PDFBox 2.0.x** (+ fontbox, commons-logging) for PDF text extraction and page rasterisation in the RAG bundle
+- **Tesseract OCR** (optional, invoked as an external CLI) for reading text inside images in the RAG bundle
 - **Logback** for logging (default level: INFO)
