@@ -4,6 +4,8 @@ Bundle-Name: com.kk.pde.ds.rag
 Bundle-SymbolicName: com.kk.pde.ds.rag
 Bundle-Version: 1.0.0.qualifier
 Import-Package: com.kk.pde.ds.mcp.api,
+ java.awt.image,
+ javax.imageio,
  org.apache.pdfbox.cos;version="[2.0,3)",
  org.apache.pdfbox.pdmodel;version="[2.0,3)",
  org.apache.pdfbox.pdmodel.graphics;version="[2.0,3)",
