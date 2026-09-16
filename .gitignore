@@ -1,5 +1,7 @@
 # Maven / Tycho build output
 target/
+# Written by Tycho into each module once pomDependencies=consider is on
+.tycho-consumer-pom.xml
 *.jar
 # ...but the chatbot's embedded commonmark jars are checked in (Bundle-ClassPath needs
 # them). Without this exception, an upgraded jar would be silently ignored and the
@@ -12,6 +14,8 @@ target/
 
 # Eclipse / PDE
 .metadata/
+bin/
+bin_test/
 #.settings/
 .loadpath
 .recommenders

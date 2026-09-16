@@ -12,6 +12,13 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
+	<!-- Test sources. test="true" is what Tycho reads to compile this folder in the
+	     test-compile phase and keep it out of the bundle jar (build.properties does not list it). -->
+	<classpathentry kind="src" output="bin_test" path="src_test">
+		<attributes>
+			<attribute name="test" value="true"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="con" path="org.eclipse.m2e.MAVEN2_CLASSPATH_CONTAINER">
 		<attributes>
 			<attribute name="maven.pomderived" value="true"/>

@@ -35,7 +35,7 @@ import com.kk.pde.ds.spike.api.ICatalogService;
  * <h2>Mocking, part 2: collaborators that return values, and Swing code under test</h2>
  *
  * <p>
- * Read {@code GreetHealthCheckTest} (in {@code com.kk.pde.ds.imp.tests}) first. It
+ * Read {@code GreetHealthCheckTest} (in {@code com.kk.pde.ds.imp}) first. It
  * introduces test doubles with a collaborator whose only method returns {@code void}.
  * {@link ICatalogService} is richer: {@code listItems()} returns data that the code
  * under test then <em>displays</em>, and {@code setSelectedId(String)} is called back
@@ -56,8 +56,8 @@ import com.kk.pde.ds.spike.api.ICatalogService;
  * {@code buildFrames}, which opens borderless {@code JFrame} windows and asks the
  * toolkit for the screen size. Neither works without a display: on the CI machine
  * they throw {@code HeadlessException}, and on a developer's desktop they would pop
- * windows open in the middle of the build. So this fragment's {@code pom.xml} forces
- * {@code -Djava.awt.headless=true}, and the tests call the package-private
+ * windows open in the middle of the build. So this bundle's {@code pom.xml} gives the
+ * surefire JVM {@code -Djava.awt.headless=true}, and the tests call the package-private
  * {@link MasterApp#buildPanels} directly. That method creates only <em>lightweight</em>
  * components ({@code JList}, {@code JLabel}, {@code JButton}…), which are pure Java and
  * run happily headless. Everything interesting about the collaborator happens there:

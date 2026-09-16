@@ -96,16 +96,17 @@ import com.kk.pde.ds.api.IGreet;
  * which is convenient — but it papers over the design smell rather than removing it.
  * </p>
  *
- * <h3>How Mockito runs inside OSGi</h3>
+ * <h3>Where Mockito comes from, and that warning in the log</h3>
  * <p>
- * Mockito is a test-only dependency: the five bundles (Mockito, its JUnit adapter,
- * ByteBuddy, the ByteBuddy agent, Objenesis) are declared in the target platform and
- * pulled in by this fragment's {@code Require-Bundle}; they never enter the product.
- * Mockito 5 defaults to the "inline" mock maker, which attaches a Java agent to the
- * running JVM and rewrites the mocked class's bytecode in place instead of generating a
- * subclass. That is what lets it work across OSGi bundle classloaders without any
- * special wiring — and it is why the test log prints a warning about Mockito
- * "self-attaching". The warning is expected.
+ * Mockito is an ordinary test-scope Maven dependency of this bundle (see
+ * {@code pom.xml}; versions are managed in the parent). Like every {@code *Test} class
+ * here it runs in a plain JVM, so no OSGi wiring is involved and nothing Mockito-related
+ * ever enters the product. Mockito 5 defaults to the "inline" mock maker, which attaches
+ * a Java agent to the running JVM and rewrites the mocked class's bytecode in place
+ * instead of generating a subclass — that is why the test log prints a warning about
+ * Mockito "self-attaching". The warning is expected. (ByteBuddy, the library doing the
+ * rewriting, is pinned in the parent pom because the JVM that runs the tests locally may
+ * be newer than the one on CI.)
  * </p>
  */
 public class GreetHealthCheckTest {
@@ -309,8 +310,9 @@ public class GreetHealthCheckTest {
      * Creates a health check with the given {@link IGreet} in its private
      * {@code greetService} field, standing in for OSGi's run-time injection. This is the
      * cost of field injection without a setter: a test has to reach in by reflection.
-     * It works here because this fragment shares the {@code imp} bundle's classloader,
-     * so nothing stands between us and the class's internals.
+     * It works because the test runs in a plain JVM with the class on the classpath, so
+     * nothing stands between us and the class's internals. ({@code GreetServiceIT} shows
+     * the other side: the same field filled by the real Declarative Services runtime.)
      */
     private static GreetHealthCheck healthCheckWith(IGreet greet) throws Exception {
         GreetHealthCheck healthCheck = new GreetHealthCheck();

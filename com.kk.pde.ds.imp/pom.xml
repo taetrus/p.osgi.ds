@@ -11,4 +11,80 @@
 
 	<artifactId>com.kk.pde.ds.imp</artifactId>
 	<packaging>eclipse-plugin</packaging>
+
+	<!-- Test-only. Versions and scope come from the parent's <dependencyManagement>.
+	     These never appear in the bundle manifest or the shipped jar. -->
+	<dependencies>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.platform</groupId>
+			<artifactId>junit-platform-launcher</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-junit-jupiter</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>net.bytebuddy</groupId>
+			<artifactId>byte-buddy</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>net.bytebuddy</groupId>
+			<artifactId>byte-buddy-agent</artifactId>
+		</dependency>
+		<!-- Only because this module has *IT tests that talk to the framework. -->
+		<dependency>
+			<groupId>org.osgi</groupId>
+			<artifactId>org.osgi.framework</artifactId>
+		</dependency>
+	</dependencies>
+
+	<!-- Test sources live in src_test/ (marked test="true" in .classpath). Listing a plugin
+	     here opts this bundle in to that tier; the executions are managed in the parent. -->
+	<build>
+		<plugins>
+			<!-- Tier 1: *Test classes, plain JVM (GreetTest, GreetHealthCheckTest). -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+			</plugin>
+			<!-- Tier 2: *IT classes, run inside Equinox (GreetServiceIT asserts real DS wiring). -->
+			<plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>tycho-surefire-plugin</artifactId>
+			</plugin>
+			<!-- Needed by tier 2 only.
+			     1. plugin-test resolves its test runtime under this bundle's own BREE (JavaSE-1.8),
+			        but the Tycho test harness (org.eclipse.core.runtime and friends) requires
+			        JavaSE-17. The bundle still compiles against the Java 8 profile; only the
+			        resolver stops enforcing the EE. The test JVM is 17+ anyway.
+			     2. Tycho's packaging adds `Require-Capability: osgi.extender=osgi.component` to
+			        the built manifest (this bundle has DS components), but nothing in the target
+			        platform is *required* to provide it, so the resolver must be told to bring
+			        Felix SCR along. The parent's tycho-surefire configuration starts it. -->
+			<plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>target-platform-configuration</artifactId>
+				<configuration>
+					<resolveWithExecutionEnvironmentConstraints>false</resolveWithExecutionEnvironmentConstraints>
+					<dependency-resolution>
+						<extraRequirements>
+							<requirement>
+								<type>eclipse-plugin</type>
+								<id>org.apache.felix.scr</id>
+								<versionRange>0.0.0</versionRange>
+							</requirement>
+						</extraRequirements>
+					</dependency-resolution>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 </project>
