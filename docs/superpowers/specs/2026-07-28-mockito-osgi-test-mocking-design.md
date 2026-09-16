@@ -1,5 +1,12 @@
 # Mocking support for the OSGi test suites — design
 
+> **Layout superseded (2026-09-16).** The `eclipse-test-plugin` fragments this spec adds
+> Mockito to were replaced by tests inside the host bundles (`src_test/`, two tiers,
+> `tycho-surefire:plugin-test`). See `2026-09-16-tycho-plugin-test-migration-design.md`.
+> `GreetHealthCheckTest` and `MasterAppTest` now run in a plain JVM; the Mockito teaching
+> arc below is unchanged, but references to fragments, `Require-Bundle` and "Mockito inside
+> Equinox" describe the old layout.
+
 **Date:** 2026-07-28
 **Status:** Implemented. Phase 1 on 2026-09-08 (`GreetHealthCheckTest`); phase 2 on 2026-09-08 (`MasterAppTest`, see the phase 2 notes for two deviations).
 **Scope:** Add Mockito to the Tycho test fragments, with beginner-oriented worked examples.

@@ -13,7 +13,89 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
+
+		<!-- Test-only libraries. Declared once here, referenced by the host bundles that have
+		     tests (see <dependencyManagement>). They are ordinary Maven test-scope dependencies:
+		     Tycho compiles each bundle's src_test/ folder against them and, for the in-framework
+		     tier, puts them into the throwaway OSGi runtime — they never enter the product. -->
+		<junit.version>5.12.2</junit.version>
+		<junit-platform.version>1.12.2</junit-platform.version>
+		<mockito.version>5.14.2</mockito.version>
+		<!-- Pinned above Mockito's transitive default: the test JVM may be newer than CI's
+		     (Homebrew Maven forks JDK 26) and older ByteBuddy refuses new class-file versions. -->
+		<bytebuddy.version>1.18.13-jdk5</bytebuddy.version>
+		<maven-surefire.version>3.5.6</maven-surefire.version>
+		<!-- Which tier-2 classes tycho-surefire runs (its <test> parameter is bound to this
+		     below; the pattern becomes **/${it.test}.java). Default: every *IT class. Narrow it
+		     with -Dit.test=GreetServiceIT. Tier 1 keeps surefire's own -Dtest — the split matters
+		     because both plugins would otherwise read the same -Dtest, and a *Test selected for
+		     tier 1 would also be dragged into Equinox (where Mockito is absent) or a selected *IT
+		     into the plain JVM (where the framework is absent). Keep this non-empty: an empty
+		     value makes Maven fall back to the plugin's -Dtest property. -->
+		<it.test>*IT</it.test>
 	</properties>
+
+	<!-- ===================================================================================
+	     Testing: two tiers, chosen by class-name suffix (Maven's own surefire/failsafe split)
+	       *Test  → maven-surefire-plugin, phase `test`, plain JVM, no OSGi. Fast. Most tests.
+	       *IT    → tycho-surefire-plugin:plugin-test, phase `integration-test`, runs inside a
+	                live Equinox that Tycho assembles from the target platform. Use only for
+	                what a plain JVM cannot show: bundle resolution, DS wiring, service lookup.
+	     Each host bundle opts in to the tier(s) it needs in its own pom.xml.
+	     =================================================================================== -->
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.junit.jupiter</groupId>
+				<artifactId>junit-jupiter</artifactId>
+				<version>${junit.version}</version>
+				<scope>test</scope>
+			</dependency>
+			<!-- Not a Maven-transitive dependency of junit-jupiter, but the Jupiter engine's OSGi
+			     manifest requires the launcher capability, so the in-framework tier (plugin-test)
+			     cannot resolve without it. Harmless for the plain-JVM tier. -->
+			<dependency>
+				<groupId>org.junit.platform</groupId>
+				<artifactId>junit-platform-launcher</artifactId>
+				<version>${junit-platform.version}</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.mockito</groupId>
+				<artifactId>mockito-core</artifactId>
+				<version>${mockito.version}</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.mockito</groupId>
+				<artifactId>mockito-junit-jupiter</artifactId>
+				<version>${mockito.version}</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>net.bytebuddy</groupId>
+				<artifactId>byte-buddy</artifactId>
+				<version>${bytebuddy.version}</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>net.bytebuddy</groupId>
+				<artifactId>byte-buddy-agent</artifactId>
+				<version>${bytebuddy.version}</version>
+				<scope>test</scope>
+			</dependency>
+			<!-- For *IT classes only: the OSGi framework API (BundleContext, FrameworkUtil).
+			     Production bundles that need it import it in their manifest; test code has no
+			     manifest, so it gets the API as a test dependency. At run time the package comes
+			     from Equinox itself — this jar is compile-only. -->
+			<dependency>
+				<groupId>org.osgi</groupId>
+				<artifactId>org.osgi.framework</artifactId>
+				<version>1.10.0</version>
+				<scope>test</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 
 	<build>
 		<plugins>
@@ -36,6 +118,9 @@
 							<version>${project.version}</version>
 						</artifact>
 					</target>
+					<!-- Let a module's own pom <dependencies> (test scope: JUnit, Mockito) join its
+					     target platform. Production bundles keep coming from the .target file. -->
+					<pomDependencies>consider</pomDependencies>
 					<environments>
 						<environment>
 							<os>linux</os>
@@ -68,6 +153,57 @@
 		</plugins>
 		<pluginManagement>
 			<plugins>
+				<!-- Tier 1: plain-JVM unit tests. Tycho's eclipse-plugin lifecycle does not bind
+				     surefire by itself, so the execution lives here; a host bundle opts in by
+				     listing this plugin in its <build><plugins>. Surefire's defaults already
+				     include **/*Test.java and leave **/*IT.java alone. -->
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-surefire-plugin</artifactId>
+					<version>${maven-surefire.version}</version>
+					<executions>
+						<execution>
+							<id>unit-tests</id>
+							<goals>
+								<goal>test</goal>
+							</goals>
+						</execution>
+					</executions>
+				</plugin>
+				<!-- Tier 2: in-framework tests. Only *IT classes; Tycho generates a test fragment
+				     for the host bundle and runs these inside Equinox (phase integration-test;
+				     the verify goal fails the build on test failures). A host bundle opts in by
+				     listing this plugin in its <build><plugins>. -->
+				<plugin>
+					<groupId>org.eclipse.tycho</groupId>
+					<artifactId>tycho-surefire-plugin</artifactId>
+					<version>${tycho.version}</version>
+					<configuration>
+						<!-- Selection is driven by ${it.test} (see <properties>); it expands to
+						     **/*IT.java by default, i.e. only in-framework classes. -->
+						<test>${it.test}</test>
+						<failIfNoTests>true</failIfNoTests>
+						<!-- Felix SCR must be *started* early or no DS component activates and every
+						     service lookup in an IT fails. Modules pull SCR into the runtime with an
+						     extraRequirement (see a tier-2 module's pom); this makes it auto-start. -->
+						<bundleStartLevel>
+							<bundle>
+								<id>org.apache.felix.scr</id>
+								<level>1</level>
+								<autoStart>true</autoStart>
+							</bundle>
+						</bundleStartLevel>
+					</configuration>
+					<executions>
+						<execution>
+							<id>osgi-integration-tests</id>
+							<goals>
+								<goal>plugin-test</goal>
+								<goal>verify</goal>
+							</goals>
+						</execution>
+					</executions>
+				</plugin>
 				<!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
 				<plugin>
 					<groupId>org.eclipse.m2e</groupId>
@@ -107,11 +243,9 @@
 		<module>com.kk.pde.ds.target</module>
 		<module>com.kk.pde.ds.api</module>
 		<module>com.kk.pde.ds.imp</module>
-		<module>com.kk.pde.ds.imp.tests</module>
 		<module>com.kk.pde.ds.app</module>
 		<module>com.kk.pde.ds.rest</module>
 		<module>com.kk.pde.ds.mcp.api</module>
-		<module>com.kk.pde.ds.mcp.api.tests</module>
 		<module>com.kk.pde.ds.mcp.server</module>
 		<module>com.kk.pde.ds.mcp.client</module>
 		<module>com.kk.pde.ds.mcp.llm</module>
@@ -123,7 +257,6 @@
 		<module>com.kk.pde.ds.spike.api</module>
 		<module>com.kk.pde.ds.spike.master</module>
 		<module>com.kk.pde.ds.spike.detail</module>
-		<module>com.kk.pde.ds.spike.tests</module>
 		<module>com.kk.pde.ds.feature</module>
 		<module>distribution</module>
 	</modules>

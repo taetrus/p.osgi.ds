@@ -58,30 +58,44 @@ import org.junit.jupiter.api.Test;
  * fails months from now, its name is the first thing you read.
  * </p>
  *
- * <h3>What makes this project's tests unusual</h3>
+ * <h3>Where this file lives, and where it runs</h3>
  * <p>
- * In most Java projects tests run in a plain JVM. Here they run <em>inside a live OSGi
- * framework</em>. This module is an {@code eclipse-test-plugin} and its
- * {@code META-INF/MANIFEST.MF} declares {@code Fragment-Host: com.kk.pde.ds.imp} — it
- * is an OSGi <strong>fragment</strong>, meaning at run time it is glued onto the
- * {@code imp} bundle and shares that bundle's classloader. That is why this test can
- * see the package-private internals of {@link Greet} without any special access: as
- * far as OSGi is concerned, this class <em>is</em> part of that bundle.
+ * Tests sit next to the code they test, in the same bundle: this file is in
+ * {@code com.kk.pde.ds.imp/src_test/}, and the same package as {@link Greet}. The folder
+ * is marked {@code test="true"} in the bundle's {@code .classpath}, which is how Tycho
+ * knows to compile it in the test-compile phase and keep it out of the shipped jar
+ * ({@code build.properties} never mentions it). Being in the same package is why this
+ * test can see package-private members without any special access.
  * </p>
  * <p>
- * Run it with {@code mvn clean verify} from the repository root (Tycho starts an
- * Equinox framework, installs the bundles, and runs the tests in it), or with
- * {@code mvn verify -pl com.kk.pde.ds.imp.tests} for just this module.
+ * This project has <strong>two kinds of test, told apart by the class name</strong>:
+ * </p>
+ * <ul>
+ * <li>{@code *Test} (this file, and most tests) runs in a plain JVM under
+ * {@code maven-surefire-plugin} in the {@code test} phase. No OSGi is involved; the
+ * object under test is created with {@code new}. Fast, simple, and enough for logic.</li>
+ * <li>{@code *IT} (see {@code GreetServiceIT} next to this file) runs
+ * <em>inside a live Equinox</em> under {@code tycho-surefire:plugin-test} in the
+ * {@code integration-test} phase. Use it only for what a plain JVM cannot show: that
+ * the bundle resolves and that Declarative Services really wired the components.</li>
+ * </ul>
+ * <p>
+ * Run everything with {@code mvn clean verify} from the repository root; {@code mvn test}
+ * runs only the plain-JVM tier. For just this bundle, list its OSGi upstream modules
+ * explicitly — Maven cannot see them —
+ * {@code mvn verify -pl com.kk.pde.ds.target,com.kk.pde.ds.api,com.kk.pde.ds.imp}.
  * </p>
  *
  * <h3>Where to read next</h3>
  * <ul>
- * <li>{@code CatalogServiceImplTest} (in {@code com.kk.pde.ds.spike.tests}) — shared
+ * <li>{@code CatalogServiceImplTest} (in {@code com.kk.pde.ds.spike.master}) — shared
  * setup with {@code @BeforeEach}, and testing an object that holds state.</li>
  * <li>{@code DockLayoutTest} — testing pure calculations, and the edge cases worth
  * covering once the happy path passes.</li>
- * <li>{@code JsonTest} (in {@code com.kk.pde.ds.mcp.api.tests}) — asserting that code
+ * <li>{@code JsonTest} (in {@code com.kk.pde.ds.mcp.api}) — asserting that code
  * <em>throws</em>, and writing regression tests that pin down fixed bugs.</li>
+ * <li>{@code GreetHealthCheckTest} — test doubles and Mockito; then
+ * {@code GreetServiceIT} — the in-framework tier.</li>
  * </ul>
  */
 public class GreetTest {

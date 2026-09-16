@@ -11,4 +11,83 @@
 
 	<artifactId>com.kk.pde.ds.spike.master</artifactId>
 	<packaging>eclipse-plugin</packaging>
+
+	<!-- Test-only. Versions and scope come from the parent's <dependencyManagement>. -->
+	<dependencies>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.platform</groupId>
+			<artifactId>junit-platform-launcher</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-junit-jupiter</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>net.bytebuddy</groupId>
+			<artifactId>byte-buddy</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>net.bytebuddy</groupId>
+			<artifactId>byte-buddy-agent</artifactId>
+		</dependency>
+		<!-- Only because this module has *IT tests that talk to the framework. -->
+		<dependency>
+			<groupId>org.osgi</groupId>
+			<artifactId>org.osgi.framework</artifactId>
+		</dependency>
+	</dependencies>
+
+	<!-- Test sources live in src_test/ (marked test="true" in .classpath). Listing a plugin
+	     here opts this bundle in to that tier; the executions are managed in the parent.
+	     Both tiers run headless: MasterAppTest builds Swing components, and SCR activates
+	     the real MasterApp inside the tier-2 runtime (its start() has a headless guard).
+	     Headless keeps a developer desktop and display-less CI identical and stops any
+	     window from opening mid-build. -->
+	<build>
+		<plugins>
+			<!-- Tier 1: DockLayoutTest, SpikeValueObjectsTest, CatalogServiceImplTest, MasterAppTest. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<argLine>-Djava.awt.headless=true</argLine>
+				</configuration>
+			</plugin>
+			<!-- Tier 2: CatalogServiceIT asserts SCR activated and registered the catalog. -->
+			<plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>tycho-surefire-plugin</artifactId>
+				<configuration>
+					<argLine>-Djava.awt.headless=true</argLine>
+				</configuration>
+			</plugin>
+			<!-- Needed by tier 2 only; same two reasons as in com.kk.pde.ds.imp/pom.xml:
+			     the harness needs JavaSE-17 while this bundle's BREE is 1.8, and Felix SCR must
+			     be pulled into the runtime explicitly. -->
+			<plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>target-platform-configuration</artifactId>
+				<configuration>
+					<resolveWithExecutionEnvironmentConstraints>false</resolveWithExecutionEnvironmentConstraints>
+					<dependency-resolution>
+						<extraRequirements>
+							<requirement>
+								<type>eclipse-plugin</type>
+								<id>org.apache.felix.scr</id>
+								<versionRange>0.0.0</versionRange>
+							</requirement>
+						</extraRequirements>
+					</dependency-resolution>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 </project>

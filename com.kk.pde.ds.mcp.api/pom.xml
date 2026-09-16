@@ -11,4 +11,24 @@
 
 	<artifactId>com.kk.pde.ds.mcp.api</artifactId>
 	<packaging>eclipse-plugin</packaging>
+
+	<!-- Test-only (JsonTest needs JUnit alone). Version and scope come from the parent. -->
+	<dependencies>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter</artifactId>
+		</dependency>
+	</dependencies>
+
+	<!-- Tier 1 only. This is an API bundle: it has no DS components and registers no
+	     services, so there is nothing an in-framework test could show that JsonTest
+	     does not. Not every bundle needs an *IT. -->
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
 </project>
