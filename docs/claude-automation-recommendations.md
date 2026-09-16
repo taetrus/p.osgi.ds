@@ -12,15 +12,15 @@ Tailored automation recommendations for the **p.osgi.ds** project (OSGi Declarat
 
 ## Codebase Profile
 
-- **Type**: Java 8, OSGi Declarative Services, multi-bundle — **22 reactor modules** (`pom.xml:107-128`) plus `fatjar`, which is built separately and is *not* in the reactor
-- **Build**: Maven Tycho 4.0.13 on Eclipse 2024-12 target platform
+- **Type**: Java 8, OSGi Declarative Services, multi-bundle — **19 reactor modules** (`pom.xml` `<modules>`) plus `fatjar`, which is built separately and is *not* in the reactor
+- **Build**: Maven Tycho 4.0.13 on a Maven-sourced target platform (Equinox 3.23 / 2025-03 line)
 - **Bundles**, by cluster:
   - core demo — `api`, `imp`, `app`, `rest`
   - MCP/LLM — `mcp.api`, `mcp.server`, `mcp.client`, `mcp.llm`, `chatbot`
   - Document Q&A — `rag` (PDFBox parsing, OCR, chunking, embeddings, vector store)
   - Remote services — `ecf.api`, `ecf.host`, `ecf.consumer` (two-JVM topology over ECF Generic)
   - Spike/PoC — `spike.api`, `spike.master`, `spike.detail`
-  - Test fragments — `imp.tests`, `mcp.api.tests`, `spike.tests`
+  - Tests — inside `imp`, `mcp.api`, `spike.master` (`src_test/`; `*Test` plain JVM, `*IT` in Equinox — see README §13)
   - Packaging — `target`, `feature`, `distribution`
 - **Runtime surfaces**: Felix HTTP Jetty (port 8080), Felix WebConsole, MCP JSON-RPC servlet, OpenRouter LLM + embeddings bridge, Swing chatbot, ECF TCP transport (port 3288), Tesseract OCR subprocess
 - **Already wired**: serena MCP, context7 MCP (global), telegram plugin, chrome-devtools plugin, commit-commands plugin, superpowers skills
@@ -149,7 +149,7 @@ A fast Python/bash script after any edit under `*/META-INF/MANIFEST.MF`, `*/OSGI
 Script `exit 0` silently on non-bundle paths; `exit 0` with stderr warning on drift.
 
 ### 2. Scoped-build guard (PreToolUse on Bash)
-**Why**: The reflex fix for a slow Tycho build is `-pl <module>` — and on this project that is a **trap**, not a speedup. Tycho resolves through OSGi `Import-Package`, but the bundles declare no Maven `<dependencies>`, so `-pl com.kk.pde.ds.rag` (with or without `-am`) dies on `Missing requirement: ... requires 'java.package; com.kk.pde.ds.mcp.api'` — a resolution error that reads like a real dependency bug and costs a few minutes to recognize. Only leaf bundles such as `com.kk.pde.ds.api` build alone.
+**Why**: The reflex fix for a slow Tycho build is `-pl <module>` — and on this project that is a **trap**, not a speedup. Tycho resolves through OSGi `Import-Package`, but the bundles declare no Maven `<dependencies>`, so a bare `-pl com.kk.pde.ds.rag` (and `-pl … -am`) dies on `Missing requirement: ... requires 'java.package; com.kk.pde.ds.mcp.api'` — a resolution error that reads like a real dependency bug and costs a few minutes to recognize. Only leaf bundles such as `com.kk.pde.ds.api` build alone; anything else needs its upstream bundles listed explicitly (`-pl com.kk.pde.ds.target,com.kk.pde.ds.api,com.kk.pde.ds.imp`, see CLAUDE.md → Testing).
 
 So the useful hook is the inverse of the obvious one: warn on `-pl`, not on its absence. Pair it with `-o` (offline) and `-DskipTests`, which *are* real speedups here.
 ```json
