@@ -16,7 +16,7 @@ This is an OSGi Declarative Services (DS) project built with Maven Tycho 4.0.13.
 | `FOR_Kerem.md`, `FOR_Kerem_RAG.md` | Narrative "how and why" write-ups (ECF remote services; RAG), including the bugs hit and lessons learned |
 | `docs/architecture.md` | Component and service wiring diagram |
 | `docs/spike-isolation-results.md`, `docs/multi-jvm-isolation-journey.md`, `docs/monolith-to-multi-jvm-migration.md` | The spike: multi-frame / multi-JVM UI design and findings |
-| `docs/superpowers/specs/` | Design specs written before implementation (e.g. Mockito in the OSGi test fragments) |
+| `docs/superpowers/specs/` | Design specs written before implementation (Mockito in the test suites; the two-tier test layout migration) |
 | `MCP_SERVER_TESTING.md` | Manual JSON-RPC test procedure for the MCP server |
 | `SECURITY.md` | Known exposures on the unauthenticated localhost HTTP surface |
 | `com.kk.pde.ds.rag/README.md` | RAG configuration reference and verification record |
@@ -41,37 +41,50 @@ Build requires JDK 17+ (Tycho 4). The product itself still runs on Java 8+.
 
 ## Testing
 
-Tests are `eclipse-test-plugin` fragments run by tycho-surefire inside a live Equinox
-(`integration-test` phase, so `mvn verify`, not `mvn test`). 48 tests across three
-fragments, JUnit 5 + Mockito; every test class's Javadoc is a short tutorial.
+Tests live **inside the bundles** in a `src_test/` folder (declared `test="true"` in the
+bundle's `.classpath`; `build.properties` untouched, so nothing ships). Two tiers, chosen by
+class name: `*Test` = plain JVM via maven-surefire (phase `test`), `*IT` = inside a live
+Equinox via `tycho-surefire:plugin-test` (phase `integration-test`). 48 tier-1 + 6 tier-2
+tests; every test class's Javadoc is a short tutorial. This layout is the reference for a
+larger Tycho project — keep it clean and copyable.
 
 ```bash
-mvn clean verify                                   # all tests; what CI runs (JDK 21)
+mvn clean verify                                   # both tiers; what CI runs (JDK 21)
+mvn test                                           # tier 1 only, no Equinox boot
 
-# One fragment — list the target module, the host and the host's project bundles explicitly
-mvn verify -pl com.kk.pde.ds.target,com.kk.pde.ds.api,com.kk.pde.ds.imp,com.kk.pde.ds.imp.tests
-mvn verify -pl com.kk.pde.ds.target,com.kk.pde.ds.mcp.api,com.kk.pde.ds.mcp.api.tests
-mvn verify -pl com.kk.pde.ds.target,com.kk.pde.ds.spike.api,com.kk.pde.ds.spike.master,com.kk.pde.ds.spike.tests
+# One bundle — list the target module and its OSGi upstream bundles explicitly
+mvn verify -pl com.kk.pde.ds.target,com.kk.pde.ds.api,com.kk.pde.ds.imp
+mvn verify -pl com.kk.pde.ds.target,com.kk.pde.ds.mcp.api
+mvn verify -pl com.kk.pde.ds.target,com.kk.pde.ds.spike.api,com.kk.pde.ds.spike.master
 
-# One class (or method with -Dtest='Class#method')
-mvn verify -pl com.kk.pde.ds.target,com.kk.pde.ds.spike.api,com.kk.pde.ds.spike.master,com.kk.pde.ds.spike.tests -Dtest=MasterAppTest
+# One class: tier 1 via surefire's -Dtest on the test phase; tier 2 via -Dit.test
+mvn test   -pl com.kk.pde.ds.target,com.kk.pde.ds.api,com.kk.pde.ds.imp -Dtest=GreetHealthCheckTest
+mvn verify -pl com.kk.pde.ds.target,com.kk.pde.ds.api,com.kk.pde.ds.imp -Dit.test=GreetServiceIT
 ```
 
-- **`-pl <fragment> -am` does not work.** Maven cannot see the fragment-to-host link (it is an
-  OSGi manifest header), so `-am` builds only the parent and fails with
-  `requires osgi.bundle ... but it could not be found`. List the modules by hand as above.
+- **Adding tests to a bundle:** `src_test/` + the `test="true"` `.classpath` entry; test deps
+  (no versions, managed in the parent) + list `maven-surefire-plugin` in the pom → tier 1.
+  For tier 2 also list `tycho-surefire-plugin`, copy the `target-platform-configuration`
+  block from `com.kk.pde.ds.imp/pom.xml` (EE constraints off + Felix SCR extraRequirement),
+  add the `org.osgi.framework` test dep, write a `*IT`. Executions are managed in the parent.
+- **Never `src/test/java`** here: the bundles use `source.. = src/`, so it nests inside the
+  production root and Tycho compiles the tests into the bundle.
+- **`-pl <module> -am` does not work.** Maven cannot see OSGi manifest dependencies, so `-am`
+  builds only the parent and fails with `requires osgi.bundle ... but it could not be found`.
 - **Local Maven may fork a different JDK than `java -version` shows.** Homebrew `mvn` uses its
   own OpenJDK (26) unless `JAVA_HOME` is set; CI is Temurin 21. Reproduce CI with
   `JAVA_HOME=$(/usr/libexec/java_home -v 21) mvn clean verify`. This is why ByteBuddy is
-  pinned to 1.18.13 in the target platform.
+  pinned in the parent pom.
 - Expected log noise: a Mockito "self-attaching" warning, and `ERROR ... Health Check failed`
   lines from tests that deliberately force the catch branch. Trust the `Tests run:` totals.
-- `com.kk.pde.ds.spike.tests` forces `-Djava.awt.headless=true`; `MasterAppTest` drives the
-  package-private `MasterApp.buildPanels` seam on the EDT via `invokeAndWait`.
-- Mockito, ByteBuddy and Objenesis are test-only target-platform locations. They must never
-  appear in `distribution/target/products/**` or the p2 repository.
+- `com.kk.pde.ds.spike.master` passes `-Djava.awt.headless=true` to both tiers; `MasterApp.start()`
+  has a headless guard because SCR activates the real component in the tier-2 runtime.
+- Test libraries (JUnit, Mockito, ByteBuddy) are pom test-scope deps, not target-platform
+  entries. They must never appear in `distribution/target/products/**` or a bundle jar.
+- Tier-2 reports land in `target/failsafe-reports/`, tier-1 in `target/surefire-reports/`.
 
-Full detail, including what each test class teaches: README section 13.
+Full detail, including what each test class teaches and the spike findings: README
+section 13 and `docs/superpowers/specs/2026-09-16-tycho-plugin-test-migration-design.md`.
 
 ## Conventions
 
@@ -176,10 +189,10 @@ distribution           → p2 repository + product builds
 fatjar                 → Standalone fat-JAR launcher (built separately, not in the reactor)
 ```
 
-Test fragments (not shipped): `com.kk.pde.ds.imp.tests` (host `imp`: `GreetTest`,
-`GreetHealthCheckTest`), `com.kk.pde.ds.mcp.api.tests` (host `mcp.api`: `JsonTest`),
-`com.kk.pde.ds.spike.tests` (host `spike.master`: `DockLayoutTest`, `SpikeValueObjectsTest`,
-`CatalogServiceImplTest`, `MasterAppTest`). See Testing above.
+Tests (not shipped) live in `src_test/` of `imp` (`GreetTest`, `GreetHealthCheckTest`,
+`GreetServiceIT`), `mcp.api` (`JsonTest`) and `spike.master` (`DockLayoutTest`,
+`SpikeValueObjectsTest`, `CatalogServiceImplTest`, `MasterAppTest`, `CatalogServiceIT`).
+See Testing above.
 
 ## REST API
 
@@ -341,7 +354,7 @@ Design and findings: the spike documents listed in the Documentation Map.
 
 | File | Purpose |
 |------|---------|
-| `com.kk.pde.ds.target/*.target` | Target platform — Maven-location dependencies (no p2 repo URLs); every bundle enumerated explicitly, incl. test-only JUnit 5 and Mockito locations |
+| `com.kk.pde.ds.target/*.target` | Target platform — Maven-location dependencies (no p2 repo URLs); every bundle enumerated explicitly. Test libraries are *not* here (pom test deps) — only the Tycho test harness + Equinox launcher |
 | `.github/workflows/build.yml` | CI: `mvn clean verify` on Temurin 21 |
 | `distribution/p2.product` | Product definition (bundles, start levels) |
 | `distribution/category.xml` | p2 repository category structure |
@@ -350,7 +363,7 @@ Design and findings: the spike documents listed in the Documentation Map.
 
 ## Technology Stack
 
-- **Java 8+** at runtime (all shipped bundles and the fat JAR launcher target Java 8 bytecode); JDK 17+ to build; test fragments are `JavaSE-17`
+- **Java 8+** at runtime (all shipped bundles and the fat JAR launcher target Java 8 bytecode); JDK 17+ to build and to run the tests
 - **Tycho 4.0.13** (Maven OSGi build)
 - **Equinox 3.23 (2025-03 line)** target platform, resolved from Maven Central with no p2 URLs
 - **JUnit 5.12 + Mockito 5.14** (test-only, never shipped)
