@@ -524,7 +524,12 @@ class and per tier. Reports: tier 1 in `<bundle>/target/surefire-reports/`, tier
 `<bundle>/target/failsafe-reports/` (Tycho reuses the failsafe layout); one `*.txt` summary
 and one `TEST-*.xml` per class.
 
-#### Adding tests to another bundle (the recipe the bigger project will follow)
+#### Adding tests to another bundle (or another project)
+
+The full copy-and-adapt guide, with the parent-pom XML, the per-bundle steps, and a
+troubleshooting table keyed by error message, is
+[`docs/adding-tests-to-a-tycho-project.md`](docs/adding-tests-to-a-tycho-project.md).
+The short version for a bundle in this repo:
 
 1. Create `src_test/` and add the `test="true"` classpath entry (copy it from
    `com.kk.pde.ds.imp/.classpath`).
