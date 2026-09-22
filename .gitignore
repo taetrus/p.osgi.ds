@@ -37,6 +37,9 @@ out/
 # Claude Code local settings
 .claude/settings.local.json
 
+# Serena rewrites its own config template on every update; keep it local
+.serena/project.yml
+
 # OSGi / P2
 *.index
 configuration/org.eclipse.osgi/
