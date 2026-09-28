@@ -39,7 +39,7 @@ Code, the `pde2tycho` skill runs these steps and the fix loop for you.
 | `--offline` | scan | skip Maven Central; every directory jar is vendored |
 | `--eclipse-home <dir>` | scan | value for `${eclipse_home}` in Profile/Directory locations |
 | `--add-project <dir>` | scan | include a project the workspace never imported (repeatable) |
-| `--force` | generate | write into a non-empty directory (overwrites, never deletes) |
+| `--force` | generate | write into a non-empty directory (overwrites; removes only an earlier run's `distribution/*.product` and vendored jars, and lists leftover module directories in the report) |
 | `--linux` | generate | also build `linux/gtk/x86_64` and a Linux branch in `run.sh` |
 
 ## 3. The inventory: `migration.json`
@@ -102,6 +102,8 @@ the outcome, and keep it next to the output so a regeneration reproduces the bui
   `.launch`. The product includes bundles that are *required* by imports; a bundle that
   is only needed at run time (for example a logging backend) must be added to the launch's
   bundles in `migration.json`. `scan` warns about each one it sees in `config.ini`.
+- **Symlinked folders inside a project are copied as empty directories.** Replace the link
+  with the real folder (or copy its content in) before you build the output.
 
 ## 7. Troubleshooting by error message
 
@@ -109,11 +111,12 @@ the outcome, and keep it next to the output so a regeneration reproduces the bui
 |------------------------------|-------|-----|
 | `Missing requirement: X requires 'java.package; p' but it could not be found` | the bundle providing `p` is neither a selected project nor in the target | select its project (or `scan --add-project`), or add it to the target (a Maven location or `vendor/plugins`) |
 | `…requires 'osgi.bundle; B' but it could not be found` | same, for `Require-Bundle` | same |
-| the error names a jar in `vendor/plugins` as missing | the Directory path form is wrong | the location must be `${project_loc:/<target module>}/vendor/plugins` |
-| `Could not resolve target platform … Maven` / `artifact not found` | a Maven location entry does not exist in the configured repositories | correct the coordinates in `target.locations`, or move the jar to `target.vendor` |
+| `…requires 'java.package; p' but it could not be found`, although a jar in `vendor/plugins` provides `p` | the Directory location's path form is wrong, so Tycho sees an empty folder | the location must be exactly `${project_loc:/<target module>}/vendor/plugins` |
+| `Could not resolve target platform … Maven` / `artifact not found` | a Maven location entry does not exist in the configured repositories | `target.locations` entries are copied as verbatim XML: correct the `groupId`/`artifactId`/`version` there, or remove that `<dependency>` and vendor the jar instead — drop the file into `<target module>/vendor/plugins` and add a `target.vendor` entry for it (`jar`, `bsn`, `version`) so a rerun of `generate` keeps it |
 | `Unresolved requirement … osgi.ee; JavaSE-N` | a bundle's BREE is newer than the build JDK | build with a newer JDK (`JAVA_HOME`) |
 | `tycho-compiler-plugin …:testCompile … package org.junit… does not exist` | the `default-testCompile` override was removed without adding test dependencies | restore it, or add the test dependencies (testing how-to) |
 | `Feature F includes X, which neither a selected project nor the target provides` (from `generate`) | a selected feature lists a missing plug-in | deselect the feature, or add the plug-in's project |
+| `Launch bundle X is not in the target platform` (from `generate`) | the target knows no bundle X — usually the workspace used the Default / Running Platform target, so `scan` found no `.target` file to read | add a Maven or p2 (InstallableUnit) location providing X to `target.locations` (or a `target.vendor` entry), or activate a real `.target` in Eclipse and rescan |
 | `Launch bundle X is a workspace bundle but no selected project provides it` (from `generate`) | the launch uses a project that is deselected or not in the workspace | select it, or `scan --add-project <dir>` |
 | product starts, but a component never activates | a bundle PDE auto-added is missing from the product, or a bundle is not auto-started | check the scan's `config.ini` warnings; add the bundle to `launches[].bundles` with `"autoStart": true` |
 | `ERROR: Could not find org.eclipse.osgi jar` from `run.sh` | no product was built for this OS/CPU | add the environment (e.g. `macosx/cocoa/aarch64`) to `environments` and rebuild |

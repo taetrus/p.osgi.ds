@@ -529,8 +529,6 @@ and one `TEST-*.xml` per class.
 The full copy-and-adapt guide, with the parent-pom XML, the per-bundle steps, and a
 troubleshooting table keyed by error message, is
 [`docs/adding-tests-to-a-tycho-project.md`](docs/adding-tests-to-a-tycho-project.md).
-To migrate an Eclipse PDE workspace into a Tycho build like this one, see
-[`docs/pde-to-tycho-migration.md`](docs/pde-to-tycho-migration.md).
 The short version for a bundle in this repo:
 
 1. Create `src_test/` and add the `test="true"` classpath entry (copy it from
@@ -541,6 +539,9 @@ The short version for a bundle in this repo:
    `tycho-surefire-plugin`, add the `target-platform-configuration` block from
    `com.kk.pde.ds.imp/pom.xml`, the `org.osgi.framework` test dependency, and write a
    `*IT` class.
+
+To migrate an Eclipse PDE workspace into a Tycho build like this one, see
+[`docs/pde-to-tycho-migration.md`](docs/pde-to-tycho-migration.md).
 
 #### Gotchas
 
