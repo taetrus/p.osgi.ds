@@ -128,6 +128,46 @@ class WorkspaceScannerTest {
 		assertTrue(inv.warnings().stream().anyMatch(w -> w.contains("No active target")), inv.warnings().toString());
 	}
 
+	/** Default / Running-Platform targets have no file: the warning must say how to fill the target. */
+	@Test
+	void missingTargetWarningSaysWhatToDo() throws IOException {
+		String warning = scan().warnings().stream().filter(w -> w.contains("No active target")).findFirst().orElseThrow();
+		assertTrue(warning.contains("add a Maven or p2 (InstallableUnit) location to target.locations in migration.json,"
+				+ " or rescan with a real .target"), warning);
+	}
+
+	@Test
+	void unreadableTargetJarIsSkippedWithANamedWarning() throws IOException {
+		Path lib = directoryTarget();
+		TestJars.bundle(lib.resolve("a.jar"), "org.a", "1.0.0");
+		Files.createDirectories(lib);
+		Files.writeString(lib.resolve("broken.jar"), "this is not a zip");
+		Inventory inv = scan();
+		assertEquals(1, inv.target().vendor().size());
+		assertTrue(inv.warnings().stream().anyMatch(w -> w.startsWith("Target jar " + lib.resolve("broken.jar")
+				+ " unreadable (") && w.endsWith("); skipped")), inv.warnings().toString());
+	}
+
+	@Test
+	void locationFileWithANonFileUriIsAWarning() throws IOException {
+		ws.bundle("com.x.api", "com.x.api");
+		Path meta = Files.createDirectories(ws.plugins().resolve("org.eclipse.core.resources/.projects/remote"));
+		Files.write(meta.resolve(".location"), TestWorkspace.locationBytes("http://x"));
+		Inventory inv = scan();
+		assertEquals(List.of("com.x.api"), inv.projects().stream().map(Project::name).toList());
+		assertTrue(inv.warnings().stream().anyMatch(w -> w.startsWith("Project remote:")), inv.warnings().toString());
+	}
+
+	@Test
+	void progressIsReportedEvery25JarsAndOfflineSaysVendoring() throws IOException {
+		Path lib = directoryTarget();
+		for (int i = 0; i < 26; i++) {
+			TestJars.bundle(lib.resolve("j" + i + ".jar"), "org.j" + i, "1.0.0");
+		}
+		scan();
+		assertEquals(List.of("Vendoring 26 directory jar(s) (offline)", "Identified 25/26 jars..."), progress);
+	}
+
 	@Test
 	void singleLaunchIsPreselectedWithDefaultProductId() throws IOException {
 		ws.bundle("com.x.api", "com.x.api");
@@ -138,6 +178,20 @@ class WorkspaceScannerTest {
 		Launch launch = scan().launches().get(0);
 		assertTrue(launch.selected());
 		assertEquals("com.x.product", launch.productId());
+	}
+
+	@Test
+	void unreadableConfigIniIsAWarningAndTheLaunchIsKept() throws IOException {
+		ws.launch("app", "<launchConfiguration type=\"org.eclipse.pde.ui.EquinoxLauncher\">"
+				+ "<setAttribute key=\"selected_target_bundles\"><setEntry value=\"org.a@default:default\"/></setAttribute>"
+				+ "</launchConfiguration>");
+		Path broken = Files.writeString(tmp.resolve("broken.jar"), "not a zip");
+		TestWorkspace.write(ws.plugins().resolve("org.eclipse.pde.core/app/config.ini"),
+				"osgi.bundles=reference\\:file\\:" + broken + "@2\\:start\n");
+		Inventory inv = scan();
+		assertEquals(1, inv.launches().size());
+		assertTrue(inv.warnings().stream().anyMatch(w -> w.startsWith("Launch app: could not check")),
+				inv.warnings().toString());
 	}
 
 	@Test

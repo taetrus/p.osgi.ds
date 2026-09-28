@@ -64,4 +64,13 @@ class MainTest {
 		assertEquals(1, run("generate", json.toString(), tmp.resolve("out").toString()));
 		assertTrue(err.toString().contains("No projects are selected"), err.toString());
 	}
+
+	@Test
+	void scanBacksUpAnExistingInventory() throws IOException {
+		Files.createDirectories(tmp.resolve("ws/.metadata/.plugins"));
+		Path json = Files.writeString(tmp.resolve("migration.json"), "{\"edited\": true}");
+		assertEquals(0, run("scan", tmp.resolve("ws").toString(), "-o", json.toString(), "--offline"));
+		assertEquals("{\"edited\": true}", Files.readString(tmp.resolve("migration.json.bak")));
+		assertTrue(out.toString().contains("migration.json.bak"), out.toString());
+	}
 }

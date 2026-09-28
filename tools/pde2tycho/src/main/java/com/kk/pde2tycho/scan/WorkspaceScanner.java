@@ -38,6 +38,9 @@ public final class WorkspaceScanner {
 	/** After this many failed lookups in a row, Central is treated as unreachable. */
 	private static final int MAX_CONSECUTIVE_LOOKUP_FAILURES = 3;
 
+	/** Progress is reported after every this many target jars (a Profile location can hold hundreds). */
+	private static final int PROGRESS_EVERY = 25;
+
 	private final ArtifactResolver resolver;
 	private final Path eclipseHome;
 	private final List<Path> extraProjects;
@@ -91,7 +94,14 @@ public final class WorkspaceScanner {
 				if (name.startsWith(".")) {
 					continue;
 				}
-				Path location = readLocation(entry.resolve(".location"));
+				Path location;
+				try {
+					location = readLocation(entry.resolve(".location"));
+				} catch (IOException | RuntimeException e) {
+					// e.g. a project on a non-file: file system, or a malformed URI
+					warnings.add("Project " + name + ": cannot read its location (" + e.getMessage() + "); skipped");
+					continue;
+				}
 				if (location == null) {
 					location = workspace.resolve(name);
 				}
@@ -181,19 +191,32 @@ public final class WorkspaceScanner {
 		Path file = resolveHandle(handle, plugins, locations);
 		if (file == null || !Files.isRegularFile(file)) {
 			warnings.add("No active target file found (workspace_target_handle=" + handle
-					+ "); the generated target platform starts empty");
+					+ "); the generated target platform starts empty. To fill it, add a Maven or p2 (InstallableUnit)"
+					+ " location to target.locations in migration.json, or rescan with a real .target");
 			return new Target(null, List.of(), List.of(), List.of());
 		}
 		TargetReader.Content content = TargetReader.read(file, variables(workspace, locations), warnings);
 		List<TargetJar> resolved = new ArrayList<>();
 		List<TargetJar> vendor = new ArrayList<>();
-		if (!content.jars().isEmpty()) {
-			progress.accept("Identifying " + content.jars().size() + " directory jar(s) on Maven Central...");
+		int total = content.jars().size();
+		if (total > 0) {
+			progress.accept(resolver == ArtifactResolver.OFFLINE ? "Vendoring " + total + " directory jar(s) (offline)"
+					: "Identifying " + total + " directory jar(s) on Maven Central...");
 		}
 		ArtifactResolver active = resolver;
 		int failures = 0;
+		int done = 0;
 		for (Path jar : content.jars()) {
-			JarInfo info = JarInfo.read(jar);
+			if (++done % PROGRESS_EVERY == 0) {
+				progress.accept("Identified " + done + "/" + total + " jars...");
+			}
+			JarInfo info;
+			try {
+				info = JarInfo.read(jar);
+			} catch (IOException | RuntimeException e) {
+				warnings.add("Target jar " + jar + " unreadable (" + e.getMessage() + "); skipped");
+				continue;
+			}
 			if (info.bsn() == null) {
 				warnings.add("Target jar " + jar + " has no Bundle-SymbolicName (PDE ignores it too); skipped");
 				continue;
@@ -288,9 +311,15 @@ public final class WorkspaceScanner {
 				}
 				launch = launch.withSelection(false,
 						launch.productId() != null ? launch.productId() : groupId + ".product");
-				checkConfigIni(launch, plugins.resolve("org.eclipse.pde.core").resolve(launch.name()).resolve("config.ini"),
-						warnings);
 				launches.add(launch);
+				try {
+					checkConfigIni(launch,
+							plugins.resolve("org.eclipse.pde.core").resolve(launch.name()).resolve("config.ini"), warnings);
+				} catch (IOException | RuntimeException e) {
+					// The check only adds hints; a broken last-run config.ini must not cost the launch.
+					warnings.add("Launch " + launch.name() + ": could not check its last run's config.ini ("
+							+ e.getMessage() + ")");
+				}
 			} catch (IOException | RuntimeException e) {
 				// LaunchReader.parseEntry throws NumberFormatException for a malformed start level;
 				// a malformed launch becomes a warning and the scan continues.

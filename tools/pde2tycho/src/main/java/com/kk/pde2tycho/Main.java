@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -100,6 +101,12 @@ public final class Main {
 		ArtifactResolver resolver = offline ? ArtifactResolver.OFFLINE : new CentralResolver();
 		Inventory inv = new WorkspaceScanner(resolver, eclipseHome, extra, err::println)
 				.scan(Path.of(positional.get(0)).toAbsolutePath().normalize());
+		if (Files.exists(output)) {
+			// migration.json is meant to be hand-edited; a rescan must not silently lose those edits.
+			Path backup = output.resolveSibling(output.getFileName() + ".bak");
+			Files.copy(output, backup, StandardCopyOption.REPLACE_EXISTING);
+			out.println("Backed up the existing " + output + " to " + backup);
+		}
 		Files.writeString(output, InventoryJson.write(inv));
 		out.printf("Scanned %d project(s), %d selected; target: %d verbatim location(s), %d jar(s) resolved,"
 				+ " %d vendored; %d launch(es); %d warning(s)%n", inv.projects().size(), inv.modules().size(),

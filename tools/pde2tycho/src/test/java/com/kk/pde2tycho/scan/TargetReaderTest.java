@@ -85,4 +85,15 @@ class TargetReaderTest {
 		TargetReader.read(target("<location id=\"f\" path=\"/x\" type=\"Feature\"/>"), vars, warnings);
 		assertTrue(warnings.get(0).contains("'Feature'"), warnings.get(0));
 	}
+
+	@Test
+	void profileLocationWarnsThatAP2SiteIsBetter() throws IOException {
+		Path home = Files.createDirectories(dir.resolve("libproject/eclipse"));
+		TestJars.bundle(home.resolve("plugins/org.a.jar"), "org.a", "1.0.0");
+		TargetReader.Content content = TargetReader.read(
+				target("<location path=\"${project_loc:/lib}/eclipse\" type=\"Profile\"/>"), vars, warnings);
+		assertEquals(1, content.jars().size());
+		assertTrue(warnings.stream().anyMatch(w -> w.contains("whole Eclipse installation")
+				&& w.contains("p2 site")), warnings.toString());
+	}
 }

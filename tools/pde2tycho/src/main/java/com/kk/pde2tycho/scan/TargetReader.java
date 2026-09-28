@@ -40,7 +40,14 @@ public final class TargetReader {
 				String type = location.getAttribute("type");
 				switch (type) {
 					case "Maven", "InstallableUnit" -> locations.add(Xml.toString(location));
-					case "Directory", "Profile" -> addDirectoryJars(location.getAttribute("path"), vars, jars, warnings);
+					case "Directory" -> addDirectoryJars(location.getAttribute("path"), vars, jars, warnings);
+					case "Profile" -> {
+						addDirectoryJars(location.getAttribute("path"), vars, jars, warnings);
+						warnings.add("Target location " + location.getAttribute("path") + " is a Profile: it pulls in a"
+								+ " whole Eclipse installation (often hundreds of jars, all vendored when not on Maven"
+								+ " Central). It is best replaced by a p2 site (InstallableUnit) location listing only"
+								+ " the features you need");
+					}
 					default -> warnings.add("Target location type '" + type
 							+ "' is not supported; add its bundles to the generated target by hand");
 				}
