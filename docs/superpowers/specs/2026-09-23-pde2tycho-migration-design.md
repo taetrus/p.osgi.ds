@@ -302,3 +302,13 @@ Each was verified or forced by the real workspace; they narrow, not widen, the d
 Multiple products per migration; migrating tests; `Eclipse Application` launches with
 `useProduct=true` / feature-based launches; p2 `InstallableUnit` locations beyond
 verbatim copy; Linux run script; in-place conversion; JUnit Plug-in Test launches.
+
+## Verification record (acceptance run, 2026-09-28)
+
+Migrated `/Users/avalon/dev/workspaces/ws.p.osgi.ds` with `--add-project` for chatbot and
+mcp.llm plus the two launch entries added in migration.json; `mvn clean verify` on JDK 21:
+`BUILD SUCCESS`, `Total time:  5.991 s` (12-module reactor; products for
+macosx/cocoa/aarch64, macosx/cocoa/x86_64 and win32/win32/x86_64); `run.sh` served
+`/api/greet` (`{"message":"Hello from OSGi HTTP Whiteboard!",...}`) and logged
+`Hello world!`.
+Fix-loop rounds needed: 0 (the inventory edit for the two launch bundles was the only fix).
