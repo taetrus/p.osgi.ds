@@ -236,15 +236,66 @@ Maven dependency, Directory path not found, product fails to start).
 - **Golden acceptance test (manual, documented):** migrate the real `ws.p.osgi.ds`
   workspace to a scratch dir; `mvn clean verify` passes; `run.sh` starts the product;
   `Hello world!` is logged and `curl localhost:8080/api/greet` answers. (That workspace
-  knows only the original 8 bundles and the `p2.product` launch.)
+  knows only the original bundles and the `p2.product` launch, so the run uses
+  `--add-project` for `chatbot`/`mcp.llm` and adds them to the launch in
+  `migration.json` — exercising the inventory-edit fix loop.)
 
-## Open risk (first plan task: spike)
+## Open risk — resolved (2026-09-28 spike)
 
-How Tycho 4.0.13 resolves a `Directory` location path: `${project_loc}`, relative to the
-`.target` file, or absolute only. The spike builds a one-bundle target with a vendored
-jar. If only absolute paths work, fall back to generating `vendor/` as a p2 repository
-(a small `eclipse-repository` module built before the target is consumed, or a
-pre-generated `content.xml`/`artifacts.xml`) referenced by a relative `file:` URL.
+How Tycho 4.0.13 resolves a `Directory` location path. Probed with a throwaway build
+(a bundle importing a package only the vendored jar provides):
+
+| `path=` | Result |
+|---------|--------|
+| `vendor/plugins` (relative) | silently empty → `requires 'java.package; …' but it could not be found` |
+| `${project_loc}/vendor/plugins` | silently empty (same error) |
+| `${basedir}/vendor/plugins` | silently empty (same error) |
+| **`${project_loc:/<target-module>}/vendor/plugins`** | **resolves** — also PDE's own syntax, so the target still works in the IDE |
+
+No p2-repository fallback is needed.
+
+## Refinements made while planning (2026-09-28)
+
+Each was verified or forced by the real workspace; they narrow, not widen, the design.
+
+1. **No generated feature.** Tycho 4 `category.xml` accepts `<bundle id="…" version="0.0.0">`
+   entries (verified), so workspace bundles not covered by a selected feature are listed
+   directly.
+2. **Features whose plug-ins are not all workspace projects start deselected** (with a
+   warning) — the real workspace's `com.kk.pde.ds.feature` lists 16 plug-ins, only 7 of
+   which the workspace has.
+3. **`scan --add-project <dir>` (repeatable)** adds projects the workspace never imported.
+   The real workspace needs it: today's `com.kk.pde.ds.app` imports
+   `com.kk.pde.ds.chatbot`, which imports `com.kk.pde.ds.mcp.llm`; neither is registered.
+4. **Central hits need no manifest check.** A SHA-1 match means identical bytes, so a
+   resolved jar is exactly as much a bundle as the local one. Local jars without a
+   `Bundle-SymbolicName` are skipped with a warning (PDE ignores them too).
+5. **Central lookups:** measured latency varies 0.2 s–30 s with occasional timeouts, so
+   each request has a 30 s timeout, a failed lookup vendors that jar, and 3 consecutive
+   failures switch the rest of the scan to offline. Progress goes to stderr.
+6. **`config.ini` is a warning source only** (bundles PDE auto-added at the last run),
+   not a gap filler.
+7. **Launch-bundle validation against the target** is only possible when the target
+   has no verbatim Maven/p2 locations (their bundle names are unknown until Tycho
+   resolves them); otherwise Tycho reports missing bundles itself.
+8. **Target artifact version is a literal** in the parent pom, not `${project.version}`,
+   so bundles whose `Bundle-Version` differs from the parent version still find it.
+9. **Test sources are copied but not compiled.** Tycho 4 compiles `.classpath`
+   `test="true"` folders (e.g. `src_test/`) and ignores `-Dmaven.test.skip` for that
+   (verified); the parent pom unbinds `tycho-compiler-plugin`'s `default-testCompile`
+   (verified to work). Removing that override is step one of migrating tests.
+10. **Launch VM arguments go on the run scripts' `java` command line.** The product has no
+    native launcher (`includeLaunchers=false`), so the product's `<vmArgs>` are
+    documentation only. `-XstartOnFirstThread` is kept in `<vmArgsMac>` but left out of
+    `run.sh` (SWT-only; it blocks AWT/Swing under `java -jar`).
+11. **`EquinoxLauncher` launches honour `default_auto_start`** (default true) for
+    `default:default` entries; `RuntimeWorkbench` launches treat them as not started.
+12. **Project kind comes from files, not natures:** `feature.xml` → feature; a manifest
+    with `Bundle-SymbolicName` → plug-in or fragment; only `*.target` → target.
+13. **Every generated file comes from a template resource** (`src/main/resources/templates/`)
+    with `@TOKEN@` placeholders; rendering fails if a placeholder is left unfilled.
+14. **Manifests are read tolerantly:** `java.util.jar.Manifest` silently drops a last
+    header that lacks a trailing newline (verified), so a newline is appended first.
 
 ## Out of scope (v1)
 
