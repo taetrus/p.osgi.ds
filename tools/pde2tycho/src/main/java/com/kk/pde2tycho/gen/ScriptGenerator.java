@@ -40,7 +40,10 @@ final class ScriptGenerator {
 		}
 	}
 
-	/** The scripts already pass -configuration and -console, so those are dropped from the launch's list. */
+	/**
+	 * The scripts already pass -configuration and -console, so those are dropped from the launch's
+	 * list, together with -configuration's value and -console's optional port.
+	 */
 	static String scriptProgramArgs(String programArgs) {
 		List<String> tokens = LauncherArgs.tokenize(programArgs);
 		List<String> out = new ArrayList<>();
@@ -48,7 +51,11 @@ final class ScriptGenerator {
 			String token = tokens.get(i);
 			if (token.equals("-configuration")) {
 				i++;
-			} else if (!token.equals("-console")) {
+			} else if (token.equals("-console")) {
+				if (i + 1 < tokens.size() && tokens.get(i + 1).matches("\\d+")) {
+					i++;
+				}
+			} else {
 				out.add(token);
 			}
 		}

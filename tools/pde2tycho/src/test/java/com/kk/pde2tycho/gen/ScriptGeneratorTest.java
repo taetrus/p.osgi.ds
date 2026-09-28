@@ -47,6 +47,13 @@ class ScriptGeneratorTest {
 		assertEquals("-consoleLog -clean", ScriptGenerator.scriptProgramArgs("-console -configuration x -consoleLog -clean"));
 	}
 
+	/** "-console 1234" opens a telnet console on a port; the script's own -console replaces both tokens. */
+	@Test
+	void consolePortIsDroppedWithTheConsoleFlag() {
+		assertEquals("-consoleLog 5", ScriptGenerator.scriptProgramArgs("-console 1234 -consoleLog 5"));
+		assertEquals("-consoleLog", ScriptGenerator.scriptProgramArgs("-console -consoleLog"));
+	}
+
 	@Test
 	void linuxEnvironmentAddsALinuxCase() throws Exception {
 		Inventory inv = GenFixtures.simple("/a");
