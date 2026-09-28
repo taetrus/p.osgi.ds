@@ -47,4 +47,21 @@ class MainTest {
 		assertEquals("migrated", InventoryJson.read(Files.readString(json)).groupId());
 		assertTrue(out.toString().contains("Scanned 0 project(s)"), out.toString());
 	}
+
+	@Test
+	void generateWithBrokenInventoryExitsOneWithMessage() throws IOException {
+		Path json = Files.writeString(tmp.resolve("migration.json"), "{\"projects\": [}");
+		IllegalArgumentException e = org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+				() -> run("generate", json.toString(), tmp.resolve("out").toString()));
+		assertTrue(e.getMessage().startsWith("migration.json is not valid JSON"), e.getMessage());
+	}
+
+	@Test
+	void generateReportsValidationErrorsAndExitsOne() throws IOException {
+		Files.createDirectories(tmp.resolve("ws/.metadata/.plugins"));
+		Path json = tmp.resolve("migration.json");
+		run("scan", tmp.resolve("ws").toString(), "-o", json.toString(), "--offline");
+		assertEquals(1, run("generate", json.toString(), tmp.resolve("out").toString()));
+		assertTrue(err.toString().contains("No projects are selected"), err.toString());
+	}
 }

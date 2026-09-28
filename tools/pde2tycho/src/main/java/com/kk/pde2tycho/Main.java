@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.kk.pde2tycho.gen.GenerationException;
+import com.kk.pde2tycho.gen.Generator;
 import com.kk.pde2tycho.model.Inventory;
 import com.kk.pde2tycho.model.InventoryJson;
 import com.kk.pde2tycho.resolve.ArtifactResolver;
@@ -42,6 +44,7 @@ public final class Main {
 		List<String> rest = new ArrayList<>(Arrays.asList(args).subList(1, args.length));
 		return switch (args[0]) {
 			case "scan" -> scan(rest, out, err);
+			case "generate" -> generate(rest, out, err);
 			default -> usage(err, "unknown command " + args[0]);
 		};
 	}
@@ -104,6 +107,43 @@ public final class Main {
 				inv.launches().size(), inv.warnings().size());
 		out.println("Wrote " + output + ". Review projects[].selected and launches[].selected, then run:"
 				+ " pde2tycho generate " + output + " <outdir>");
+		return 0;
+	}
+
+	private static int generate(List<String> args, PrintStream out, PrintStream err) throws IOException {
+		boolean force = false;
+		boolean linux = false;
+		List<String> positional = new ArrayList<>();
+		for (String arg : args) {
+			switch (arg) {
+				case "--force" -> force = true;
+				case "--linux" -> linux = true;
+				default -> {
+					if (arg.startsWith("-")) {
+						return usage(err, "unknown option " + arg);
+					}
+					positional.add(arg);
+				}
+			}
+		}
+		if (positional.size() != 2) {
+			return usage(err, "generate needs <migration.json> <outdir>");
+		}
+		Inventory inv = InventoryJson.read(Files.readString(Path.of(positional.get(0))));
+		if (linux && !inv.environments().contains("linux/gtk/x86_64")) {
+			List<String> environments = new ArrayList<>(inv.environments());
+			environments.add("linux/gtk/x86_64");
+			inv = inv.withEnvironments(environments);
+		}
+		Path target = Path.of(positional.get(1)).toAbsolutePath().normalize();
+		try {
+			Generator.generate(inv, target, force);
+		} catch (GenerationException e) {
+			err.println("pde2tycho: cannot generate from " + positional.get(0) + ":");
+			e.errors().forEach(message -> err.println("  - " + message));
+			return 1;
+		}
+		out.println("Generated a Tycho build in " + target + ". Read MIGRATION-REPORT.md, then run: mvn clean verify");
 		return 0;
 	}
 }
