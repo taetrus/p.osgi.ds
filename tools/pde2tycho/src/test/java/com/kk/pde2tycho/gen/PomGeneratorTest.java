@@ -3,7 +3,11 @@ package com.kk.pde2tycho.gen;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+
+import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.junit.jupiter.api.Test;
 
@@ -45,5 +49,22 @@ class PomGeneratorTest {
 	void featureIsAnEclipseFeature() {
 		Project f = new Project("f", Kind.FEATURE, "/f", "com.x.feature", "1.0.0.qualifier", null, List.of(), true);
 		assertTrue(PomGenerator.module(inv, f).contains("<packaging>eclipse-feature</packaging>"));
+	}
+
+	@Test
+	void coordinatesAreXmlEscaped() throws Exception {
+		Inventory odd = new Inventory("/ws", "com.x&y", "1.0<2", "4.0.13", inv.environments(), inv.projects(),
+				inv.target(), inv.launches(), inv.warnings());
+		Project p = new Project("x", Kind.PLUGIN, "/x", "com.x&lib", "2.1.0.<q>", null, List.of(), true);
+		String module = PomGenerator.module(odd, p);
+		assertTrue(module.contains("<groupId>com.x&amp;y</groupId>"), module);
+		assertTrue(module.contains("<version>1.0&lt;2</version>"), module);
+		assertTrue(module.contains("<artifactId>com.x&amp;lib</artifactId>"), module);
+		assertTrue(module.contains("<version>2.1.0.&lt;q&gt;</version>"), module);
+		String parent = PomGenerator.parent(odd, List.of("com.x&y.target", "distribution"));
+		for (String xml : List.of(module, parent)) {
+			DocumentBuilderFactory.newInstance().newDocumentBuilder()
+					.parse(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
+		}
 	}
 }

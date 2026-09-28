@@ -32,8 +32,9 @@ final class PomGenerator {
 		for (String module : modules) {
 			moduleList.append("\t\t<module>").append(Xml.escape(module)).append("</module>\n");
 		}
-		return Templates.render("parent-pom.xml", Map.of("GROUP_ID", inv.groupId(), "VERSION", inv.version(),
-				"TYCHO_VERSION", inv.tychoVersion(), "TARGET_ID", targetId(inv), "ENVIRONMENTS",
+		return Templates.render("parent-pom.xml", Map.of("GROUP_ID", Xml.escape(inv.groupId()), "VERSION",
+				Xml.escape(inv.version()), "TYCHO_VERSION", Xml.escape(inv.tychoVersion()), "TARGET_ID",
+				Xml.escape(targetId(inv)), "ENVIRONMENTS",
 				environments.toString(), "MODULES", moduleList.toString()));
 	}
 
@@ -43,8 +44,9 @@ final class PomGenerator {
 	}
 
 	static String module(Inventory inv, String artifactId, String version, String packaging) {
-		return Templates.render("module-pom.xml", Map.of("GROUP_ID", inv.groupId(), "VERSION", inv.version(),
-				"ARTIFACT_ID", artifactId, "MODULE_VERSION", version, "PACKAGING", packaging));
+		return Templates.render("module-pom.xml", Map.of("GROUP_ID", Xml.escape(inv.groupId()), "VERSION",
+				Xml.escape(inv.version()), "ARTIFACT_ID", Xml.escape(artifactId), "MODULE_VERSION", Xml.escape(version),
+				"PACKAGING", packaging));
 	}
 
 	/** Bundle-Version 1.2.3.qualifier ↔ pom 1.2.3-SNAPSHOT; any other version must match exactly. */

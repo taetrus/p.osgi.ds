@@ -57,12 +57,13 @@ final class DistributionGenerator {
 			}
 		}
 		return Templates.render("distribution-pom.xml",
-				Map.of("GROUP_ID", inv.groupId(), "VERSION", inv.version(), "FINISH_STEPS", steps.toString()));
+				Map.of("GROUP_ID", Xml.escape(inv.groupId()), "VERSION", Xml.escape(inv.version()), "FINISH_STEPS",
+						steps.toString()));
 	}
 
 	/** Selected features, plus workspace bundles no selected feature covers (Tycho 4 accepts <bundle>). */
 	private static String category(Inventory inv, Launch launch) {
-		String group = inv.groupId();
+		String group = Xml.escape(inv.groupId());
 		Set<String> covered = new HashSet<>();
 		StringBuilder entries = new StringBuilder();
 		for (Project feature : inv.modules()) {

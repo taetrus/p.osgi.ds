@@ -9,7 +9,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Renders src/main/resources/templates/* by replacing @TOKEN@ placeholders. Line endings
+ * Renders src/main/resources/templates/* by replacing @TOKEN@ placeholders in one pass, so a
+ * value is inserted verbatim even when it contains "@X@" or "$". Line endings
  * are normalised to LF on load: the repo's .gitattributes checks *.bat out with CRLF.
  */
 final class Templates {
@@ -29,13 +30,16 @@ final class Templates {
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
-		for (Map.Entry<String, String> e : values.entrySet()) {
-			text = text.replace("@" + e.getKey() + "@", e.getValue());
+		Matcher m = PLACEHOLDER.matcher(text);
+		StringBuilder out = new StringBuilder();
+		while (m.find()) {
+			String value = values.get(m.group().substring(1, m.group().length() - 1));
+			if (value == null) {
+				throw new IllegalStateException("Template " + name + " has no value for " + m.group());
+			}
+			m.appendReplacement(out, Matcher.quoteReplacement(value));
 		}
-		Matcher leftover = PLACEHOLDER.matcher(text);
-		if (leftover.find()) {
-			throw new IllegalStateException("Template " + name + " has no value for " + leftover.group());
-		}
-		return text;
+		m.appendTail(out);
+		return out.toString();
 	}
 }
