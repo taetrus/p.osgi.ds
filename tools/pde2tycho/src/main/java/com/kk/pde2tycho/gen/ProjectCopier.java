@@ -9,11 +9,11 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Set;
 
-/** Copies a project into the output, leaving out build output and VCS data at its root. */
+/** Copies a project into the output, leaving out build output, VCS data and Eclipse metadata at its root. */
 final class ProjectCopier {
 
 	/** Only skipped directly under the project root, so a source package named "bin" survives. */
-	private static final Set<String> SKIPPED_AT_ROOT = Set.of("bin", "bin_test", "target", ".git");
+	private static final Set<String> SKIPPED_AT_ROOT = Set.of("bin", "bin_test", "target", ".git", ".metadata");
 
 	private ProjectCopier() {
 	}

@@ -30,6 +30,7 @@ class ProjectCopierTest {
 		touch(src.resolve("bin/x/A.class"));
 		touch(src.resolve("target/p.jar"));
 		touch(src.resolve(".git/HEAD"));
+		touch(src.resolve(".metadata/.log"));
 		Path dst = tmp.resolve("out/p");
 		ProjectCopier.copy(src, dst);
 		assertTrue(Files.exists(dst.resolve("META-INF/MANIFEST.MF")));
@@ -38,6 +39,7 @@ class ProjectCopierTest {
 		assertFalse(Files.exists(dst.resolve("bin")));
 		assertFalse(Files.exists(dst.resolve("target")));
 		assertFalse(Files.exists(dst.resolve(".git")));
+		assertFalse(Files.exists(dst.resolve(".metadata")));
 	}
 
 	@Test
