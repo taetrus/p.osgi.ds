@@ -18,6 +18,7 @@ This is an OSGi Declarative Services (DS) project built with Maven Tycho 4.0.13.
 | `docs/spike-isolation-results.md`, `docs/multi-jvm-isolation-journey.md`, `docs/monolith-to-multi-jvm-migration.md` | The spike: multi-frame / multi-JVM UI design and findings |
 | `docs/superpowers/specs/` | Design specs written before implementation (Mockito in the test suites; the two-tier test layout migration) |
 | `docs/adding-tests-to-a-tycho-project.md` | How-to: apply the two-tier test layout to another Tycho/PDE project (parent pom XML, per-bundle steps, troubleshooting by error message) |
+| `docs/pde-to-tycho-migration.md` | Migrating an Eclipse PDE workspace to Tycho with `tools/pde2tycho` (or by hand); troubleshooting by error message |
 | `MCP_SERVER_TESTING.md` | Manual JSON-RPC test procedure for the MCP server |
 | `SECURITY.md` | Known exposures on the unauthenticated localhost HTTP surface |
 | `com.kk.pde.ds.rag/README.md` | RAG configuration reference and verification record |
@@ -189,6 +190,7 @@ com.kk.pde.ds.spike.detail → Spike detail component
 com.kk.pde.ds.feature  → Feature grouping all bundles
 distribution           → p2 repository + product builds
 fatjar                 → Standalone fat-JAR launcher (built separately, not in the reactor)
+tools/pde2tycho        → PDE-workspace-to-Tycho migration CLI (plain Maven, not in the reactor)
 ```
 
 Tests (not shipped) live in `src_test/` of `imp` (`GreetTest`, `GreetHealthCheckTest`,
