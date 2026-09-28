@@ -33,6 +33,7 @@ class LaunchReaderTest {
 			    <stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="-os ${target.os} -ws ${target.ws} -arch ${target.arch} -nl ${target.nl} -consoleLog"/>
 			    <stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-Declipse.ignoreApp=true -Dosgi.noShutdown=true -XstartOnFirstThread"/>
 			    <stringAttribute key="productId" value="com.kk.pde.ds.product"/>
+			    <booleanAttribute key="useProduct" value="false"/>
 			    <setAttribute key="selected_target_bundles">
 			        <setEntry value="org.apache.commons.commons-io@default:default"/>
 			        <setEntry value="org.apache.felix.http.jetty@default:true"/>
@@ -55,7 +56,7 @@ class LaunchReaderTest {
 		Launch launch = LaunchReader.read(write("p2.product.launch", RUNTIME_WORKBENCH));
 		assertEquals("p2.product", launch.name());
 		assertFalse(launch.selected());
-		assertEquals("com.kk.pde.ds.product", launch.productId());
+		assertNull(launch.productId(), "useProduct=false: the productId attribute is a leftover, not the launch's product");
 		assertFalse(launch.defaultAutoStart());
 		assertEquals("JavaSE-21", launch.jre());
 		assertTrue(launch.vmArgs().startsWith("-Declipse.ignoreApp=true"));
@@ -76,6 +77,7 @@ class LaunchReaderTest {
 				"""));
 		assertTrue(launch.defaultAutoStart());
 		assertNull(launch.productId());
+		assertNull(launch.bundles().get(0).level(), "no explicit default_start_level: the product default applies");
 	}
 
 	@Test
@@ -106,7 +108,40 @@ class LaunchReaderTest {
 	@Test
 	void blankProductIdIsNull() throws IOException {
 		Launch launch = LaunchReader.read(write("x.launch", RUNTIME_WORKBENCH.replace(
-				"value=\"com.kk.pde.ds.product\"", "value=\"\"")));
+				"value=\"com.kk.pde.ds.product\"", "value=\"\"").replace(
+						"key=\"useProduct\" value=\"false\"", "key=\"useProduct\" value=\"true\"")));
 		assertNull(launch.productId());
+	}
+
+	@Test
+	void eclipseApplicationKeepsItsProductIdOnlyWhenRunningTheProduct() throws IOException {
+		Launch launch = LaunchReader.read(write("x.launch",
+				RUNTIME_WORKBENCH.replace("key=\"useProduct\" value=\"false\"", "key=\"useProduct\" value=\"true\"")));
+		assertEquals("com.kk.pde.ds.product", launch.productId());
+	}
+
+	@Test
+	void applicationAndTypeAreReadable() throws IOException {
+		Path file = write("x.launch", RUNTIME_WORKBENCH.replace("<setAttribute key=\"selected_target_bundles\">",
+				"<stringAttribute key=\"application\" value=\"org.eclipse.ui.ide.workbench\"/>"
+						+ "<setAttribute key=\"selected_target_bundles\">"));
+		assertEquals("org.eclipse.ui.ide.workbench", LaunchReader.application(file));
+		assertEquals("org.eclipse.pde.ui.RuntimeWorkbench", LaunchReader.type(file));
+		assertNull(LaunchReader.application(write("y.launch", RUNTIME_WORKBENCH)));
+	}
+
+	@Test
+	void equinoxDefaultStartLevelFillsDefaultEntriesWhenSet() throws IOException {
+		Launch launch = LaunchReader.read(write("osgi.launch", """
+				<launchConfiguration type="org.eclipse.pde.ui.EquinoxLauncher">
+				    <intAttribute key="default_start_level" value="5"/>
+				    <setAttribute key="selected_target_bundles">
+				        <setEntry value="org.a@default:default"/>
+				        <setEntry value="org.b@2:true"/>
+				    </setAttribute>
+				</launchConfiguration>
+				"""));
+		assertTrue(launch.bundles().contains(new LaunchBundle("org.a", 5, null, false)), launch.bundles().toString());
+		assertTrue(launch.bundles().contains(new LaunchBundle("org.b", 2, true, false)), launch.bundles().toString());
 	}
 }

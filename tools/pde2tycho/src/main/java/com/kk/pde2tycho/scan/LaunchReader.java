@@ -21,6 +21,7 @@ import com.kk.pde2tycho.xml.Xml;
 public final class LaunchReader {
 
 	private static final String EQUINOX_LAUNCHER = "org.eclipse.pde.ui.EquinoxLauncher";
+	private static final String ECLIPSE_APPLICATION = "org.eclipse.pde.ui.RuntimeWorkbench";
 
 	private LaunchReader() {
 	}
@@ -58,22 +59,46 @@ public final class LaunchReader {
 				return null;
 			}
 		}
+		String type = root.getAttribute("type");
+		boolean equinox = EQUINOX_LAUNCHER.equals(type);
+		// An OSGi Framework launch may set its own default start level; recorded as a concrete level.
+		String defaultLevel = equinox ? strings.get("default_start_level") : null;
+		Integer level = defaultLevel == null || defaultLevel.isBlank() ? null : Integer.valueOf(defaultLevel.trim());
 		List<LaunchBundle> bundles = new ArrayList<>();
 		if (workspace != null) {
-			workspace.forEach(entry -> bundles.add(parseEntry(entry, true)));
+			workspace.forEach(entry -> bundles.add(withDefaultLevel(parseEntry(entry, true), level)));
 		}
 		if (target != null) {
-			target.forEach(entry -> bundles.add(parseEntry(entry, false)));
+			target.forEach(entry -> bundles.add(withDefaultLevel(parseEntry(entry, false), level)));
 		}
-		boolean equinox = EQUINOX_LAUNCHER.equals(root.getAttribute("type"));
 		boolean defaultAutoStart = equinox && booleans.getOrDefault("default_auto_start", true);
-		String productId = strings.get("productId");
+		// An Eclipse Application keeps a productId attribute even when it runs plain bundles (useProduct=false).
+		String productId = ECLIPSE_APPLICATION.equals(type) && !booleans.getOrDefault("useProduct", false) ? null
+				: strings.get("productId");
 		String jre = strings.get("org.eclipse.jdt.launching.JRE_CONTAINER");
 		String name = file.getFileName().toString().replaceFirst("\\.launch$", "");
 		return new Launch(name, false, productId == null || productId.isBlank() ? null : productId, defaultAutoStart,
 				bundles, strings.getOrDefault("org.eclipse.jdt.launching.VM_ARGUMENTS", ""),
 				strings.getOrDefault("org.eclipse.jdt.launching.PROGRAM_ARGUMENTS", ""),
 				jre == null ? null : jre.substring(jre.lastIndexOf('/') + 1));
+	}
+
+	/**
+	 * The Eclipse application an "Eclipse Application" launch runs, or null. Kept out of
+	 * {@link Launch}: the generated product starts bundles only, so scan just warns about it.
+	 */
+	public static String application(Path file) throws IOException {
+		for (Element e : Xml.children(Xml.parse(file).getDocumentElement())) {
+			if ("application".equals(e.getAttribute("key")) && !e.getAttribute("value").isBlank()) {
+				return e.getAttribute("value");
+			}
+		}
+		return null;
+	}
+
+	/** The launch configuration type id, e.g. org.eclipse.pde.ui.EquinoxLauncher. */
+	public static String type(Path file) throws IOException {
+		return Xml.parse(file).getDocumentElement().getAttribute("type");
 	}
 
 	/** "id@level:autoStart", where either part may be "default" and id may carry "*version". */
@@ -97,6 +122,11 @@ public final class LaunchReader {
 			id = id.substring(0, star);
 		}
 		return new LaunchBundle(id, level, autoStart, workspace);
+	}
+
+	private static LaunchBundle withDefaultLevel(LaunchBundle bundle, Integer level) {
+		return bundle.level() != null || level == null ? bundle
+				: new LaunchBundle(bundle.id(), level, bundle.autoStart(), bundle.workspace());
 	}
 
 	private static List<String> splitCsv(String value) {

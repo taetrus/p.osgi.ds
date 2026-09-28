@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
@@ -308,6 +309,17 @@ public final class WorkspaceScanner {
 				Launch launch = LaunchReader.read(file);
 				if (launch == null) {
 					continue;
+				}
+				if (LaunchReader.type(file).toLowerCase(Locale.ROOT).contains("junit")) {
+					warnings.add("Launch " + launch.name() + " is a JUnit Plug-in Test launch; skipped (tests are not"
+							+ " migrated into the product)");
+					continue;
+				}
+				String application = LaunchReader.application(file);
+				if (application != null) {
+					warnings.add("Launch " + launch.name() + " runs application " + application + "; the generated"
+							+ " product starts bundles only — add -application " + application
+							+ " to launches[].programArgs (and the bundles it needs) if you want it");
 				}
 				launch = launch.withSelection(false,
 						launch.productId() != null ? launch.productId() : groupId + ".product");

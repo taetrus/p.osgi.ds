@@ -181,6 +181,34 @@ class WorkspaceScannerTest {
 	}
 
 	@Test
+	void eclipseApplicationLaunchWithAnApplicationIsWarnedAbout() throws IOException {
+		ws.launch("rcp", "<launchConfiguration type=\"org.eclipse.pde.ui.RuntimeWorkbench\">"
+				+ "<stringAttribute key=\"application\" value=\"org.eclipse.ui.ide.workbench\"/>"
+				+ "<setAttribute key=\"selected_target_bundles\"><setEntry value=\"org.a@default:default\"/></setAttribute>"
+				+ "</launchConfiguration>");
+		Inventory inv = scan();
+		assertEquals(1, inv.launches().size());
+		assertTrue(inv.warnings().contains("Launch rcp runs application org.eclipse.ui.ide.workbench; the generated"
+				+ " product starts bundles only — add -application org.eclipse.ui.ide.workbench to"
+				+ " launches[].programArgs (and the bundles it needs) if you want it"), inv.warnings().toString());
+	}
+
+	@Test
+	void junitPluginTestLaunchIsSkippedWithAWarning() throws IOException {
+		ws.launch("tests", "<launchConfiguration type=\"org.eclipse.pde.ui.JunitLaunchConfig\">"
+				+ "<setAttribute key=\"selected_target_bundles\"><setEntry value=\"org.a@default:default\"/></setAttribute>"
+				+ "</launchConfiguration>");
+		ws.launch("app", "<launchConfiguration type=\"org.eclipse.pde.ui.EquinoxLauncher\">"
+				+ "<setAttribute key=\"selected_target_bundles\"><setEntry value=\"org.a@default:default\"/></setAttribute>"
+				+ "</launchConfiguration>");
+		Inventory inv = scan();
+		assertEquals(List.of("app"), inv.launches().stream().map(Launch::name).toList());
+		assertTrue(inv.launches().get(0).selected(), "the only product candidate left is preselected");
+		assertTrue(inv.warnings().stream().anyMatch(w -> w.startsWith("Launch tests is a JUnit Plug-in Test")),
+				inv.warnings().toString());
+	}
+
+	@Test
 	void unreadableConfigIniIsAWarningAndTheLaunchIsKept() throws IOException {
 		ws.launch("app", "<launchConfiguration type=\"org.eclipse.pde.ui.EquinoxLauncher\">"
 				+ "<setAttribute key=\"selected_target_bundles\"><setEntry value=\"org.a@default:default\"/></setAttribute>"
