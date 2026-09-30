@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?pde version="3.5"?>
+
+<product uid="@PRODUCT_ID@" name="@PRODUCT_ID@" version="@OSGI_VERSION@" type="bundles" includeLaunchers="false" autoIncludeRequirements="true">
+
+	<configIni use="default"/>
+
+	<launcherArgs>
+		<programArgs>@PROGRAM_ARGS@</programArgs>
+		<vmArgs>@VM_ARGS@</vmArgs>
+@VM_ARGS_MAC@	</launcherArgs>
+
+	<plugins>
+@PLUGINS@	</plugins>
+
+	<configurations>
+@CONFIGURATIONS@	</configurations>
+
+</product>

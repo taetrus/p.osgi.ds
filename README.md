@@ -540,6 +540,9 @@ The short version for a bundle in this repo:
    `com.kk.pde.ds.imp/pom.xml`, the `org.osgi.framework` test dependency, and write a
    `*IT` class.
 
+To migrate an Eclipse PDE workspace into a Tycho build like this one, see
+[`docs/pde-to-tycho-migration.md`](docs/pde-to-tycho-migration.md).
+
 #### Gotchas
 
 - **`-pl <module> -am` does not work.** Maven's `--also-make` follows *pom* dependencies,

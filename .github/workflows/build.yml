@@ -21,3 +21,6 @@ jobs:
 
       - name: Build and verify
         run: mvn --batch-mode --no-transfer-progress clean verify
+
+      - name: Test pde2tycho (migration tool, outside the Tycho reactor)
+        run: mvn --batch-mode --no-transfer-progress -f tools/pde2tycho verify
