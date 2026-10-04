@@ -19,6 +19,22 @@ A bundle keeps its tests in the folder `src_test/`. The class name selects the t
 | Tier 1 | `*Test` | A plain JVM. There is no OSGi framework. | Fast |
 | Tier 2 | `*IT` | A live Equinox framework that Tycho assembles. | Slow |
 
+Figure 1 shows where the code of a bundle goes during a build.
+
+```mermaid
+flowchart LR
+    subgraph bundle["Bundle"]
+        src["src/<br/>product code"]
+        st["src_test/<br/>*Test and *IT classes"]
+    end
+    src --> jar["Bundle jar<br/>in the product"]
+    st --> tc["target/test-classes<br/>not in the product"]
+    tc --> t1["Tier 1: *Test<br/>plain JVM"]
+    tc --> t2["Tier 2: *IT<br/>Equinox framework"]
+```
+
+*Figure 1: Product code and test code in a bundle*
+
 ---
 
 ## Part A: Make a Decision About Which Tests to Add
@@ -31,6 +47,17 @@ Add a test in each of these conditions:
 - You change behavior that has no test.
 - You correct a defect. Write the test first. Make sure that the test is unsuccessful
   before the correction and successful after the correction.
+
+Figure 2 shows the sequence for a defect.
+
+```mermaid
+flowchart LR
+    a["Write the test"] --> b["Do the test.<br/>It is unsuccessful."]
+    b --> c["Correct the defect"]
+    c --> d["Do the test.<br/>It is successful."]
+```
+
+*Figure 2: Test sequence for a defect correction*
 
 ### A.2 Select the tier
 
@@ -47,6 +74,31 @@ Answer these questions in sequence. Stop at the first answer "yes".
    If yes, write a tier 2 test.
 
 If the answer to each question is "no", a test is not necessary.
+
+Figure 3 shows the same questions as a diagram.
+
+```mermaid
+flowchart TD
+    q1{"1. Can you make the object<br/>with new?"}
+    q2{"2. Is it a DS component, and do you<br/>examine only its state?"}
+    q3{"3. Does it use a service through<br/>a @Reference field?"}
+    q4{"4. Must the test show resolution, activation,<br/>injection or service properties?"}
+    t1a["Tier 1 test"]
+    t1b["Tier 1 test.<br/>Call @Activate directly."]
+    t1c["Tier 1 test.<br/>Mock the service."]
+    t2["Tier 2 test"]
+    none["A test is not necessary"]
+    q1 -->|Yes| t1a
+    q1 -->|No| q2
+    q2 -->|Yes| t1b
+    q2 -->|No| q3
+    q3 -->|Yes| t1c
+    q3 -->|No| q4
+    q4 -->|Yes| t2
+    q4 -->|No| none
+```
+
+*Figure 3: Selection of the tier*
 
 **Note:** Most tests are tier 1 tests. A tier 2 test starts a framework and uses more time.
 Do not write a tier 2 test for behavior that a tier 1 test can show.
@@ -94,6 +146,31 @@ example `scrRegistersIGreet`.
 ---
 
 ## Part B: Add the Tests
+
+Figure 4 shows which procedures of this part to do.
+
+```mermaid
+flowchart TD
+    b1["B.1 steps 1 thru 4:<br/>folder, .classpath entry,<br/>JUnit dependency, surefire plugin"]
+    m{"Do you mock<br/>a service?"}
+    b2["B.2: add Mockito"]
+    k{"Is the test<br/>a tier 2 test?"}
+    b3["B.3 steps 2 thru 4:<br/>OSGi dependency, tycho-surefire plugin,<br/>target-platform-configuration block"]
+    w1["Write the *Test class"]
+    w2["Write the *IT class"]
+    c["C.3: do the tests of the bundle"]
+    b1 --> m
+    m -->|Yes| b2
+    m -->|No| k
+    b2 --> k
+    k -->|No| w1
+    k -->|Yes| b3
+    b3 --> w2
+    w1 --> c
+    w2 --> c
+```
+
+*Figure 4: Procedures to add a test*
 
 ### B.1 Add a tier 1 test to a bundle
 
@@ -252,6 +329,20 @@ Do all commands in the project root.
 
 **Note:** Tycho 4 must have JDK 17 or later. CI uses Temurin 21. To get the same result as
 CI on macOS, put `JAVA_HOME=$(/usr/libexec/java_home -v 21)` before the command.
+
+Figure 5 shows the build phases and the tier that each phase does. The command `mvn test`
+stops after the phase `test`. The command `mvn verify` does all phases.
+
+```mermaid
+flowchart LR
+    c["compile"] --> tc["test-compile"]
+    tc --> t["test<br/>Tier 1"]
+    t --> p["package"]
+    p --> it["integration-test<br/>Tier 2"]
+    it --> v["verify"]
+```
+
+*Figure 5: Build phases and tiers*
 
 ### C.1 Do all bundle tests
 
