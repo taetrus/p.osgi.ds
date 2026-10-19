@@ -58,7 +58,8 @@ Use the Maven Wrapper `./mvnw` for all builds. It pins the Maven version that CI
 # Build specific modules. For a module with OSGi dependencies, also list its upstream modules (see Testing)
 ./mvnw clean package -pl com.kk.pde.ds.target,com.kk.pde.ds.api
 
-# Continue a failed build from the distribution module
+# Continue a failed build from the distribution module. Maven finds the earlier
+# modules in the local repository only, so run "./mvnw clean install -DskipTests" one time before.
 ./mvnw verify -rf :distribution
 
 # Test the pde2tycho tool (plain Maven, not in the reactor). CI runs this as a second step.
