@@ -1,5 +1,11 @@
 # Swing Chatbot Bundle Implementation Plan
 
+> **Status:** Implemented on 2026-04-01 (commits from 8a092ae). The plan is complete, but nobody updated the checkboxes. The code differs from this plan in these points:
+> - There is no `IChatService` interface. The bundle has the DS component class `ChatService`.
+> - There is no `LlmJsonUtil.getAllInArray`.
+> - Additional classes: `ChatConfig`, `DarkTheme`, `MarkdownStyler`, `SettingsDialog`.
+> - The bundle puts commonmark 0.21.0 (with the GFM tables extension) on its `Bundle-ClassPath`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add a Swing-based chatbot bundle (`com.kk.pde.ds.chatbot`) that provides a desktop chat UI for talking to OpenAI-compatible LLMs (like OpenRouter), with session history, model selection, and MCP tool integration.

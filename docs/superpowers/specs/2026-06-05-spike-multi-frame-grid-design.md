@@ -2,6 +2,11 @@
 
 **Date:** 2026-06-05
 **Modules:** `com.kk.pde.ds.spike.api`, `com.kk.pde.ds.spike.master`, `com.kk.pde.ds.spike.detail`
+**Status:** Implemented on 2026-06-05 (commit bee59ff). Later work extended it. The code differs from this design in these points:
+- Commit 69a9371 added `AnchorState`. The anchor frame can move and minimize, and the other frames follow it.
+- The `SPIKE_FRAMES` environment variable sets N. It has priority over `-Dspike.frames`, because the run scripts pass it through. Set it on the master only.
+- The detail reads N from the layout of the master. You do not set N on the detail.
+- Tests now exist in `com.kk.pde.ds.spike.master/src_test/` (`DockLayoutTest`, `CatalogServiceIT` and others). The Testing section says that there is no test module.
 
 ## Goal
 

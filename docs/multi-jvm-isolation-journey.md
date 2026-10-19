@@ -1,88 +1,62 @@
 # From a Freezing Monolith to Isolated Apps
 
-*How we took a single-JVM Swing/OSGi application that froze for everyone and found a
-path to splitting it into independent, fault-isolated processes — without rewriting
-the panels.*
+*This document tells how we took a single-JVM Swing/OSGi application that froze for all users. We found a path to split it into independent processes, each with its own failure domain. We did not rewrite the panels.*
 
 ---
 
-## Executive summary
+## Summary
 
-A large OSGi application runs **hundreds of bundles in one JVM**, with many teams'
-Swing panels combined into a **single window**. Because everything shares one event
-thread, one heap, and one process, **one team's mistake freezes or crashes the whole
-app for everyone**.
+A large OSGi application runs **hundreds of bundles in one JVM**. Many teams contribute Swing panels, and the application combines them into a **single window**. All panels share one event thread, one heap and one process. Thus **an error from one team freezes or stops the full application for all users**.
 
-We explored several ways to split it across processes, discarded the expensive ones,
-and landed on a cheap, incremental architecture: **one JVM per panel-group, in its own
-window, coordinated only by shared ECF remote services**. We then **built a working
-two-app proof-of-concept** that demonstrates the isolation for real — and it surfaced
-the one piece of infrastructure still needed (dynamic service discovery), which we are
-now adding.
+We examined several ways to split the application across processes. We rejected the expensive ones. We selected an incremental architecture with a low cost. It has **one JVM for each panel group, each in its own window**. **Shared ECF remote services are the only link.**
 
-**Outcome:** a validated, low-cost, team-by-team migration path off the monolith — with
-running code to prove it.
+We then **built a working proof of concept with two apps**. It shows the isolation with real code. It also found the one missing piece of infrastructure: dynamic service discovery.
+
+After that, we made the two apps look like one combined UI. First, the detail window attached to the master window. Then each app opened N frames in one shared grid. Then the first master frame became an anchor that moves all frames of the two apps.
+
+**Result:** a tested migration path with a low cost, one team at a time, and running code as proof.
 
 ---
 
-## Part 1 — The problem
+## Part 1: The problem
 
-The application is a classic "big ball of mud" desktop client:
+The application is a typical "big ball of mud" desktop client:
 
 - **Hundreds of OSGi bundles** in **one JVM**.
-- **Many Swing panels** from **many teams**, all docked into **one `JFrame`**.
+- **Many Swing panels** from **many teams**, all in **one `JFrame`**.
 
-Everything shares three things, and each is a single point of failure:
+All panels share three resources. Each resource is a single point of failure:
 
-| Shared resource | Failure it causes |
+| Shared resource | Failure that it causes |
 |---|---|
-| One **Event Dispatch Thread** (EDT) | Any panel doing slow work freezes the *entire* UI |
-| One **heap** | One bundle's memory leak / GC pause stalls *everyone* |
-| One **process** | One panel's crash can take down *the whole app* |
+| One **Event Dispatch Thread** (EDT) | A panel that does slow work freezes the *full* UI. |
+| One **heap** | A memory leak or a GC pause in one bundle stops *all* panels. |
+| One **process** | A crash in one panel can stop *the full application*. |
 
-With many developers contributing panels, these failures are **rampant** — and a freeze
-caused by Team A is felt by Team B's users. The goal became clear: **isolate teams'
-panels so one team's problem can't sink the ship.**
+Many developers contribute panels, so these failures occur **frequently**. A freeze that Team A causes also affects the users of Team B. The goal became clear: **isolate the panels of each team, so that a problem in one team cannot stop the full application.**
 
 ---
 
-## Part 2 — The journey (what we tried, and why we ruled it out)
+## Part 2: What we tried, and why we rejected it
 
-The first instinct was: *"move a panel from one JVM to another."* That turned out to be
-the wrong framing, and chasing it taught us the real constraints.
+The first idea was: *"move a panel from one JVM to another JVM."* This was the wrong question. But the attempts showed us the real constraints.
 
-**Step 1 — "Can we just send a `JPanel` over the wire?"** No. A Swing component is welded
-to one JVM's event thread and native peers. Serialize it and you get a dead snapshot with
-no live behavior — and host-side updates can never reach it. *A live UI object cannot
-cross a process boundary.*
+**Step 1: "Can we send a `JPanel` over the network?"** No. A Swing component needs the event thread and the native peers of one JVM. If you serialize it, you get a static copy with no live behavior. Updates from the host can never get to it. *A live UI object cannot go across a process boundary.*
 
-**Step 2 — "Mirror the panel as an image + forward clicks back."** Technically possible
-(it's how remote-desktop tools work): keep the real panel headless on the host, stream its
-pixels, and send mouse/keyboard events back. It even preserves existing click handlers with
-no panel rewrite. But it's **expensive to build and operate** (latency, bandwidth, and
-broken popups/dialogs/drag-drop), and the user ruled it out for this stage.
+**Step 2: "Show the panel as an image and send the clicks back."** This is technically possible. Remote-desktop tools operate this way. The real panel stays headless on the host. The host sends its pixels, and the client sends the mouse and keyboard events back. This keeps the existing click handlers, and the panels need no rewrite. But it is **expensive to build and to operate**. Latency and bandwidth increase, and popups, dialogs and drag-and-drop do not operate correctly. The user rejected it for this stage.
 
-**Step 3 — "Re-implement each panel as remote data + local rendering."** Clean in theory,
-but it means **rewriting every one of hundreds of panels** into a data-model + renderer.
-**Too invasive, too late.**
+**Step 3: "Write each panel again as remote data plus local rendering."** This is clean in theory. But it means that we **write each of hundreds of panels again** as a data model plus a renderer. **This change is too large, and it is too late for it.**
 
-**Step 4 — the reframe.** Stepping back: the goal was never "transfer panels." It was
-**fault and performance isolation**. Panel-transfer was just an assumed *means*. Once we
-asked *"what are you actually trying to achieve?"*, two answers unlocked everything:
+**Step 4: a new view of the problem.** The goal was never "move panels". The goal was **isolation of failures and performance**. Panel transfer was only an assumed *method*. We asked, *"What do you actually want to get?"* Two answers solved the problem:
 
-- The freezes come from **all** of: backend blocking, the panels' own rendering/compute,
-  GC pressure, and crashes — so the isolation must be at the **process** level (separate
-  EDTs *and* heaps *and* crash domains), not just the service level.
-- **Separate windows are acceptable.** This was the key: the *only* thing that forced the
-  expensive image/embedding approaches was insisting on a single combined window. Drop that,
-  and the whole problem becomes easy.
+- The freezes come from **all** of these causes: backend calls that block, rendering and calculation in the panels, GC pressure and crashes. Thus the isolation must be at the **process** level, with separate EDTs, heaps and crash domains. Isolation at the service level only is not sufficient.
+- **Separate windows are acceptable.** This was the key point. Only the requirement for one combined window made the expensive image and embedding methods necessary. Without that requirement, the problem becomes easy.
 
 ---
 
-## Part 3 — The solution
+## Part 3: The solution
 
-**Desktop "micro-frontends": one JVM per panel-group, each in its own window, coordinated
-only by shared services.**
+**Desktop "micro-frontends": one JVM for each panel group, each in its own window, with shared services as the only link.**
 
 ```
                   ┌──────────── Shell / Launcher ────────────┐
@@ -97,97 +71,127 @@ only by shared services.**
                   (the ONLY coupling: *.api bundles = interfaces + DTOs)
 ```
 
-Why this fixes every freeze cause **for free**:
+This design removes each cause of a freeze **with no additional work**:
 
-| Freeze cause | Fixed by |
+| Cause of the freeze | Solution |
 |---|---|
-| Panels' own rendering/compute on the EDT | **Separate EDT per app** |
-| Panels blocking on backend/IO | App-local threads; remote calls made off-EDT |
-| Memory / GC pressure | **Separate heaps** |
-| Crashes / exceptions | **Separate processes** (+ supervisor restart) |
+| Rendering and calculation in the panels on the EDT | **A separate EDT for each app** |
+| Panels that block on backend calls or I/O | Threads in each app. Remote calls do not use the EDT. |
+| Memory and GC pressure | **Separate heaps** |
+| Crashes and exceptions | **Separate processes**, plus a supervisor that starts a crashed app again |
 
-The panels **keep their existing code** and run for real in their own window. The only
-change: cross-team interactions that used to be in-JVM method calls become **ECF service
-calls** — which this project already does well.
+The panels **keep their existing code**. Each panel runs in its own window. Only one thing changes: interactions between teams that were method calls in one JVM become **ECF service calls**. This project already uses ECF service calls.
 
-**Where the cost actually is** (honest): not UI tech, but **untangling the implicit
-in-JVM coupling into explicit service contracts**, and promoting shared global state
-(session, selection, config) into a Core service first. That work is **incremental** —
-carve out the worst-offending panel-group first, leave the rest as the monolith, and peel
-off more over time. The monolith shrinks; value lands immediately.
+**Where the real cost is:** the cost is not in the UI technology. The cost is in two tasks:
 
----
+1. Change the implicit coupling inside the JVM into explicit service contracts.
+2. Move the shared global state (session, selection, configuration) into a Core service first.
 
-## Part 4 — The proof (we built it)
-
-To de-risk before committing teams, we built a **runnable two-app spike**:
-
-- **App-1 (master)** — its own JVM and window: a list of catalog items; owns the data and
-  the current selection; **exports** an `ICatalogService` over ECF.
-- **App-2 (detail)** — its own JVM and window: **consumes** that service and shows the
-  details of whatever is selected in App-1.
-
-The *only* thing shared between them is a tiny contract bundle (one interface + one
-serializable DTO). No panel remoting.
-
-**What we verified, with running code:**
-
-- ✅ **Cross-JVM coordination** — selecting in App-1 updates App-2 across processes
-  (`Detail now showing remote selection: Hex Bolt M8`).
-- ✅ **Crash isolation** — killing App-1 left App-2 running and gracefully showing
-  "unavailable." One app's crash did **not** take down the other.
-- ✅ **Freeze isolation** — freezing one app's UI thread leaves the other responsive
-  (separate EDTs); App-1's frozen *window* doesn't block App-2 because its service answers
-  off the event thread.
-
-**The one gap the spike surfaced (and why that's valuable):**
-
-- ⚠️ After App-1 **restarted**, App-2 did **not** automatically reconnect. The spike used a
-  *static* endpoint file, which ECF reads **once at startup**. So discovery was
-  "once," not "continuous." For a system where apps crash and **restart and rejoin**, that's
-  the missing piece — exactly the kind of thing a spike is meant to catch *before* you build
-  on it.
+This work is **incremental**. First, move the panel group that causes the most problems. Keep the other panel groups in the monolith. Move more panel groups over time. The monolith becomes smaller, and each step gives value immediately.
 
 ---
 
-## Part 5 — What's next: closing the auto-rejoin gap
+## Part 4: The proof (we built it)
 
-The fix is **dynamic service discovery**: apps **advertise** their services and **discover**
-peers continuously, so a restarted app is re-found and re-connected automatically (instead of
-discovery happening once at startup).
+To decrease the risk before teams start, we built a **runnable spike with two apps**:
 
-We attempted the obvious route — ECF's **JmDNS/Zeroconf discovery provider** — and learned it
-is not a drop-in: adding the provider bundle is necessary but not sufficient. ECF did not
-auto-instantiate or connect a discovery container in a local two-JVM test, which means it needs
-**explicit discovery-container wiring**, and mDNS multicast between two processes on a single
-developer machine (macOS loopback) is itself unreliable. We rolled the spike back to its
-verified static-EDEF state rather than ship unverified discovery.
+- **App-1 (master)** has its own JVM and window. It shows a list of catalog items. It keeps the data and the current selection. It **exports** an `ICatalogService` over ECF.
+- **App-2 (detail)** has its own JVM and window. It **uses** that service and shows the details of the item that the user selects in App-1.
 
-So the auto-rejoin gap has **two viable closes**, to be chosen per environment:
+The two apps share only a small contract bundle. At this stage, the bundle had one interface and one serializable DTO. The spike sends no panels between JVMs.
 
-1. **Discovery provider (JmDNS/Zeroconf or ZooKeeper), verified on a real network** — the
-   "proper" answer for elastic, many-app topologies. Needs the explicit discovery-container
-   wiring and a true (non-loopback) network to validate.
-2. **Deterministic programmatic re-import** — a small consumer-side watchdog that re-imports the
-   endpoint via ECF's `RemoteServiceAdmin` when the provider returns. Works with the existing
-   static endpoint info, needs no multicast, and is fully verifiable locally. A pragmatic bridge
-   until a discovery provider is stood up.
+**What we tested with running code:**
 
-After that, the roadmap is the incremental migration itself: stand up the Core (shared state +
-discovery + supervisor), carve out the first painful panel-group, and iterate.
+- ✅ **Cross-JVM coordination.** A selection in App-1 updates App-2 across processes (`Detail now showing remote selection: Hex Bolt M8`).
+- ✅ **Crash isolation.** We killed App-1, and App-2 continued to run and showed "unavailable". The crash of one app did **not** stop the other app.
+- ✅ **Freeze isolation.** Each app has its own EDT. Thus a freeze of the UI thread of one app does not freeze the other app. The frozen App-1 *window* does not block App-2, because the App-1 service does not use the event thread to answer.
+
+**The one gap that the spike found:**
+
+- ⚠️ After App-1 **restarted**, App-2 did **not** connect again automatically. The spike used a *static* endpoint file, and ECF reads that file **one time at startup**. Thus discovery occurred one time only. It was not continuous. A system where apps crash, **restart and join again** needs this missing piece. A spike must find this type of gap *before* you build on the design.
 
 ---
 
-## Key takeaways
+## Part 5: One combined UI from two processes
 
-1. **Question the means, not just the requirement.** "Transfer a panel" was an assumption;
-   the real goal was *isolation*. The right question ("what are you actually trying to
-   achieve?") dissolved the hardest part of the problem.
-2. **One constraint was doing all the damage.** Insisting on a single combined window was the
-   only thing forcing expensive solutions. Relaxing it made the problem cheap.
-3. **Isolation is free once you split processes; coordination is cheap with services.** The
-   architecture leans on what OSGi/ECF already do well, not on novel UI plumbing.
-4. **Build a spike to find the gap.** A few hundred lines of running code proved the thesis
-   *and* surfaced the discovery requirement — far cheaper than discovering it mid-migration.
-5. **Migrate incrementally.** Carve out the worst offender first; let the monolith shrink.
-   No big-bang rewrite, value on day one.
+The next request was: *make the two apps look like one UI.* The user wanted three things:
+
+1. **One window**: one combined UI on the screen.
+2. **Real panels**: the real interactive widgets, with no change.
+3. **Isolated processes**: a separate EDT, heap and crash domain for each app.
+
+A Swing widget cannot go across processes. Native window embedding could give all three things, but it is not a usable option on macOS. Thus we kept items 2 and 3, and we made a visual copy of item 1 (commit `d6f987e`):
+
+- The master window was the **anchor**. It published its live screen bounds (`DockBounds`) through `ICatalogService`.
+- The detail window was the **follower**. It had no border, and it attached itself to the right edge of the anchor with the same height.
+- Every panel showed a badge with its owner process: teal "APP-1 · MASTER" and amber "APP-2 · DETAIL".
+- The close button (●) closed the two apps. A crash of one app did not stop the other app.
+
+To keep the follower synchronized with one remote call for each poll, `ICatalogService` got `getDockState()`. It returns one `DockState` snapshot.
+
+---
+
+## Part 6: From two windows to a tiled grid
+
+The combined UI with two windows showed the isolation with one window for each app. The next step made this general (commit `bee59ff`). Each app opens **N frames**, and the frames of the two apps fill **one shared grid**.
+
+**Slot calculation.** The grid has one global sequence of slots. `DockLayout` gives the slot numbers:
+
+- `masterSlot(k) = 2k`: master frames use the even slots.
+- `detailSlot(k) = 2k + 1`: detail frames use the odd slots.
+
+The fill sequence is M, D, M, D and so on. `slotBounds(slot)` calculates the screen bounds of a slot: `col = slot % columns` and `row = slot / columns`. When a row is full, the next slot goes to a new row.
+
+**One layout, shared parameters.** The master starts first. It calculates the number of columns from the width of the primary screen: `columns = max(1, (screenWidth − 60) / 400)`. It publishes the `DockLayout` one time with `setLayout()`. The detail reads the layout in its first poll and uses the same `slotBounds()` formula. The two apps share parameters, not state. No frame sends its own messages.
+
+**Frame count.** The default is N = 2. Set `SPIKE_FRAMES=N` (or `-Dspike.frames=N`) on the master. The detail reads N from the layout.
+
+**Panels for each frame.** `distribute(panelCount, frames)` divides the panels of each app into balanced, contiguous groups. For example, with 4 panels and 2 frames, frame 0 gets panels 0 and 1, and frame 1 gets panels 2 and 3. With N = 1, each app has one window, as in Part 5.
+
+**Proof from a run.** With `SPIKE_FRAMES=3`, the master frames went to slots 0, 2 and 4. The detail frames went to slots 1, 3 and 5. A new row started after column 4.
+
+---
+
+## Part 7: The anchor moves all frames
+
+With N frames for each app, there is no single "host window" for the follower. Commit `69a9371` added a new anchor:
+
+- The first master frame, **M-1**, is the anchor (badge "M-1 ⚓"). It is the only frame that you can drag or minimize.
+- The anchor does not send the position of each window. It publishes one `AnchorState(offsetX, offsetY, minimized)`. The offset is the distance between the anchor and its home slot.
+- Each other frame goes to `slotBounds(slot) + offset`. Each frame adds the same offset to its own home position, so the frames keep their relative positions.
+- In the master JVM, the other master frames move immediately during the drag. The detail gets the offset in its `getDockState()` poll every 120 ms. It moves its frames only when the `AnchorState` changes.
+- Minimize reduces the anchor to its header strip and hides all other frames. Restore shows them again.
+
+This is the same rule as in Part 6: **share parameters, not state.** `DockLayout` shares the static grid. `AnchorState` shares the one value that moves the grid.
+
+The commit record states that `mvn clean verify` passed and that the master started with M-1 as the anchor and with no exceptions.
+
+---
+
+## Part 8: Next step: close the gap for automatic join
+
+The solution is **dynamic service discovery**. Apps **advertise** their services and **discover** other apps continuously. Thus the system finds a restarted app again and connects to it automatically. Discovery does not occur only one time at startup.
+
+We tried the usual method first: ECF's **JmDNS/Zeroconf discovery provider**. We learned that it is not a simple addition. The provider bundle is necessary, but it is not sufficient. In a local test with two JVMs, ECF did not create or connect a discovery container automatically. Thus it needs **explicit wiring of the discovery container**. Also, mDNS multicast between two processes on one developer computer (macOS loopback) is not reliable. We returned the spike to its tested static-EDEF state. We did not ship discovery that we had not tested.
+
+There are **two possible solutions** for the gap. Select one for each environment:
+
+1. **A discovery provider (JmDNS/Zeroconf or ZooKeeper), tested on a real network.** This is the correct solution for flexible topologies with many apps. It needs the explicit wiring of the discovery container and a real (not loopback) network to test it.
+2. **A programmatic import of the endpoint again.** A small watchdog in the consumer imports the endpoint again through ECF's `RemoteServiceAdmin` when the provider comes back. It uses the existing static endpoint data. It needs no multicast, and you can test it fully on one computer. It is a practical temporary solution until a discovery provider is available.
+
+After that, the plan is the incremental migration:
+
+1. Create the Core app (shared state, discovery and supervisor).
+2. Move the first panel group that causes problems.
+3. Repeat for the next panel group.
+
+---
+
+## Lessons
+
+1. **Examine the method, not only the requirement.** "Move a panel" was an assumption. The real goal was *isolation*. The correct question ("What do you actually want to get?") removed the most difficult part of the problem.
+2. **One constraint caused all the cost.** Only the requirement for one combined window made the expensive solutions necessary. Without it, the problem became cheap.
+3. **Separate processes give isolation, and services give coordination at a low cost.** The architecture uses what OSGi and ECF already do well. It needs no new UI mechanism.
+4. **Build a spike to find the gap.** A few hundred lines of running code proved the idea *and* found the discovery requirement. This was much cheaper than finding the gap during the migration.
+5. **Migrate incrementally.** Move the worst panel group first, and let the monolith become smaller. Do not rewrite everything at one time. Each step gives value immediately.
+6. **Share parameters, not state.** The combined UI shares only a few numbers (`DockLayout` and `AnchorState`). Each app calculates its own window positions from those numbers.

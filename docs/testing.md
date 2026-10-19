@@ -116,7 +116,7 @@ test.
 | A DS component that has state | Call `@Activate` in `@BeforeEach`. Then examine the state. | 1 | `CatalogServiceImplTest` |
 | A component that calls a different service | Mock the service. Examine the result and the calls. Make the service throw an exception. | 1 | `GreetHealthCheckTest` |
 | A component that calls services in a sequence | Use `ArgumentCaptor`, `InOrder` or `spy()`. | 1 | `MasterAppTest` |
-| Swing code | Examine the components without a display. Do not examine how the window looks. | 1 | `MasterAppTest` |
+| Swing code | Examine the components without a screen. Do not examine how the window looks. | 1 | `MasterAppTest` |
 | A component that SCR must register as a service | The bundle is active. SCR registers the service. DS supplies the reference. | 2 | `GreetServiceIT` |
 | A service that must have specified properties | SCR calls `@Activate`. The service has the properties. | 2 | `CatalogServiceIT` |
 
@@ -259,7 +259,11 @@ bundle.
 Do this procedure only if paragraph A.2 gives the answer "tier 2".
 
 1. Do steps 1 thru 4 of paragraph B.1.
-2. Add the dependency `org.osgi:org.osgi.framework` to the `pom.xml`, without a version.
+2. Add these dependencies to the `pom.xml`, without versions:
+
+   - `org.junit.platform:junit-platform-launcher`
+   - `org.osgi:org.osgi.framework`
+
 3. Add `tycho-surefire-plugin` to the `<build><plugins>` section of the `pom.xml`:
 
    ```xml
@@ -306,6 +310,9 @@ Do this procedure only if paragraph A.2 gives the answer "tier 2".
 
 6. Do the tests of the bundle (refer to paragraph C.3).
 
+**Note:** The OSGi manifest of the Jupiter engine requires the launcher capability.
+Without `junit-platform-launcher`, tier 2 cannot resolve. Tier 1 does not need it.
+
 **Note:** The block in step 4 does two things. It stops the check of the Java version of
 the bundle. It also adds Felix SCR to the framework. If SCR is not there, no DS component
 starts.
@@ -327,11 +334,14 @@ starts.
 
 Do all commands in the project root.
 
+Use the Maven Wrapper `./mvnw` (on Windows, `mvnw.cmd`). It uses Maven 3.9.16. Tycho 4.0.13
+does not start on Maven 3.10. CI uses `./mvnw` with the same goals.
+
 **Note:** Tycho 4 must have JDK 17 or later. CI uses Temurin 21. To get the same result as
 CI on macOS, put `JAVA_HOME=$(/usr/libexec/java_home -v 21)` before the command.
 
-Figure 5 shows the build phases and the tier that each phase does. The command `mvn test`
-stops after the phase `test`. The command `mvn verify` does all phases.
+Figure 5 shows the build phases and the tier that each phase does. The command `./mvnw test`
+stops after the phase `test`. The command `./mvnw verify` does all phases.
 
 ```mermaid
 flowchart LR
@@ -349,7 +359,7 @@ flowchart LR
 1. Enter this command:
 
    ```bash
-   mvn clean verify
+   ./mvnw clean verify
    ```
 
 2. Make sure that the last lines show `BUILD SUCCESS`.
@@ -361,7 +371,7 @@ This command does tier 1 and tier 2. CI uses the same command.
 1. Enter this command:
 
    ```bash
-   mvn test
+   ./mvnw test
    ```
 
 This command does not start Equinox.
@@ -372,9 +382,9 @@ This command does not start Equinox.
 2. Enter the command with the target module, those bundles, and the bundle:
 
    ```bash
-   mvn verify -pl com.kk.pde.ds.target,com.kk.pde.ds.api,com.kk.pde.ds.imp
-   mvn verify -pl com.kk.pde.ds.target,com.kk.pde.ds.mcp.api
-   mvn verify -pl com.kk.pde.ds.target,com.kk.pde.ds.spike.api,com.kk.pde.ds.spike.master
+   ./mvnw verify -pl com.kk.pde.ds.target,com.kk.pde.ds.api,com.kk.pde.ds.imp
+   ./mvnw verify -pl com.kk.pde.ds.target,com.kk.pde.ds.mcp.api
+   ./mvnw verify -pl com.kk.pde.ds.target,com.kk.pde.ds.spike.api,com.kk.pde.ds.spike.master
    ```
 
 **Caution:** Do not use `-pl <module> -am`. Maven cannot read OSGi manifest dependencies.
@@ -385,8 +395,8 @@ The option `-am` builds only the parent, and the build stops.
 1. Use the property `-Dtest` with the phase `test`:
 
    ```bash
-   mvn test -pl com.kk.pde.ds.target,com.kk.pde.ds.api,com.kk.pde.ds.imp -Dtest=GreetHealthCheckTest
-   mvn test -pl com.kk.pde.ds.target,com.kk.pde.ds.spike.api,com.kk.pde.ds.spike.master -Dtest='MasterAppTest#spyRunsTheRealServiceAndRecordsCalls'
+   ./mvnw test -pl com.kk.pde.ds.target,com.kk.pde.ds.api,com.kk.pde.ds.imp -Dtest=GreetHealthCheckTest
+   ./mvnw test -pl com.kk.pde.ds.target,com.kk.pde.ds.spike.api,com.kk.pde.ds.spike.master -Dtest='MasterAppTest#spyRunsTheRealServiceAndRecordsCalls'
    ```
 
 2. If the value contains `#`, put the value between quotation marks.
@@ -396,7 +406,7 @@ The option `-am` builds only the parent, and the build stops.
 1. Use the property `-Dit.test` with the phase `verify`:
 
    ```bash
-   mvn verify -pl com.kk.pde.ds.target,com.kk.pde.ds.api,com.kk.pde.ds.imp -Dit.test=GreetServiceIT
+   ./mvnw verify -pl com.kk.pde.ds.target,com.kk.pde.ds.api,com.kk.pde.ds.imp -Dit.test=GreetServiceIT
    ```
 
 Tier 1 also operates during this command.
@@ -409,7 +419,7 @@ does not do its tests.
 1. Enter this command:
 
    ```bash
-   mvn -f tools/pde2tycho verify
+   ./mvnw -f tools/pde2tycho verify
    ```
 
 ### C.7 Read the results
@@ -443,7 +453,7 @@ These lines in the log are normal:
 | A tier 1 test cannot get a bundle or a `BundleContext`. | Tier 1 has no OSGi framework. | Change the suffix of the class to `IT`. Do paragraph B.3. |
 | A tier 2 test finds no service. | Felix SCR is not in the framework. | Do step 4 of paragraph B.3. |
 | A tier 2 test cannot find Mockito classes. | Mockito is not in the Equinox framework. | Move the test to a `*Test` class. |
-| A window opens during the tests. | The JVM has a display. | Add the `argLine` in paragraph B.4. |
+| A window opens during the tests. | The JVM has a screen. | Add the `argLine` in paragraph B.4. |
 | The local result is different from the CI result. | The command `mvn` of Homebrew uses its own JDK when `JAVA_HOME` is not set. | Set `JAVA_HOME` to JDK 21 before the command. |
 | Test classes are in a bundle jar. | The tests are in `src/`, or `src_test/` is in `build.properties`. | Move the tests to `src_test/` and remove the entry. |
 
