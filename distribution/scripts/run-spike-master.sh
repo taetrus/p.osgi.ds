@@ -7,8 +7,8 @@
 # The detail reads N from the master's published layout, so only set it here, e.g.:
 #   SPIKE_FRAMES=3 ./run-spike-master.sh
 #   ./run-spike-detail.sh
-# (-Dspike.frames=N also works, but only if placed BEFORE -jar — the env var is the
-#  supported path since these scripts append args after -jar.)
+# (-Dspike.frames=N also works: the script passes its args to the JVM before -jar.
+#  The env var is the simpler path.)
 
 PRODUCT_UID="com.kk.pde.ds.spike.master.product"
 
