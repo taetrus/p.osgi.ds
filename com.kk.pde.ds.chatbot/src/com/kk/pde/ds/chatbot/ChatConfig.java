@@ -29,7 +29,7 @@ public final class ChatConfig {
 	private static final Logger LOG = LoggerFactory.getLogger(ChatConfig.class);
 
 	// Code defaults
-	public static final String DEFAULT_MODEL = "google/gemini-flash-1.5";
+	public static final String DEFAULT_MODEL = "minimax/minimax-m3.1-flash:free";
 	public static final String DEFAULT_BASE_URL = "https://openrouter.ai/api/v1";
 
 	// Property keys
