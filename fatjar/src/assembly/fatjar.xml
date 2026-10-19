@@ -39,6 +39,7 @@
             <outputDirectory>/configuration/configs</outputDirectory>
             <includes>
                 <include>*.cfg</include>
+                <include>*.config</include>
             </includes>
         </fileSet>
     </fileSets>

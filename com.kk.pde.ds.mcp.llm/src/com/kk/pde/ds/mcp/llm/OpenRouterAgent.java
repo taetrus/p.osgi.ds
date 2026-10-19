@@ -39,7 +39,7 @@ import com.kk.pde.ds.mcp.api.Json;
  *
  * Configuration via system properties (set with -D at startup):
  *   openrouter.api.key   — required; your OpenRouter API key
- *   openrouter.model     — optional; model ID (default: google/gemini-flash-1.5)
+ *   openrouter.model     — optional; model ID (default: minimax/minimax-m3.1-flash:free)
  *   openrouter.base.url  — optional; API base URL (default: https://openrouter.ai/api/v1)
  */
 @Component(service = OpenRouterAgent.class)
@@ -47,7 +47,7 @@ public class OpenRouterAgent {
 
 	private static final Logger LOG = LoggerFactory.getLogger(OpenRouterAgent.class);
 	private static final String DEFAULT_BASE_URL = "https://openrouter.ai/api/v1";
-	private static final String DEFAULT_MODEL = "google/gemini-flash-1.5";
+	private static final String DEFAULT_MODEL = "minimax/minimax-m3.1-flash:free";
 	private static final int MAX_TURNS = 10;
 
 	/** Name of the RAG retrieval tool whose results carry document citations. */

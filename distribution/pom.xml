@@ -150,14 +150,18 @@
 									<fileset dir="${project.build.directory}/products" includes="**/run-spike-*.sh"/>
 								</chmod>
 								<!-- Regenerate archives with fixed config.ini -->
-								<tar destfile="${project.build.directory}/products/com.kk.pde.ds.product-linux.gtk.x86_64.tar.gz"
-									 basedir="${project.build.directory}/products/com.kk.pde.ds.product/linux/gtk/x86_64"
-									 compression="gzip"/>
+								<!-- tarfileset filemode keeps run.sh executable; a plain basedir drops the 755 mode -->
+								<tar destfile="${project.build.directory}/products/com.kk.pde.ds.product-linux.gtk.x86_64.tar.gz" compression="gzip">
+									<tarfileset dir="${project.build.directory}/products/com.kk.pde.ds.product/linux/gtk/x86_64" includes="**/*.sh" filemode="755"/>
+									<tarfileset dir="${project.build.directory}/products/com.kk.pde.ds.product/linux/gtk/x86_64" excludes="**/*.sh"/>
+								</tar>
 								<zip destfile="${project.build.directory}/products/com.kk.pde.ds.product-win32.win32.x86_64.zip"
 									 basedir="${project.build.directory}/products/com.kk.pde.ds.product/win32/win32/x86_64"/>
-								<tar destfile="${project.build.directory}/products/com.kk.pde.ds.product-macosx.cocoa.x86_64.tar.gz"
-									 basedir="${project.build.directory}/products/com.kk.pde.ds.product/macosx/cocoa/x86_64"
-									 compression="gzip"/>
+								<!-- tarfileset filemode keeps run.sh executable; a plain basedir drops the 755 mode -->
+								<tar destfile="${project.build.directory}/products/com.kk.pde.ds.product-macosx.cocoa.x86_64.tar.gz" compression="gzip">
+									<tarfileset dir="${project.build.directory}/products/com.kk.pde.ds.product/macosx/cocoa/x86_64" includes="**/*.sh" filemode="755"/>
+									<tarfileset dir="${project.build.directory}/products/com.kk.pde.ds.product/macosx/cocoa/x86_64" excludes="**/*.sh"/>
+								</tar>
 							</target>
 						</configuration>
 					</execution>
