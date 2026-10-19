@@ -70,13 +70,15 @@ For the test commands, see [testing.md](testing.md).
 
 Maven Tycho builds this Eclipse PDE / OSGi DS project without an IDE. Tycho resolves the target platform from Maven Central. Then it makes a p2 repository and runnable products for each platform.
 
-GitHub Actions runs the workflow on each push to `main` and on each pull request to `main`. The workflow is [.github/workflows/build.yml](../.github/workflows/build.yml). It has two jobs on `ubuntu-latest`. The `build` job has these steps:
+GitHub Actions runs the workflow on each push to `main` and on each pull request to `main`. The workflow is [.github/workflows/build.yml](../.github/workflows/build.yml). It has three jobs. The `build` job runs on `ubuntu-latest` and has these steps:
 
 1. Set up JDK 21 (Temurin), with a Maven cache.
 2. Run `./mvnw --batch-mode --no-transfer-progress clean verify`.
 3. Run `./mvnw --batch-mode --no-transfer-progress -f tools/pde2tycho verify`. This step tests the PDE-to-Tycho migration tool, which is outside the Tycho reactor.
 
-The `docs` job runs [tools/doccheck/check-docs.sh](../tools/doccheck/check-docs.sh). The script does two checks:
+The `pde2tycho-windows` job runs the pde2tycho tests on `windows-latest` with `.\mvnw.cmd`. pde2tycho reads Windows paths and generates Windows run scripts, so its tests must also pass on Windows.
+
+The `docs` job runs on `ubuntu-latest`. It runs [tools/doccheck/check-docs.sh](../tools/doccheck/check-docs.sh). The script does two checks:
 
 1. It runs `ste-lint.py` on `README.md`, `CLAUDE.md`, `SECURITY.md` and `docs/*.md`. A hard ASD-STE100 violation fails the job. An advisory finding, such as passive voice, does not fail it.
 2. It runs `check_links.py` on the same files and on `docs/superpowers/`. A relative link to a missing file or to a missing heading anchor fails the job.
