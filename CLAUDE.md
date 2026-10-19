@@ -17,6 +17,7 @@ This is an OSGi Declarative Services (DS) project built with Maven Tycho 4.0.13.
 | `docs/architecture.md` | Component and service wiring diagram |
 | `docs/spike-isolation-results.md`, `docs/multi-jvm-isolation-journey.md`, `docs/monolith-to-multi-jvm-migration.md` | The spike: multi-frame / multi-JVM UI design and findings |
 | `docs/superpowers/specs/` | Design specs written before implementation (Mockito in the test suites; the two-tier test layout migration) |
+| `docs/testing.md` | How to decide which tests to add, add them to a bundle, and run them (Simplified Technical English, with diagrams) |
 | `docs/adding-tests-to-a-tycho-project.md` | How-to: apply the two-tier test layout to another Tycho/PDE project (parent pom XML, per-bundle steps, troubleshooting by error message) |
 | `docs/pde-to-tycho-migration.md` | Migrating an Eclipse PDE workspace to Tycho with `tools/pde2tycho` (or by hand); troubleshooting by error message |
 | `MCP_SERVER_TESTING.md` | Manual JSON-RPC test procedure for the MCP server |

@@ -72,3 +72,7 @@ replay_pid*
 # Build metadata
 .mvn/timing.properties
 .mvn/wrapper/maven-wrapper.jar
+
+# Local agent skills (per-machine tooling)
+.agents/
+skills-lock.json
