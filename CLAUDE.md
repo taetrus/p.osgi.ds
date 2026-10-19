@@ -94,7 +94,9 @@ To apply the layout elsewhere: `docs/adding-tests-to-a-tycho-project.md`.
 - Commits: conventional subjects with a scope, e.g. `feat(rag): ...`, `fix(ecf): ...`,
   `test(spike): ...`, `docs(claude): ...`, `chore(serena): ...`.
 - Work lands on `main` via PRs from `feat/*` or `docs/*` branches.
-- CI: `.github/workflows/build.yml` runs `mvn --batch-mode clean verify` on Temurin 21.
+- CI: `.github/workflows/build.yml` runs `./mvnw --batch-mode clean verify` on Temurin 21. The Maven
+  Wrapper pins Maven 3.9.16: Tycho 4.0.13 fails to start on Maven 3.10 (`No implementation for
+  MavenTargetLocationFactory was bound`), so do not call the runner's system `mvn`.
 - Dependency minimalism is a deliberate theme (hand-rolled JSON, OOXML-as-zip, Tesseract via
   subprocess). Prefer that over adding a library, and never add anything that drags slf4j 2.x.
 
