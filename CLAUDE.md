@@ -14,7 +14,8 @@ build makes a p2 repository and a product archive for each platform.
 
 **Rule:** All documentation goes in `docs/`. Only `README.md`, `CLAUDE.md` and `SECURITY.md` stay
 in the root. All documentation follows ASD-STE100 Simplified Technical English. Use the
-`anthropic-skills:asd-ste100` skill and its `ste-lint.py` linter.
+`anthropic-skills:asd-ste100` skill. Before you commit a doc change, run
+`tools/doccheck/check-docs.sh` (STE lint and links). CI runs the same script.
 
 | File | Read it for |
 |------|-------------|
@@ -231,6 +232,7 @@ distribution           → p2 repository + product builds
 settings/mcp.json      → MCP client config. The build copies it into the product. No code reads it.
 fatjar                 → Standalone fat-JAR launcher (built separately, not in the reactor)
 tools/pde2tycho        → PDE-workspace-to-Tycho migration CLI (plain Maven, not in the reactor)
+tools/doccheck          → Doc checks for CI: ASD-STE100 lint and relative links (check-docs.sh)
 ```
 
 The MCP tool registry has 9 tools: 7 in `mcp.server` (`echo`, `greet`, `system_info`, `calculator`,
