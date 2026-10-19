@@ -44,7 +44,7 @@ This is the recommended method. You do not need to extract an archive. The scrip
    ```bash
    export OPENROUTER_API_KEY=your_key_here
    ```
-   Windows:
+   Windows `cmd.exe`:
    ```cmd
    set OPENROUTER_API_KEY=your_key_here
    ```

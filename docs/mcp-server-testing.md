@@ -426,6 +426,15 @@ Invoke-RestMethod -Method POST -Uri http://localhost:8080/mcp `
 ```
 
 `Invoke-RestMethod` parses the JSON response. The output is a PowerShell object.
+PowerShell does not show the nested fields, for example the text `Echo: hello from powershell`.
+To see the full response as JSON, add `| ConvertTo-Json -Depth 10` after the command:
+
+```powershell
+Invoke-RestMethod -Method POST -Uri http://localhost:8080/mcp `
+  -ContentType "application/json" `
+  -Body '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"echo","arguments":{"message":"hello from powershell"}}}' |
+  ConvertTo-Json -Depth 10
+```
 
 ---
 
@@ -581,7 +590,7 @@ methods:
    export OPENROUTER_API_KEY=sk-or-v1-your-key-here
    ./distribution/scripts/run.sh
 
-   # Windows
+   # Windows cmd.exe
    set OPENROUTER_API_KEY=sk-or-v1-your-key-here
    distribution\scripts\run.bat
    ```
