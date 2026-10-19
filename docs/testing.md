@@ -350,7 +350,8 @@ If a test file or a test library is in the product, do one of these corrections:
 
 Do all commands in the project root.
 
-Use the Maven Wrapper `./mvnw` (on Windows, `mvnw.cmd`). It uses Maven 3.9.16. Tycho 4.0.13
+Use the Maven Wrapper `./mvnw` (on Windows, `mvnw.cmd` in `cmd.exe` or `.\mvnw.cmd` in
+PowerShell). It uses Maven 3.9.16. Tycho 4.0.13
 does not start on Maven 3.10. CI uses `./mvnw` with the same goals.
 
 **Note:** Tycho 4 must have JDK 17 or later. CI uses Temurin 21. To get the same result as
@@ -417,7 +418,23 @@ The option `-am` builds only the parent, and the build stops.
 
 2. If the value contains `#`, put the value between quotation marks.
 
-**Note:** On Windows (`cmd` or PowerShell), use `mvnw.cmd` with the same arguments.
+**Windows `cmd.exe`:** Use `mvnw.cmd` with the same arguments. Use double quotation marks
+for a value that contains `#`. `cmd.exe` does not remove single quotation marks, so Maven
+finds no test.
+
+```cmd
+mvnw.cmd test -pl com.kk.pde.ds.target,com.kk.pde.ds.spike.api,com.kk.pde.ds.spike.master -Dtest="MasterAppTest#spyRunsTheRealServiceAndRecordsCalls"
+```
+
+**Windows PowerShell:** Use `.\mvnw.cmd`. Put each `-D` argument in double quotation marks.
+PowerShell cuts an argument such as `-Dit.test=GreetServiceIT` at the period, and Maven
+stops with `Unknown lifecycle phase ".test=GreetServiceIT"`.
+
+```powershell
+.\mvnw.cmd test -pl com.kk.pde.ds.target,com.kk.pde.ds.api,com.kk.pde.ds.imp "-Dtest=GreetHealthCheckTest"
+.\mvnw.cmd test -pl com.kk.pde.ds.target,com.kk.pde.ds.spike.api,com.kk.pde.ds.spike.master "-Dtest=MasterAppTest#spyRunsTheRealServiceAndRecordsCalls"
+.\mvnw.cmd verify -pl com.kk.pde.ds.target,com.kk.pde.ds.api,com.kk.pde.ds.imp "-Dit.test=GreetServiceIT"
+```
 
 **Note:** Tier 1 uses `-Dtest` and tier 2 uses `-Dit.test`. The two properties are
 different on purpose. If the two plugins read the same property, a `*Test` class can go
@@ -432,7 +449,7 @@ JVM, where there is no framework.
    ./mvnw verify -pl com.kk.pde.ds.target,com.kk.pde.ds.api,com.kk.pde.ds.imp -Dit.test=GreetServiceIT
    ```
 
-Tier 1 also operates during this command.
+Tier 1 also operates during this command. For Windows, refer to the notes in paragraph C.4.
 
 ### C.6 Do the tests of the migration tool
 

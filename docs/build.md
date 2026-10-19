@@ -32,7 +32,7 @@ Related documents:
 |-------------|---------|
 | **JDK to build** | 17 or newer. Tycho 4 needs it, and the tier-2 test runtime needs `JavaSE-17`. CI uses Temurin 21. |
 | **Java to run** | 8 or newer. All shipped bundles and the fat JAR launcher use Java 8 bytecode. |
-| **Maven** | Use the Maven Wrapper: `./mvnw`, or `mvnw.cmd` on Windows. The wrapper pins Maven 3.9.16 in `.mvn/wrapper/maven-wrapper.properties`. Tycho 4.0.13 does not start on Maven 3.10. |
+| **Maven** | Use the Maven Wrapper: `./mvnw`. On Windows, use `mvnw.cmd` in `cmd.exe` or `.\mvnw.cmd` in PowerShell. The wrapper pins Maven 3.9.16 in `.mvn/wrapper/maven-wrapper.properties`. Tycho 4.0.13 does not start on Maven 3.10. |
 | **Internet** | Maven must download the target platform dependencies. |
 
 > **Local JDK note:** Homebrew `mvn` can use a different JDK than `java -version` shows. To use the same JDK as CI on macOS, set `JAVA_HOME=$(/usr/libexec/java_home -v 21)`.
@@ -41,7 +41,7 @@ Related documents:
 
 ## Build commands
 
-Run all commands from the repository root. On Windows, use `mvnw.cmd` instead of `./mvnw`.
+Run all commands from the repository root. On Windows, use `mvnw.cmd` in `cmd.exe` or `.\mvnw.cmd` in PowerShell instead of `./mvnw`.
 
 ```bash
 # Full build with tests and verification (what CI runs)
@@ -53,7 +53,9 @@ Run all commands from the repository root. On Windows, use `mvnw.cmd` instead of
 # Build specific modules: always list the target module and the OSGi upstream modules
 ./mvnw clean package -pl com.kk.pde.ds.target,com.kk.pde.ds.api
 
-# Resume a failed build from the distribution module
+# Resume a failed build from the distribution module.
+# Maven finds the earlier modules in the local repository only, so run
+# "./mvnw clean install -DskipTests" one time before.
 ./mvnw verify -rf :distribution
 
 # Build with debug output

@@ -27,13 +27,21 @@ use the same form.
 ## 2. Run the tool
 
 ```bash
-tools/pde2tycho/pde2tycho.sh scan <workspace> -o migration.json      # macOS / Linux
-tools\pde2tycho\pde2tycho.bat scan <workspace> -o migration.json     # Windows
+tools/pde2tycho/pde2tycho.sh scan <workspace> -o migration.json
 # review/edit migration.json
 tools/pde2tycho/pde2tycho.sh generate migration.json <outdir>
 cd <outdir> && mvn clean verify
 distribution/scripts/run.sh                                          # or run.bat
 ```
+
+On Windows `cmd.exe`, do the scan with this command:
+
+```cmd
+tools\pde2tycho\pde2tycho.bat scan <workspace> -o migration.json
+```
+
+Do not put a comment after the command. `cmd.exe` gives the comment to the tool as more
+arguments, and the tool stops with `scan needs exactly one workspace directory`.
 
 The first run builds the tool. This needs JDK 17 or later and Maven. Tycho needs them too.
 In Claude Code, the `pde2tycho` skill does these steps and the correction loop for you.

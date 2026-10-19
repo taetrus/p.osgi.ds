@@ -47,7 +47,7 @@ This repository is a **showcase**. It is a Java 8 OSGi application built with **
 |-------------|---------|
 | **JDK to build** | 17 or newer. CI uses Temurin 21 |
 | **Java to run** | 8 or newer |
-| **Maven** | Use the Maven Wrapper (`./mvnw`, or `mvnw.cmd` on Windows). It pins Maven 3.9.16. Tycho 4.0.13 does not start on Maven 3.10 |
+| **Maven** | Use the Maven Wrapper: `./mvnw`. On Windows, use `mvnw.cmd` in `cmd.exe` or `.\mvnw.cmd` in PowerShell. It pins Maven 3.9.16. Tycho 4.0.13 does not start on Maven 3.10 |
 | **Internet** | Maven must download the target platform dependencies |
 
 For more detail, see [`docs/build.md`](docs/build.md).
@@ -58,24 +58,48 @@ For more detail, see [`docs/build.md`](docs/build.md).
 
 1. Build the product and run all tests:
 
+   macOS/Linux:
+
    ```bash
-   ./mvnw clean verify          # Windows: mvnw.cmd clean verify
+   ./mvnw clean verify
    ```
 
-2. Optional: set an OpenRouter API key to enable the chatbot and the LLM features:
+   Windows `cmd.exe`:
+
+   ```cmd
+   mvnw.cmd clean verify
+   ```
+
+   In Windows PowerShell, use `.\mvnw.cmd clean verify`.
+
+2. Optional: set an OpenRouter API key to enable the chatbot and the LLM features.
+
+   macOS/Linux:
 
    ```bash
-   export OPENROUTER_API_KEY=your_key_here   # macOS/Linux
-   set OPENROUTER_API_KEY=your_key_here      # Windows cmd.exe
+   export OPENROUTER_API_KEY=your_key_here
+   ```
+
+   Windows `cmd.exe`:
+
+   ```cmd
+   set OPENROUTER_API_KEY=your_key_here
    ```
 
    The default model is `minimax/minimax-m3.1-flash:free`. To change it, see [`docs/llm-and-chatbot.md`](docs/llm-and-chatbot.md).
 
-3. Start the application:
+3. Start the application.
+
+   macOS/Linux:
 
    ```bash
-   ./distribution/scripts/run.sh             # macOS/Linux
-   distribution\scripts\run.bat              # Windows
+   ./distribution/scripts/run.sh
+   ```
+
+   Windows `cmd.exe`:
+
+   ```cmd
+   distribution\scripts\run.bat
    ```
 
    The clock window and the chatbot window open.

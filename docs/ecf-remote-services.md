@@ -190,7 +190,7 @@ Central, with the groupId `org.eclipse.ecf`.
    ```bash
    ./mvnw clean verify
    ```
-   On Windows, use `mvnw.cmd clean verify`.
+   On Windows, use `mvnw.cmd clean verify` in `cmd.exe` or `.\mvnw.cmd clean verify` in PowerShell.
 2. In terminal 1, start the host.
 
    macOS and Linux:

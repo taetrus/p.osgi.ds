@@ -112,7 +112,7 @@ Build the main project first. The fat JAR collects the bundles from the built pr
    ./mvnw -f fatjar clean package
    ```
 
-On Windows, use `mvnw.cmd` instead of `./mvnw`.
+On Windows, use `mvnw.cmd` in `cmd.exe` or `.\mvnw.cmd` in PowerShell instead of `./mvnw`.
 
 Output: `fatjar/target/osgi-fatjar.jar`
 
