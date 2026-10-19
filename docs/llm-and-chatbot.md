@@ -98,8 +98,13 @@ You can also give the key as a system property:
 `-D` flags before `-jar`, so the JVM receives them.
 
 To use a local LM Studio server, add `-Dopenrouter.base.url=http://localhost:1234/v1`.
-The agent needs a non-empty API key also for LM Studio. Use any value, for example
-`-Dopenrouter.api.key=lm-studio`.
+Port 1234 is the LM Studio default. Start the LM Studio server first, for example with
+`lms server start`. Checked against LM Studio 0.4.21 and
+https://lmstudio.ai/docs/developer/openai-compat.
+
+`OpenRouterAgent` stops with `Error: No API key found` when the key is empty. Thus give
+a key also for LM Studio. If LM Studio authentication is off (the default), any value
+is correct, for example `-Dopenrouter.api.key=lm-studio`.
 
 ## Configuration
 

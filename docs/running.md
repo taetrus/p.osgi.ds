@@ -342,19 +342,30 @@ The run script gives your arguments to the JVM before `-jar`. Thus you can add t
 
 ### Connect from an IDE
 
+The debug agent listens on `localhost:5005`. We checked the procedures below against
+IntelliJ IDEA 2026.2, Eclipse 4.38 and VS Code 1.142 with the Extension Pack for Java.
+
 **IntelliJ IDEA:**
-1. Select Run → Edit Configurations → + → Remote JVM Debug.
-2. Set Host to `localhost`.
-3. Set Port to `5005`.
-4. Click Debug.
+1. Select Run → Edit Configurations.
+2. Click **+** (Add New Configuration) and select **Remote JVM Debug**.
+3. Make sure that Host is `localhost` and Port is `5005`. These are the default values.
+4. Click Apply.
+5. Select the configuration and click Debug.
+
+Source: https://www.jetbrains.com/help/idea/tutorial-remote-debug.html
 
 **Eclipse:**
-1. Select Run → Debug Configurations → Remote Java Application → New.
-2. Set Host to `localhost`.
-3. Set Port to `5005`.
-4. Click Debug.
+1. Select Run → Debug Configurations.
+2. Select **Remote Java Application** and click **New**.
+3. On the Connect tab, set Connection Type to **Standard (Socket Attach)**.
+4. Set Host to `localhost`.
+5. Set Port to `5005`.
+6. Click Debug.
 
-**VS Code:** add this configuration to `launch.json`:
+Source: https://help.eclipse.org/latest/topic/org.eclipse.jdt.doc.user/tasks/task-remotejava_launch_config.htm
+
+**VS Code:** add this configuration to the `configurations` array in
+`.vscode/launch.json`:
 ```json
 {
     "type": "java",
@@ -365,30 +376,42 @@ The run script gives your arguments to the JVM before `-jar`. Thus you can add t
 }
 ```
 
+Source: https://github.com/microsoft/vscode-java-debug/blob/main/Configuration.md
+
 ## IDE integration
 
 ### Eclipse PDE
 
-We recommend Eclipse PDE for OSGi work.
+We recommend Eclipse PDE for OSGi work. Checked against Eclipse 4.38 with m2e and the
+m2e PDE connector ("PDE integration for Maven Tycho project packagings").
 
 1. Import the projects:
-   1. Select File → Import → Existing Projects into Workspace.
+   1. Select File → Import → Maven → Existing Maven Projects.
    2. Select the repository root.
    3. Import all projects.
+
+   Do not use File → Import → Existing Projects into Workspace. Some bundles have no
+   `.project` file, for example `com.kk.pde.ds.chatbot` and `com.kk.pde.ds.rag`. That
+   wizard does not find these bundles. The Maven import makes the `.project` files.
 2. Set the target platform:
    1. Open `com.kk.pde.ds.target/com.kk.pde.ds.target.target` in the Target Editor.
-   2. Wait until Eclipse resolves the target.
-   3. Click "Set as Active Target Platform".
+   2. Wait until Eclipse resolves the target. The target uses Maven locations. The m2e
+      PDE target support resolves them.
+   3. Click **Set as Active Target Platform** at the top right of the editor.
 3. Create a run configuration:
    1. Select Run → Run Configurations → OSGi Framework → New.
-   2. Select the bundles to include.
-   3. Set the program arguments to `-console -consoleLog`.
-   4. Set the VM arguments to `-Dlogback.configurationFile=distribution/configuration/logback.xml`.
+   2. On the Bundles tab, select the bundles to include.
+   3. On the Arguments tab, set Program arguments to `-console -consoleLog`.
+   4. On the Arguments tab, set VM arguments to
+      `-Dlogback.configurationFile=${project_loc:distribution}/configuration/logback.xml`.
+      The `${project_loc:distribution}` variable gives the absolute path of the
+      `distribution` project. Thus the working directory has no effect on the path.
 4. To debug, use Debug on the run configuration. As an alternative, add the remote debug agent and attach.
 
 ### IntelliJ IDEA
 
 We recommend this procedure: run the built product and attach the remote debugger.
+Checked against IntelliJ IDEA 2026.2.
 
 1. Build the product:
    ```bash
@@ -398,16 +421,23 @@ We recommend this procedure: run the built product and attach the remote debugge
    ```bash
    ./distribution/scripts/run.sh -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005
    ```
-3. Select Run → Edit Configurations → Remote JVM Debug.
-4. Connect to `localhost:5005`.
+   Make sure that the console shows `Listening for transport dt_socket at address: 5005`.
+3. Create a Remote JVM Debug configuration. Refer to [Connect from an IDE](#connect-from-an-ide).
+4. Debug the configuration. IntelliJ IDEA connects to `localhost:5005`.
 
 **Alternative: direct start**
 
-1. Create a JAR Application configuration.
-2. Set the JAR path to `<platform dir>/plugins/org.eclipse.osgi_*.jar`.
-3. Set the program arguments to `-configuration configuration -console -consoleLog`.
-4. Set the VM options to `-Dlogback.configurationFile=configuration/logback.xml`.
-5. Set the working directory to the platform directory of the product.
+1. Select Run → Edit Configurations, click **+** and select **JAR Application**.
+2. Set Path to JAR to the absolute path of `<platform dir>/plugins/org.eclipse.osgi_<version>.jar`.
+   Path to JAR needs the absolute path of one file. Thus do not use `*`. Use the real file name, for example
+   `org.eclipse.osgi_3.23.0.v20250228-0640.jar`.
+3. Set Program arguments to `-configuration configuration -console -consoleLog`.
+4. Set Working directory to the platform directory of the product.
+
+You do not have to set `-Dlogback.configurationFile`. The product `config.ini` sets
+`logback.configurationFile=configuration/logback.xml`.
+
+Source: https://www.jetbrains.com/help/idea/run-debug-configuration-jar.html
 
 The platform directory is one of these, under `distribution/target/products/com.kk.pde.ds.product/`:
 
@@ -417,7 +447,9 @@ The platform directory is one of these, under `distribution/target/products/com.
 
 ### VS Code
 
-1. Install the Java Extension Pack.
+Checked against VS Code 1.142 and https://code.visualstudio.com/docs/java/java-debugging.
+
+1. Install the Extension Pack for Java.
 2. Open the repository folder.
 3. Build with the Maven Wrapper: `./mvnw clean verify`.
 4. Start the product with the debug agent. Refer to [Use the run script with the debug agent](#use-the-run-script-with-the-debug-agent).

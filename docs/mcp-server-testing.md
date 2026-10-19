@@ -483,25 +483,32 @@ The application shows an `osgi>` prompt after it starts.
 
 ### LM Studio (local, with MCP support)
 
-LM Studio v0.3.17 and later can operate as an MCP host and connect to the OSGi server.
+LM Studio 0.3.17 and later can operate as an MCP host and connect to the OSGi server.
+Checked against LM Studio 0.4.21 and the LM Studio MCP page
+(https://lmstudio.ai/docs/app/mcp).
 
-1. Open **LM Studio** → **Settings** → **MCP**.
-2. Click **Add server**. Enter this configuration:
+1. In LM Studio, open the **Program** tab in the right sidebar.
+2. Click **Install** → **Edit mcp.json**. The file opens in the LM Studio editor. On
+   macOS and Linux, the file is `~/.lmstudio/mcp.json`.
+3. Add the `osgi-mcp` entry in `mcpServers`:
 
    ```json
    {
-     "osgi-mcp": {
-       "type": "http",
-       "url": "http://localhost:8080/mcp"
+     "mcpServers": {
+       "osgi-mcp": {
+         "url": "http://localhost:8080/mcp"
+       }
      }
    }
    ```
 
-   The file `settings/mcp.json` in the project root contains the same server entry. You
-   can copy it from there.
+   LM Studio uses the Cursor `mcp.json` format. A remote server needs only `url`. The file
+   `settings/mcp.json` in the project root also has a `"type": "http"` field for Claude
+   Code. The LM Studio page does not show `type`, thus do not copy it.
 
-3. Load a model that can use tools, for example Llama 3.1 8B, Qwen2.5 or Mistral Nemo.
-4. Start a chat. LM Studio finds the 9 tools automatically.
+4. Save the file.
+5. Load a model that can use tools, for example Llama 3.1 8B, Qwen2.5 or Mistral Nemo.
+6. Start a chat. LM Studio finds the 9 tools automatically.
 
 Test prompts:
 
@@ -513,29 +520,34 @@ Test prompts:
 
 ### OpenCode (terminal coding agent, with MCP support)
 
-OpenCode reads its MCP servers from its configuration file.
+OpenCode reads its MCP servers from the `mcp` key of its configuration file. Checked
+against the OpenCode MCP servers page (https://opencode.ai/docs/mcp-servers/) and
+configuration page (https://opencode.ai/docs/config/), October 2026.
 
-Configuration file:
+Configuration file. Use one of these:
 
-- macOS and Linux: `~/.config/opencode/config.json`
-- Windows: `%APPDATA%\opencode\config.json`
+- Global: `~/.config/opencode/opencode.json`
+- One project only: `opencode.json` in the project root
 
 1. Add this entry to the configuration file:
 
    ```json
    {
-     "mcpServers": {
+     "$schema": "https://opencode.ai/config.json",
+     "mcp": {
        "osgi-mcp": {
          "type": "remote",
          "url": "http://localhost:8080/mcp",
-         "headers": []
+         "enabled": true
        }
      }
    }
    ```
 
-   **Note:** OpenCode uses `"type": "remote"` for HTTP servers. LM Studio uses
-   `"type": "http"`.
+   **Note:** OpenCode uses `"type": "remote"` for HTTP servers. The key is `mcp`, not
+   `mcpServers`. The optional `headers` field is an object, for example
+   `{"Authorization": "Bearer <token>"}`. The OSGi server has no authentication, thus do not
+   add `headers`.
 
 2. Start `opencode`.
 3. Name the tools in the conversation. Examples:
