@@ -3,3 +3,7 @@
 
 # Force CRLF for Windows batch files
 *.bat text eol=crlf
+
+# Maven Wrapper scripts
+mvnw text eol=lf
+*.cmd text eol=crlf
