@@ -35,7 +35,7 @@ This repository is a **showcase**. It is a Java 8 OSGi application built with **
 | **ECF Remote Services (RSA)** | A DS `@Reference` in one JVM that a service in a second JVM satisfies over `ecftcp://`, with file-based EDEF discovery | [`docs/ecf-remote-services.md`](docs/ecf-remote-services.md) |
 | **Spike: multi-frame, multi-JVM UI** | Two JVMs show one combined UI. They share only a few integers (`DockLayout`) over ECF | [`docs/spike-isolation-results.md`](docs/spike-isolation-results.md) |
 | **Fat JAR launcher** | The full application as one `java -jar` file, next to the p2 product | [`docs/fat-jar.md`](docs/fat-jar.md) |
-| **Two-tier testing** | Tests inside the bundles. `*Test` classes run in a plain JVM. `*IT` classes run inside a live Equinox. JUnit 5 and Mockito, 54 tests | [`docs/testing.md`](docs/testing.md) |
+| **Two-tier testing** | Tests inside the bundles. `*Test` classes run in a plain JVM. `*IT` classes run inside a live Equinox. JUnit 5 and Mockito, 60 tests | [`docs/testing.md`](docs/testing.md) |
 | **PDE to Tycho migration** | `tools/pde2tycho`, a CLI that moves an Eclipse PDE workspace to a Tycho build | [`docs/pde-to-tycho-migration.md`](docs/pde-to-tycho-migration.md) |
 | **Few dependencies** | A hand-written JSON parser, OOXML read as a zip (no POI or Tika), and Tesseract as a subprocess (no Tess4J) | [`docs/rag-design.md`](docs/rag-design.md) |
 
