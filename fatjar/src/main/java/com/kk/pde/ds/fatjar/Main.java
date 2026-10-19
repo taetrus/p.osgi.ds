@@ -42,7 +42,13 @@ import java.util.jar.JarFile;
  */
 public class Main {
 
-    /** Start-level map matching the product definition (p2.product). */
+    /**
+     * Start-level map, kept in step with distribution/p2.product by hand. Keys are jar
+     * file-name prefixes; the first matching key wins, so list a longer prefix before a
+     * shorter one that it extends (fontbox before pdfbox). A bundle with no entry starts
+     * at the framework default level, and the launcher prints a warning for it.
+     * p2.product's startLevel="0" means "default", which config.ini sets to 4.
+     */
     private static final Map<String, StartConfig> BUNDLE_CONFIG = new LinkedHashMap<>();
 
     static {
@@ -85,6 +91,12 @@ public class Main {
         cfg("com.kk.pde.ds.mcp.client",              4, true);
         cfg("com.kk.pde.ds.mcp.llm",                 4, true);
         cfg("com.kk.pde.ds.chatbot",                 4, true);
+        cfg("com.kk.pde.ds.rag",                     4, true);
+
+        // Start level 4: PDF parsing libraries for RAG (no auto-start, as in p2.product)
+        cfg("org.apache.pdfbox.fontbox",              4, false);
+        cfg("org.apache.pdfbox_",                     4, false);
+        cfg("org.apache.commons.commons-logging",     4, false);
 
         // Start level 4: logging + commons (no auto-start — resolved lazily)
         cfg("ch.qos.logback.classic",                 4, false);
@@ -208,6 +220,10 @@ public class Main {
 
                 // Set start level via the interface class (not the impl class)
                 StartConfig sc = findConfig(jar.getName());
+                if (sc == null) {
+                    System.err.println("WARN: No start-level entry for " + jar.getName()
+                            + " (default level, auto-start). Add it to BUNDLE_CONFIG to match p2.product.");
+                }
                 if (sc != null) {
                     Method adapt = bundle.getClass().getMethod("adapt", Class.class);
                     Object bsl = adapt.invoke(bundle, bslClass);
