@@ -63,8 +63,10 @@ public interface ICatalogService {
 	void setClosing(boolean closing);
 
 	/**
-	 * Asks the master (anchor) to close the whole combined app — invoked remotely by
-	 * the detail's close control. The master sets {@link #setClosing(boolean)} and exits.
+	 * Asks the master (anchor) to close the whole combined app. Today only the master's
+	 * own close control (the anchor frame's close button) calls it, as a local call. The
+	 * detail does not call it. The master sets the closing flag, waits about 450 ms so the
+	 * detail can see the flag on its next poll, and exits. The detail then exits too.
 	 */
 	void requestShutdown();
 

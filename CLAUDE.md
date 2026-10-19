@@ -76,7 +76,7 @@ name selects the tier:
 - `*Test` is tier 1. A plain JVM runs it through maven-surefire (phase `test`).
 - `*IT` is tier 2. A live Equinox runs it through `tycho-surefire:plugin-test` (phase `integration-test`).
 
-There are 48 tier-1 tests and 6 tier-2 tests. The Javadoc of each test class is a short tutorial.
+There are 54 tier-1 tests and 6 tier-2 tests. The Javadoc of each test class is a short tutorial.
 This layout is the reference for a larger Tycho project. Keep it clean and easy to copy.
 
 ```bash
@@ -237,7 +237,7 @@ The MCP tool registry has 9 tools: 7 in `mcp.server` (`echo`, `greet`, `system_i
 `date_time`, `bundle_list`, `http_fetch`) and 2 in `rag` (`document_search`, `ingest_documents`).
 
 Tests (not shipped) are in `src_test/` of `imp` (`GreetTest`, `GreetHealthCheckTest`,
-`GreetServiceIT`), `mcp.api` (`JsonTest`) and `spike.master` (`DockLayoutTest`,
+`GreetServiceIT`), `mcp.api` (`JsonTest`), `chatbot` (`ChatConfigTest`) and `spike.master` (`DockLayoutTest`,
 `SpikeValueObjectsTest`, `CatalogServiceImplTest`, `MasterAppTest`, `CatalogServiceIT`).
 See Testing above.
 

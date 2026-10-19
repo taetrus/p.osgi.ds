@@ -44,7 +44,12 @@ public final class ChatConfig {
 	private final File configFile;
 
 	public ChatConfig() {
-		configFile = new File(CONFIG_DIR, CONFIG_FILE);
+		this(new File(CONFIG_DIR, CONFIG_FILE));
+	}
+
+	/** Use a specific settings file. Package-private so tests can use a temporary file. */
+	ChatConfig(File configFile) {
+		this.configFile = configFile;
 		load();
 	}
 
@@ -114,19 +119,44 @@ public final class ChatConfig {
 		}
 	}
 
-	/**
-	 * Get the API key. Priority: file > system property > env var > empty.
-	 */
-	public String getApiKey() {
-		String val = props.getProperty(KEY_API_KEY, "").trim();
-		if (!val.isEmpty()) return val;
+	// Each setting has three views:
+	//   saved    - the value in the settings file only ("" when not set). The Settings
+	//              dialog shows and edits only this value.
+	//   fallback - the value used when the saved value is empty (-D, env var, default).
+	//   effective (getApiKey/getModel/getBaseUrl) - saved if set, else fallback.
+	// The dialog must never copy a fallback into the file: a saved value has priority on
+	// every later start, so it would hide a later -D change, and a key from the
+	// environment would land in a plaintext file.
 
-		val = System.getProperty("openrouter.api.key", "");
+	/** Get the API key. Priority: file > system property > env var > empty. */
+	public String getApiKey() {
+		String saved = getSavedApiKey();
+		return saved.isEmpty() ? getFallbackApiKey() : saved;
+	}
+
+	/** The API key in the settings file, or "" when the file has none. */
+	public String getSavedApiKey() {
+		return props.getProperty(KEY_API_KEY, "").trim();
+	}
+
+	/** The API key from {@code -Dopenrouter.api.key}, else {@code OPENROUTER_API_KEY}, else "". */
+	public String getFallbackApiKey() {
+		String val = System.getProperty("openrouter.api.key", "");
 		if (!val.isEmpty()) return val;
 
 		String envKey = System.getenv("OPENROUTER_API_KEY");
-		if (envKey != null && !envKey.isEmpty()) return envKey;
+		return envKey != null ? envKey : "";
+	}
 
+	/** Where the fallback API key comes from, for display. Never contains the key. */
+	public String getFallbackApiKeySource() {
+		if (!System.getProperty("openrouter.api.key", "").isEmpty()) {
+			return "-Dopenrouter.api.key";
+		}
+		String envKey = System.getenv("OPENROUTER_API_KEY");
+		if (envKey != null && !envKey.isEmpty()) {
+			return "OPENROUTER_API_KEY";
+		}
 		return "";
 	}
 
@@ -134,13 +164,19 @@ public final class ChatConfig {
 		props.setProperty(KEY_API_KEY, apiKey != null ? apiKey : "");
 	}
 
-	/**
-	 * Get the model ID. Priority: file > system property > code default.
-	 */
+	/** Get the model ID. Priority: file > system property > code default. */
 	public String getModel() {
-		String val = props.getProperty(KEY_MODEL, "").trim();
-		if (!val.isEmpty()) return val;
+		String saved = getSavedModel();
+		return saved.isEmpty() ? getFallbackModel() : saved;
+	}
 
+	/** The model in the settings file, or "" when the file has none. */
+	public String getSavedModel() {
+		return props.getProperty(KEY_MODEL, "").trim();
+	}
+
+	/** The model from {@code -Dopenrouter.model}, else the code default. */
+	public String getFallbackModel() {
 		return System.getProperty("openrouter.model", DEFAULT_MODEL);
 	}
 
@@ -148,13 +184,19 @@ public final class ChatConfig {
 		props.setProperty(KEY_MODEL, model != null ? model : "");
 	}
 
-	/**
-	 * Get the API base URL. Priority: file > system property > code default.
-	 */
+	/** Get the API base URL. Priority: file > system property > code default. */
 	public String getBaseUrl() {
-		String val = props.getProperty(KEY_BASE_URL, "").trim();
-		if (!val.isEmpty()) return val;
+		String saved = getSavedBaseUrl();
+		return saved.isEmpty() ? getFallbackBaseUrl() : saved;
+	}
 
+	/** The base URL in the settings file, or "" when the file has none. */
+	public String getSavedBaseUrl() {
+		return props.getProperty(KEY_BASE_URL, "").trim();
+	}
+
+	/** The base URL from {@code -Dopenrouter.base.url}, else the code default. */
+	public String getFallbackBaseUrl() {
 		return System.getProperty("openrouter.base.url", DEFAULT_BASE_URL);
 	}
 

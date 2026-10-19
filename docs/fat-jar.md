@@ -72,7 +72,7 @@ The JAR contains only the main product. The ECF and spike bundles are not in it.
 
 ## Start levels
 
-`Main` has its own start-level table. The Javadoc of the table says that it matches `p2.product`, but it does not match fully. The real behaviour is as follows.
+`Main` has its own start-level table. The table must match `p2.product`, and you keep it in step by hand. Each key is a jar file-name prefix, and the first matching key wins.
 
 | Bundles | Fat JAR (`Main`) | Built product (`config.ini`) |
 |---------|------------------|------------------------------|
@@ -80,15 +80,17 @@ The JAR contains only the main product. The ECF and spike bundles are not in it.
 | scr, service.component, service.component.annotations, util.function, util.promise, eventadmin, service.event, fileinstall, healthcheck.api, healthcheck.core | 2, start | 2, start |
 | gogo.*, equinox.console, healthcheck.generalchecks, healthcheck.webconsoleplugin | 3, start | 3, start |
 | http.jetty, http.servlet-api, webconsole, webconsole.plugins.ds, inventory | 4, start | 4, start. `p2.product` sets level 0, which means the default level 4. |
-| api, imp, app, rest, mcp.api, mcp.server, mcp.client, mcp.llm, chatbot | 4, start | 4, start |
-| `com.kk.pde.ds.rag` | No entry: the framework's initial bundle start level, start | 4, start |
-| pdfbox, fontbox, commons-logging | No entry: the framework's initial bundle start level, start | 4, no start |
+| api, imp, app, rest, mcp.api, mcp.server, mcp.client, mcp.llm, chatbot, rag | 4, start | 4, start |
+| pdfbox, fontbox, commons-logging | 4, no start | 4, no start |
 | logback (classic, core), slf4j, commons-fileupload, commons-io | 4, no start | 4, no start |
 
-The real differences are:
+The two tables match. When `Main` installs a bundle that has no entry, it prints this warning:
 
-- `Main` has no entry for `com.kk.pde.ds.rag`, pdfbox, fontbox and commons-logging. `Main` does not set a start level for these bundles, so they keep the framework's initial bundle start level.
-- `Main` starts each bundle that has no entry. Thus pdfbox, fontbox and commons-logging start in the fat JAR. In the product, they do not start automatically.
+```text
+WARN: No start-level entry for <jar> (default level, auto-start). Add it to BUNDLE_CONFIG to match p2.product.
+```
+
+When you add a bundle to `p2.product`, add it to `BUNDLE_CONFIG` in `Main.java` too.
 
 For the product table, see [build.md](build.md#bundle-start-levels).
 
@@ -130,7 +132,8 @@ OPENROUTER_API_KEY=your_key java -jar fatjar/target/osgi-fatjar.jar
 # With a telnet console on port 5555
 java -Dosgi.console.port=5555 -jar fatjar/target/osgi-fatjar.jar
 
-# With the convenience script (it builds the JAR if the JAR does not exist)
+# With the convenience script. If the JAR does not exist, it builds the main product
+# (when that is missing too) and then the JAR, both with the Maven Wrapper.
 ./fatjar/run.sh
 ```
 
@@ -187,6 +190,4 @@ The `fatjar/pom.xml` file has OS profiles. Each profile finds the `plugins/` dir
 
 ## Known gaps
 
-- `fatjar/run.sh` runs the system `mvn` (`mvn clean package -q`), not the Maven Wrapper. Thus the script can use a different Maven version than the rest of the project. It also does not build the main product first. Build the fat JAR with `./mvnw -f fatjar clean package` instead.
-- `fatjar/run.sh` is a bash script. There is no Windows version.
-- The Javadoc of the start-level table in `Main.java` says that the table matches `p2.product`. See [Start levels](#start-levels) for the differences.
+- `fatjar/run.sh` is a bash script. There is no Windows version. On Windows, build with `mvnw.cmd -f fatjar clean package` and start the JAR with `java -jar`.

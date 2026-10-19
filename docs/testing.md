@@ -498,7 +498,7 @@ These lines in the log are normal:
 
 ### D.1 Test classes
 
-The project contains seven tier 1 classes with **48 tests** and two tier 2 classes with
+The project contains eight tier 1 classes with **54 tests** and two tier 2 classes with
 **6 tests**. The Javadoc of each class is a short lesson about one test idea.
 
 | Bundle | Class | Tier | Tests | What the class teaches |
@@ -507,19 +507,21 @@ The project contains seven tier 1 classes with **48 tests** and two tier 2 class
 | `com.kk.pde.ds.mcp.api` | `JsonTest` | 1 | 13 | The hand-written `Json` parser: round trips, numeric and string IDs, control characters, `\uXXXX` escapes, incorrect input, and protection against JSON-RPC injection. |
 | `com.kk.pde.ds.spike.master` | `DockLayoutTest` | 1 | 8 | The grid calculation that the two spike JVMs share. The usual input first, then the limits. |
 | `com.kk.pde.ds.spike.master` | `SpikeValueObjectsTest` | 1 | 4 | The two contracts of a value object that goes through ECF: `equals`/`hashCode`, and a `Serializable` round trip. |
+| `com.kk.pde.ds.chatbot` | `ChatConfigTest` | 1 | 6 | Settings with several sources (file, `-D`, environment, default). The difference between the saved value and the effective value. A regression test for a real bug: the Settings dialog saved a key from the environment. `@TempDir`, and how to restore system properties after a test. |
 | `com.kk.pde.ds.spike.master` | `CatalogServiceImplTest` | 1 | 10 | The state of a DS component. The test calls the `@Activate` method directly from `@BeforeEach`. |
 | `com.kk.pde.ds.imp` | `GreetHealthCheckTest` | 1 | 6 | **Mockito, part 1.** Why a test needs a test double. A hand-written double and `mock()`. `doThrow(...).when(mock).greet()` for a `void` method. `verify`, `times(1)` and `verifyNoMoreInteractions`. `@ExtendWith(MockitoExtension.class)`, `@Mock`, and `@InjectMocks` into a private `@Reference` field. |
 | `com.kk.pde.ds.spike.master` | `MasterAppTest` | 1 | 6 | **Mockito, part 2.** `when(...).thenReturn(...)`, `ArgumentCaptor`, `InOrder`, `spy()` and its two problems. Swing code without a screen, with `SwingUtilities.invokeAndWait`. |
 | `com.kk.pde.ds.imp` | `GreetServiceIT` | 2 | 3 | **In the framework, part 1.** The bundle is ACTIVE. SCR registers `IGreet`, and the service is a `Greet`. Real DS injection supplies the `@Reference` of the health check. |
 | `com.kk.pde.ds.spike.master` | `CatalogServiceIT` | 2 | 3 | **In the framework, part 2.** SCR calls `@Activate` (five items). SCR registers `ICatalogService` with the `service.exported.*` properties that the ECF export needs. |
 
-`com.kk.pde.ds.mcp.api` has no `*IT` class on purpose. A bundle that contains only an API
-registers no service, so a framework start can show nothing.
+`com.kk.pde.ds.mcp.api` and `com.kk.pde.ds.chatbot` have no `*IT` class on purpose. `mcp.api`
+contains only an API and registers no service, so a framework start can show nothing. The
+`chatbot` component needs the LLM bundle and a screen, and `ChatConfigTest` already tests its logic.
 
 Read the classes in this sequence:
 
 1. `GreetTest`
-2. `JsonTest`, `DockLayoutTest`, `SpikeValueObjectsTest` and `CatalogServiceImplTest`
+2. `JsonTest`, `DockLayoutTest`, `SpikeValueObjectsTest`, `CatalogServiceImplTest` and `ChatConfigTest`
 3. `GreetHealthCheckTest`
 4. `MasterAppTest`
 5. `GreetServiceIT`

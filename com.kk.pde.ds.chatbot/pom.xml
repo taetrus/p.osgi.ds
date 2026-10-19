@@ -11,4 +11,23 @@
 
 	<artifactId>com.kk.pde.ds.chatbot</artifactId>
 	<packaging>eclipse-plugin</packaging>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter</artifactId>
+		</dependency>
+	</dependencies>
+
+	<!-- Tier 1 only: ChatConfigTest runs in a plain JVM. The bundle's DS component
+	     (ChatService) needs the LLM bundle and a UI, so an in-framework test would
+	     show little that the plain test does not. -->
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
 </project>

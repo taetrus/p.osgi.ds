@@ -44,7 +44,7 @@ public class SettingsDialog extends JDialog {
 		super(parent, "Settings", true);
 		this.chatService = chatService;
 
-		setPreferredSize(new Dimension(500, 300));
+		setPreferredSize(new Dimension(520, 360));
 		setResizable(false);
 
 		JPanel contentPane = new JPanel(new BorderLayout(10, 10));
@@ -71,14 +71,18 @@ public class SettingsDialog extends JDialog {
 		apiKeyField.setForeground(DarkTheme.FG_PRIMARY);
 		apiKeyField.setCaretColor(DarkTheme.FG_PRIMARY);
 		apiKeyField.setBorder(DarkTheme.inputBorder());
-		String currentKey = chatService.getApiKey();
-		if (currentKey != null && !currentKey.isEmpty()) {
-			apiKeyField.setText(currentKey);
-		}
+		// Show only the saved value. A key from -D or the environment stays out of the
+		// field, so Save cannot copy it into the plaintext settings file.
+		final ChatConfig config = chatService.getConfig();
+		apiKeyField.setText(config.getSavedApiKey());
 		formPanel.add(apiKeyField, gbc);
+		String keySource = config.getFallbackApiKeySource();
+		addHint(formPanel, gbc, 1, keySource.isEmpty()
+				? "Empty: no key. Set OPENROUTER_API_KEY or enter a key."
+				: "Empty: uses the key from " + keySource + ".");
 
 		// Model
-		gbc.gridx = 0; gbc.gridy = 1; gbc.fill = GridBagConstraints.NONE; gbc.weightx = 0;
+		gbc.gridx = 0; gbc.gridy = 2; gbc.fill = GridBagConstraints.NONE; gbc.weightx = 0;
 		JLabel modelLabel = new JLabel("Model:");
 		modelLabel.setForeground(DarkTheme.FG_PRIMARY);
 		formPanel.add(modelLabel, gbc);
@@ -89,11 +93,12 @@ public class SettingsDialog extends JDialog {
 		modelField.setForeground(DarkTheme.FG_PRIMARY);
 		modelField.setCaretColor(DarkTheme.FG_PRIMARY);
 		modelField.setBorder(DarkTheme.inputBorder());
-		modelField.setText(chatService.getModel());
+		modelField.setText(config.getSavedModel());
 		formPanel.add(modelField, gbc);
+		addHint(formPanel, gbc, 3, "Empty: uses " + config.getFallbackModel() + ".");
 
 		// Base URL
-		gbc.gridx = 0; gbc.gridy = 2; gbc.fill = GridBagConstraints.NONE; gbc.weightx = 0;
+		gbc.gridx = 0; gbc.gridy = 4; gbc.fill = GridBagConstraints.NONE; gbc.weightx = 0;
 		JLabel urlLabel = new JLabel("Base URL:");
 		urlLabel.setForeground(DarkTheme.FG_PRIMARY);
 		formPanel.add(urlLabel, gbc);
@@ -104,8 +109,9 @@ public class SettingsDialog extends JDialog {
 		baseUrlField.setForeground(DarkTheme.FG_PRIMARY);
 		baseUrlField.setCaretColor(DarkTheme.FG_PRIMARY);
 		baseUrlField.setBorder(DarkTheme.inputBorder());
-		baseUrlField.setText(chatService.getBaseUrl());
+		baseUrlField.setText(config.getSavedBaseUrl());
 		formPanel.add(baseUrlField, gbc);
+		addHint(formPanel, gbc, 5, "Empty: uses " + config.getFallbackBaseUrl() + ".");
 
 		contentPane.add(formPanel, BorderLayout.CENTER);
 
@@ -154,20 +160,22 @@ public class SettingsDialog extends JDialog {
 		setLocationRelativeTo(parent);
 	}
 
-	private void saveSettings() {
-		String apiKey = new String(apiKeyField.getPassword());
-		String model = modelField.getText().trim();
-		String baseUrl = baseUrlField.getText().trim();
+	/** Add a dim one-line hint in column 1 of the given row. */
+	private static void addHint(JPanel formPanel, GridBagConstraints gbc, int row, String text) {
+		gbc.gridx = 1; gbc.gridy = row; gbc.fill = GridBagConstraints.HORIZONTAL; gbc.weightx = 1.0;
+		JLabel hint = new JLabel(text);
+		hint.setForeground(DarkTheme.FG_DIM);
+		formPanel.add(hint, gbc);
+	}
 
-		if (!apiKey.isEmpty()) {
-			chatService.setApiKey(apiKey);
-		}
-		if (!model.isEmpty()) {
-			chatService.setModel(model);
-		}
-		if (!baseUrl.isEmpty()) {
-			chatService.setBaseUrl(baseUrl);
-		}
+	/**
+	 * Write the fields to the settings file exactly as shown. An empty field clears the
+	 * saved value, so the setting falls back to -D, the environment or the default.
+	 */
+	private void saveSettings() {
+		chatService.setApiKey(new String(apiKeyField.getPassword()).trim());
+		chatService.setModel(modelField.getText().trim());
+		chatService.setBaseUrl(baseUrlField.getText().trim());
 
 		chatService.getConfig().saveAsync();
 		LOG.info("Settings saved to disk");
@@ -179,8 +187,12 @@ public class SettingsDialog extends JDialog {
 		statusLabel.setText("Testing connection...");
 		statusLabel.setForeground(DarkTheme.FG_DIM);
 
-		final String baseUrl = baseUrlField.getText().trim();
-		final String apiKey = new String(apiKeyField.getPassword());
+		// Test what Save would use: the field value, else the fallback.
+		ChatConfig config = chatService.getConfig();
+		String urlText = baseUrlField.getText().trim();
+		String keyText = new String(apiKeyField.getPassword()).trim();
+		final String baseUrl = urlText.isEmpty() ? config.getFallbackBaseUrl() : urlText;
+		final String apiKey = keyText.isEmpty() ? config.getFallbackApiKey() : keyText;
 
 		new SwingWorker<List<String>, Void>() {
 			@Override

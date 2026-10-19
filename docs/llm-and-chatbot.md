@@ -359,23 +359,27 @@ call.
 
 Click **Settings** to open the modal dialog.
 
+Each field shows only the value saved in `settings/chatbot.properties`. An empty field means
+"no saved value". A grey hint under each field shows the value that the chatbot uses instead.
+
 | Field | Contents |
 |-------|----------|
-| **API Key** | A password field. It shows the current key, from any source. |
-| **Model** | The current model ID. |
-| **Base URL** | The current base URL. |
+| **API Key** | A password field with the saved key. When it is empty, the hint names the fallback source (`-Dopenrouter.api.key` or `OPENROUTER_API_KEY`). The hint never shows the key. |
+| **Model** | The saved model ID. When it is empty, the hint shows the model from `-Dopenrouter.model` or the default. |
+| **Base URL** | The saved base URL. When it is empty, the hint shows the URL from `-Dopenrouter.base.url` or the default. |
 
 | Button | Action |
 |--------|--------|
-| **Test Connection** | Calls `ModelFetcher` with the values in the fields. It shows the number of tool-capable models, or `Connection failed`. It does not save. |
+| **Test Connection** | Calls `ModelFetcher` with the field values. For an empty field, it uses the fallback value. It shows the number of tool-capable models, or `Connection failed`. It does not save. |
 | **Cancel** | Closes the dialog. It does not save. |
-| **Save** | Writes each non-empty field to `settings/chatbot.properties` on a background thread. Then it closes the dialog. |
+| **Save** | Writes the three fields to `settings/chatbot.properties` exactly as shown, on a background thread. Then it closes the dialog. |
 
-**Caution:** The dialog fills each field with the current value, also when the value
-comes from `-D` or from `OPENROUTER_API_KEY`. When you click **Save**, the dialog writes
-all three values to the file. The file then has precedence over `-D` on each later
-start. The file keeps the API key in plaintext. An empty field does not delete a value
-from the file. Edit the file to delete a value.
+To delete a saved value, clear the field and click **Save**. The setting then uses `-D`, the
+environment variable or the default again.
+
+A key from `-D` or from `OPENROUTER_API_KEY` never goes into the file, because the dialog does
+not show it. Only a key that you type into the field goes into the file, in plaintext.
+`ChatConfigTest` in `com.kk.pde.ds.chatbot/src_test/` checks this behavior.
 
 ## Markdown in answers
 
