@@ -16,7 +16,7 @@ The spike tests the architecture and the recovery behavior before teams start th
 
 - Catalog and selection: `listItems`, `getItem`, `getSelectedId`, `setSelectedId`, `getSelectedItem`.
 - Combined UI, which the master writes: `setLayout`, `setAnchor`, `setClosing`.
-- `requestShutdown`. The close button (●) in a master frame calls it. The master sets the closing flag and exits. The detail reads the flag and exits too.
+- `requestShutdown`. The close button (●) in a master frame calls it. The master sets the closing flag and exits approximately 450 ms later. The detail reads the flag in `DockState` on its next poll and exits too.
 - `getDockState`. The detail reads the layout, the closing flag, the selection and the anchor state in one remote call.
 
 ## Frames
@@ -25,6 +25,7 @@ Each app opens N borderless frames in one shared grid. The default is N = 2.
 
 - Set N on the master with the `SPIKE_FRAMES` environment variable or with `-Dspike.frames=N`. The environment variable has priority.
 - The master calculates a `DockLayout` and publishes it with `setLayout`. The detail reads N from that layout. Do not set N on the detail.
+- `DockLayout` contains six integers: `framesPerApp`, `tileWidth`, `tileHeight`, `originX`, `originY` and `columns`. The two apps calculate the frame positions from these numbers with the same formula. They do not send window positions to each other.
 - Master frames use the even grid slots and detail frames use the odd slots.
 - The first master frame (M-1) is the anchor. You can drag or minimize only the anchor. The other frames of the two apps move with it.
 
@@ -48,14 +49,27 @@ For the design of the grid and the anchor, see [multi-jvm-isolation-journey.md](
 
    To open 3 frames for each app, use `SPIKE_FRAMES=3 ./distribution/scripts/run-spike-master.sh`.
 
+   On Windows `cmd.exe`, use these commands:
+
+   ```cmd
+   set SPIKE_FRAMES=3
+   distribution\scripts\run-spike-master.bat
+   ```
+
+   The command `set SPIKE_FRAMES=3` is optional.
+
 3. In terminal 2, start the detail:
 
    ```bash
    ./distribution/scripts/run-spike-detail.sh
    ```
 
+   On Windows `cmd.exe`, use `distribution\scripts\run-spike-detail.bat`.
+
 4. Select an item in the App-1 CATALOG panel. Make sure that the App-2 SELECTED ITEM panel shows the same item.
 5. Push **Freeze 5s** or **Crash** in one app. Make sure that the other app continues to operate.
+6. Drag or minimize the anchor frame M-1. Make sure that all frames of the two apps move with it.
+7. Click the close button (●) in a master frame. Make sure that the two JVMs stop.
 
 ## Results
 

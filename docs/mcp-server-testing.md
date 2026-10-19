@@ -11,7 +11,7 @@ endpoint at `http://localhost:8080/mcp`. It accepts HTTP **POST** requests with
 ## Prerequisites
 
 1. Build the project. In the project root, enter `./mvnw clean verify`.
-2. Start the application. Refer to `README.md` for the run commands for each platform.
+2. Start the application. Refer to [running.md](running.md) for the run commands for each platform.
 3. Open the Felix WebConsole at `http://localhost:8080/system/console`.
    The user name is `admin` and the password is `admin`.
 4. Make sure that the WebConsole page opens. If it opens, the HTTP server operates.
@@ -588,7 +588,7 @@ If you set the two, the system property has priority.
 
 #### Select a model (optional)
 
-The default model is `google/gemini-flash-1.5`. To use a different model, add
+The default model is `minimax/minimax-m3.1-flash:free`. To use a different model, add
 `-Dopenrouter.model`:
 
 ```bash
@@ -650,6 +650,6 @@ curl -s -X POST http://localhost:8080/llm/chat \
 | Symptom | Correction |
 |---------|------------|
 | `Error: No API key found. Set OPENROUTER_API_KEY env var or start with -Dopenrouter.api.key=your_key` | Set the API key (refer to "Set the API key"). Then start the application again. |
-| `Error from OpenRouter: No endpoints found for google/gemini-flash-1.5.` | OpenRouter does not supply the default model now. Set `-Dopenrouter.model`, or send the key `model` in the request. |
+| `Error from OpenRouter: No endpoints found for <model>.` | OpenRouter does not supply that model now. Free models can disappear. Set `-Dopenrouter.model`, or send the key `model` in the request. Refer to [llm-and-chatbot.md](llm-and-chatbot.md#the-default-model). |
 | `Error from OpenRouter: ...` (other message) | Examine the key, the model name and your OpenRouter credit balance. |
 | `LlmChatServlet` is not in `scr:list`. | Make sure that the bundle `com.kk.pde.ds.mcp.llm` is `ACTIVE`. Enter `ss mcp.llm` in the OSGi console. |

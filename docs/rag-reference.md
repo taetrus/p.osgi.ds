@@ -87,6 +87,27 @@ OCR is on by default when a `tesseract` binary is available on the host.
 the only step that starts an external process. If the binary is not available, or if
 `rag.ocr.enabled=false`, ingestion continues with text only.
 
+At activation, the engine writes one of these log lines:
+
+| Condition | Level | Log text |
+|-----------|-------|----------|
+| The binary operates | `INFO` | `TesseractCliOcrEngine activated (binary=..., lang=...)` |
+| The binary does not operate | `WARN` | `TesseractCliOcrEngine: 'tesseract' not runnable; OCR disabled ...` |
+| `rag.ocr.enabled=false` | `INFO` | `TesseractCliOcrEngine disabled via rag.ocr.enabled=false` |
+
+### Install Tesseract
+
+Install Tesseract one time on the host.
+
+- macOS: `brew install tesseract`
+- Windows: `winget install UB-Mannheim.TesseractOCR` or `choco install tesseract`
+
+On Windows, make sure that `tesseract.exe` is on the `PATH`. Alternatively, set
+`-Drag.ocr.binary=C:\path\to\tesseract.exe`.
+
+To read more than one language, set `-Drag.ocr.lang`, for example `eng+tur`. Tesseract
+must have the data files for each language.
+
 For server runs, set `-Djava.awt.headless=true`. PDFBox and ImageIO use AWT.
 
 ## Run the feature
@@ -106,6 +127,11 @@ For server runs, set `-Djava.awt.headless=true`. PDFBox and ImageIO use AWT.
        -Dopenrouter.embeddings.model=intfloat/multilingual-e5-large \
        -Drag.docs.dir=/path/to/your/documents
    ```
+   On Windows `cmd.exe`, use these commands:
+   ```cmd
+   set OPENROUTER_API_KEY=your_key
+   distribution\scripts\run.bat -Drag.docs.dir=C:\path\to\your\documents
+   ```
 4. Make sure that the log shows each component activation and these lines:
    ```
    DocumentIngestionService - Auto-ingesting documents from /path/to/your/documents
@@ -113,6 +139,9 @@ For server runs, set `-Djava.awt.headless=true`. PDFBox and ImageIO use AWT.
    ```
 5. In the chatbot, ask a question about your documents. The model calls
    `document_search`. The answer includes citations such as `report.pdf (chunk 3)`.
+6. Make sure that the answer ends with a **References** footer that lists the source
+   documents. For the footer, refer to
+   [llm-and-chatbot.md](llm-and-chatbot.md#references-footer).
 
 ## MCP tools
 
@@ -138,6 +167,16 @@ To search the documents, use this request:
 curl -s -X POST http://localhost:8080/mcp -H 'Content-Type: application/json' -d \
  '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"document_search","arguments":{"query":"your question","top_k":"5"}}}'
 ```
+
+On Windows `cmd.exe`, use these requests:
+
+```cmd
+curl -s -X POST http://localhost:8080/mcp -H "Content-Type: application/json" -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"ingest_documents\",\"arguments\":{\"path\":\"C:\\\\path\\\\to\\\\docs\"}}}"
+curl -s -X POST http://localhost:8080/mcp -H "Content-Type: application/json" -d "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"document_search\",\"arguments\":{\"query\":\"your question\",\"top_k\":\"5\"}}}"
+```
+
+The value of `top_k` can be a JSON number or a string. The MCP server changes each
+argument to a string before it calls the tool.
 
 For the general MCP test procedure, see [mcp-server-testing.md](mcp-server-testing.md).
 

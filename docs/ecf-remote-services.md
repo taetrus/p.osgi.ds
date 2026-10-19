@@ -182,20 +182,40 @@ demo.
 
 ## Run the demo
 
+The build makes two dedicated products from `distribution/com.kk.pde.ds.ecf.host.product`
+and `distribution/com.kk.pde.ds.ecf.consumer.product`. The ECF bundles come from Maven
+Central, with the groupId `org.eclipse.ecf`.
+
 1. Build the project:
    ```bash
-   mvn clean verify
+   ./mvnw clean verify
    ```
-2. In terminal 1, start the host:
+   On Windows, use `mvnw.cmd clean verify`.
+2. In terminal 1, start the host.
+
+   macOS and Linux:
    ```bash
    ./distribution/scripts/run-ecf-host.sh
    ```
-3. In terminal 2, start the consumer:
+   Windows `cmd.exe`:
+   ```cmd
+   distribution\scripts\run-ecf-host.bat
+   ```
+3. In terminal 2, start the consumer.
+
+   macOS and Linux:
    ```bash
    ./distribution/scripts/run-ecf-consumer.sh
    ```
+   Windows `cmd.exe`:
+   ```cmd
+   distribution\scripts\run-ecf-consumer.bat
+   ```
 4. Make sure that the consumer log shows `Remote response: Hello, ECF! (served remotely by host)`.
 5. To call the host again, type `ecf:greet World` at the consumer `osgi>` prompt.
+
+`ecf:greet` is a custom Gogo shell command. `GreetCommand` in
+`com.kk.pde.ds.ecf.consumer` supplies it.
 
 ## The same pattern in the spike
 

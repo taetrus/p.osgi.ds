@@ -18,15 +18,24 @@ in the root. All documentation follows ASD-STE100 Simplified Technical English. 
 
 | File | Read it for |
 |------|-------------|
-| `README.md` | Full reference: run guide for each feature (macOS and Windows), REST, chatbot, RAG, OCR, tests, troubleshooting |
+| `README.md` | Entry page: feature overview, quick start, index of all docs |
 | `SECURITY.md` | Known exposures on the unauthenticated localhost HTTP surface |
 | `docs/architecture.md` | Component and service wiring diagram |
+| `docs/build.md` | Requirements, build commands, CI, target platform, product definition, project structure |
+| `docs/running.md` | Start methods, run scripts, configuration, logging, debugging, IDE setup, OSGi console |
+| `docs/troubleshooting.md` | Symptoms, causes and fixes |
+| `docs/fat-jar.md` | The single-file launcher |
+| `docs/declarative-services.md` | DS components, hand-written `OSGI-INF` XML, binding flow |
+| `docs/rest-api.md` | REST endpoints, limits and errors |
+| `docs/webconsole-and-health-checks.md` | Felix WebConsole and health checks |
+| `docs/mcp-server.md` | MCP server, the 9 tools, MCP client, how to add a tool |
+| `docs/llm-and-chatbot.md` | LLM agent loop, `/llm/chat`, chatbot UI and its configuration |
 | `docs/ecf-remote-services.md` | Narrative "how and why" of the ECF remote services, with the bugs and the lessons |
 | `docs/rag-design.md` | Narrative "how and why" of RAG, with the bugs and the lessons |
 | `docs/rag-reference.md` | RAG configuration reference and verification record |
 | `docs/mcp-server-testing.md` | Manual JSON-RPC test procedure for the MCP server |
 | `docs/spike-isolation-results.md`, `docs/multi-jvm-isolation-journey.md`, `docs/monolith-to-multi-jvm-migration.md` | The spike: multi-frame / multi-JVM UI design and findings |
-| `docs/multi-jvm-isolation-journey.html` | Visual version of the journey, in Turkish. It has a chapter that the `.md` does not have (the tiled grid). |
+| `docs/multi-jvm-isolation-journey.html` | Visual version of the journey, in Turkish. Same story as the `.md`. |
 | `docs/testing.md` | How to select tests, add them to a bundle, and run them (STE, with diagrams) |
 | `docs/adding-tests-to-a-tycho-project.md` | How to apply the two-tier test layout to a different Tycho/PDE project (parent pom XML, steps for each bundle, troubleshooting by error message) |
 | `docs/pde-to-tycho-migration.md` | How to migrate an Eclipse PDE workspace to Tycho with `tools/pde2tycho` (or by hand). Troubleshooting by error message. |
@@ -274,10 +283,10 @@ The `com.kk.pde.ds.chatbot` bundle gives a Swing chat interface for LLMs.
 
 **Configuration:**
 - `OPENROUTER_API_KEY` or `-Dopenrouter.api.key` (required)
-- `-Dopenrouter.model` (default `google/gemini-flash-1.5`)
+- `-Dopenrouter.model` (default `minimax/minimax-m3.1-flash:free`)
 - `-Dopenrouter.base.url` (default `https://openrouter.ai/api/v1`). All OpenAI-compatible endpoints work.
 
-The RAG embeddings client reads the same `openrouter.*` properties. Full table: README "Chatbot UI".
+The RAG embeddings client reads the same `openrouter.*` properties. Full table: `docs/llm-and-chatbot.md`.
 
 **Service binding flow:**
 1. `OpenRouterAgent` injects `IMcpToolRegistry` for tool access.
@@ -314,7 +323,7 @@ available, also standalone image files (`.png`/`.jpg`/`.jpeg`/`.tif`/`.tiff`/`.b
   `rag.ocr.binary`, `rag.ocr.lang`, `rag.ocr.dpi`, ...).
 
 Full property table and the MCP `curl` examples for `ingest_documents` / `document_search`:
-`docs/rag-reference.md`. Run guide: README section "8. RAG — Document Q&A".
+`docs/rag-reference.md`. Run guide: `docs/rag-reference.md`.
 
 **OCR:**
 - A scanned PDF page is a page with a text layer below `rag.ocr.min.chars.per.page`. PDFBox
