@@ -1,7 +1,12 @@
 # Design: pde2tycho — migrate an Eclipse PDE workspace to a Maven Tycho build
 
 **Date:** 2026-09-23
-**Status:** Approved (design); pending implementation plan
+**Status:** Implemented on 2026-09-28 in `tools/pde2tycho` (commits 8333658 to c6a98e5). The code differs from this design in these points:
+- The classes are not the same as the file list. `gen/PomGenerator.java` replaces `ParentPomGenerator` and `ModulePomGenerator`. `model/InventoryJson.java` and `json/Json.java` do the JSON read and write. Additional classes: `InventoryValidator`, `LauncherArgs`, `ProjectCopier`, `Templates`, `Output`.
+- The tests build their fixtures in code (`TestWorkspace.java`, `TestJars.java`). There is no `src/test/resources/fixtures/`.
+- In `migration.json`, the target key is `locations`, not `mavenLocations`. The bundle key is `autoStart`, not `auto`.
+- `scan` has the options `--eclipse-home` and `--add-project`.
+- When a Linux environment is set (`generate --linux`), `run.sh` also gets a Linux case. "Out of scope" lists a Linux run script.
 **Goal:** A reusable tool, a Claude skill and a guide that turn the PDE projects, active
 target platform and an OSGi launch configuration of an Eclipse workspace into a
 self-contained Tycho 4 build: parent pom, `eclipse-plugin`/`eclipse-feature` modules, an

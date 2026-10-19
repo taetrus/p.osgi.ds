@@ -1,7 +1,11 @@
 # Design: ECF Remote Services Showcase
 
 **Date:** 2026-05-29
-**Status:** Approved (design); pending implementation plan
+**Status:** Implemented on 2026-05-29 (commit 198c317). The code differs from this design in these points:
+- The consumer does not call `greet` in `bindGreet`. It calls `greet` from `@Activate`, on the daemon thread `ecf-consumer-greet`.
+- The EDEF uses `ecf.endpoint.id.ns` = `org.eclipse.ecf.core.identity.StringID`, not `ecf.namespace.generic`.
+- The EDEF uses the framework UUID `ecf-host-framework`, not `ecf-demo-host`.
+- The Documentation section names `FOR_Kerem.md`. That file is now `docs/ecf-remote-services.md`.
 **Goal:** Add new OSGi bundles that showcase Eclipse Communication Framework (ECF)
 usage via the OSGi Remote Services / Remote Service Admin (RSA) standard, using DS
 annotations consistently with the rest of the project.

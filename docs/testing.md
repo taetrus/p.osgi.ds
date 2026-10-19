@@ -1,10 +1,11 @@
 # How to Add Tests and Do Tests
 
-This document has three parts:
+This document has four parts:
 
 - Part A tells you how to make a decision about which tests to add.
 - Part B tells you how to add the tests to a bundle.
 - Part C tells you how to do the tests and read the results.
+- Part D tells you which tests the project has and how the two tiers operate.
 
 The text obeys ASD-STE100 (Simplified Technical English). Names of tools, files, commands,
 classes and build phases are technical names. The verbs *compile*, *resolve*, *build* and
@@ -116,7 +117,7 @@ test.
 | A DS component that has state | Call `@Activate` in `@BeforeEach`. Then examine the state. | 1 | `CatalogServiceImplTest` |
 | A component that calls a different service | Mock the service. Examine the result and the calls. Make the service throw an exception. | 1 | `GreetHealthCheckTest` |
 | A component that calls services in a sequence | Use `ArgumentCaptor`, `InOrder` or `spy()`. | 1 | `MasterAppTest` |
-| Swing code | Examine the components without a display. Do not examine how the window looks. | 1 | `MasterAppTest` |
+| Swing code | Examine the components without a screen. Do not examine how the window looks. | 1 | `MasterAppTest` |
 | A component that SCR must register as a service | The bundle is active. SCR registers the service. DS supplies the reference. | 2 | `GreetServiceIT` |
 | A service that must have specified properties | SCR calls `@Activate`. The service has the properties. | 2 | `CatalogServiceIT` |
 
@@ -259,7 +260,11 @@ bundle.
 Do this procedure only if paragraph A.2 gives the answer "tier 2".
 
 1. Do steps 1 thru 4 of paragraph B.1.
-2. Add the dependency `org.osgi:org.osgi.framework` to the `pom.xml`, without a version.
+2. Add these dependencies to the `pom.xml`, without versions:
+
+   - `org.junit.platform:junit-platform-launcher`
+   - `org.osgi:org.osgi.framework`
+
 3. Add `tycho-surefire-plugin` to the `<build><plugins>` section of the `pom.xml`:
 
    ```xml
@@ -306,6 +311,9 @@ Do this procedure only if paragraph A.2 gives the answer "tier 2".
 
 6. Do the tests of the bundle (refer to paragraph C.3).
 
+**Note:** The OSGi manifest of the Jupiter engine requires the launcher capability.
+Without `junit-platform-launcher`, tier 2 cannot resolve. Tier 1 does not need it.
+
 **Note:** The block in step 4 does two things. It stops the check of the Java version of
 the bundle. It also adds Felix SCR to the framework. If SCR is not there, no DS component
 starts.
@@ -321,17 +329,35 @@ starts.
 - If the test makes Swing components, add `<argLine>-Djava.awt.headless=true</argLine>` to
   the configuration of the two plugins. Refer to `com.kk.pde.ds.spike.master/pom.xml`.
 
+### B.5 Make sure that no test library ships
+
+Do this procedure after a full build (paragraph C.1).
+
+1. Make sure that `distribution/target/products/**` and
+   `distribution/target/repository/plugins/` contain no `org.mockito.*`,
+   `net.bytebuddy.*`, `org.objenesis` or `junit-*` bundle.
+2. Enter `unzip -l <bundle jar>` for each bundle that has tests.
+3. Make sure that the list contains no `*Test.class` and no `*IT.class` file.
+
+If a test file or a test library is in the product, do one of these corrections:
+
+- Remove the test folder from `build.properties`.
+- Give the test dependency the scope `test`.
+
 ---
 
 ## Part C: Do the Tests
 
 Do all commands in the project root.
 
+Use the Maven Wrapper `./mvnw` (on Windows, `mvnw.cmd`). It uses Maven 3.9.16. Tycho 4.0.13
+does not start on Maven 3.10. CI uses `./mvnw` with the same goals.
+
 **Note:** Tycho 4 must have JDK 17 or later. CI uses Temurin 21. To get the same result as
 CI on macOS, put `JAVA_HOME=$(/usr/libexec/java_home -v 21)` before the command.
 
-Figure 5 shows the build phases and the tier that each phase does. The command `mvn test`
-stops after the phase `test`. The command `mvn verify` does all phases.
+Figure 5 shows the build phases and the tier that each phase does. The command `./mvnw test`
+stops after the phase `test`. The command `./mvnw verify` does all phases.
 
 ```mermaid
 flowchart LR
@@ -349,7 +375,7 @@ flowchart LR
 1. Enter this command:
 
    ```bash
-   mvn clean verify
+   ./mvnw clean verify
    ```
 
 2. Make sure that the last lines show `BUILD SUCCESS`.
@@ -361,7 +387,7 @@ This command does tier 1 and tier 2. CI uses the same command.
 1. Enter this command:
 
    ```bash
-   mvn test
+   ./mvnw test
    ```
 
 This command does not start Equinox.
@@ -372,9 +398,9 @@ This command does not start Equinox.
 2. Enter the command with the target module, those bundles, and the bundle:
 
    ```bash
-   mvn verify -pl com.kk.pde.ds.target,com.kk.pde.ds.api,com.kk.pde.ds.imp
-   mvn verify -pl com.kk.pde.ds.target,com.kk.pde.ds.mcp.api
-   mvn verify -pl com.kk.pde.ds.target,com.kk.pde.ds.spike.api,com.kk.pde.ds.spike.master
+   ./mvnw verify -pl com.kk.pde.ds.target,com.kk.pde.ds.api,com.kk.pde.ds.imp
+   ./mvnw verify -pl com.kk.pde.ds.target,com.kk.pde.ds.mcp.api
+   ./mvnw verify -pl com.kk.pde.ds.target,com.kk.pde.ds.spike.api,com.kk.pde.ds.spike.master
    ```
 
 **Caution:** Do not use `-pl <module> -am`. Maven cannot read OSGi manifest dependencies.
@@ -385,18 +411,25 @@ The option `-am` builds only the parent, and the build stops.
 1. Use the property `-Dtest` with the phase `test`:
 
    ```bash
-   mvn test -pl com.kk.pde.ds.target,com.kk.pde.ds.api,com.kk.pde.ds.imp -Dtest=GreetHealthCheckTest
-   mvn test -pl com.kk.pde.ds.target,com.kk.pde.ds.spike.api,com.kk.pde.ds.spike.master -Dtest='MasterAppTest#spyRunsTheRealServiceAndRecordsCalls'
+   ./mvnw test -pl com.kk.pde.ds.target,com.kk.pde.ds.api,com.kk.pde.ds.imp -Dtest=GreetHealthCheckTest
+   ./mvnw test -pl com.kk.pde.ds.target,com.kk.pde.ds.spike.api,com.kk.pde.ds.spike.master -Dtest='MasterAppTest#spyRunsTheRealServiceAndRecordsCalls'
    ```
 
 2. If the value contains `#`, put the value between quotation marks.
+
+**Note:** On Windows (`cmd` or PowerShell), use `mvnw.cmd` with the same arguments.
+
+**Note:** Tier 1 uses `-Dtest` and tier 2 uses `-Dit.test`. The two properties are
+different on purpose. If the two plugins read the same property, a `*Test` class can go
+into Equinox, where Mockito is not available. Or an `*IT` class can go into the plain
+JVM, where there is no framework.
 
 ### C.5 Do one tier 2 class
 
 1. Use the property `-Dit.test` with the phase `verify`:
 
    ```bash
-   mvn verify -pl com.kk.pde.ds.target,com.kk.pde.ds.api,com.kk.pde.ds.imp -Dit.test=GreetServiceIT
+   ./mvnw verify -pl com.kk.pde.ds.target,com.kk.pde.ds.api,com.kk.pde.ds.imp -Dit.test=GreetServiceIT
    ```
 
 Tier 1 also operates during this command.
@@ -409,8 +442,13 @@ does not do its tests.
 1. Enter this command:
 
    ```bash
-   mvn -f tools/pde2tycho verify
+   ./mvnw -f tools/pde2tycho verify
    ```
+
+CI runs these two commands in this sequence:
+
+1. `./mvnw --batch-mode --no-transfer-progress clean verify`
+2. `./mvnw --batch-mode --no-transfer-progress -f tools/pde2tycho verify`
 
 ### C.7 Read the results
 
@@ -426,6 +464,13 @@ Use these lines to find the result. Do not look for the word `ERROR` in the log.
 |------|---------------|
 | Tier 1 | `<bundle>/target/surefire-reports/` |
 | Tier 2 | `<bundle>/target/failsafe-reports/` |
+
+Tycho uses the failsafe folder layout for tier 2. Each class gets one `*.txt` summary and
+one `TEST-*.xml` file.
+
+**Note:** `GreetHealthCheckTest` has a `@Nested` class, `WithAnnotations`. Its `*.txt`
+summary shows `Tests run: 0`, but `TEST-com.kk.pde.ds.imp.GreetHealthCheckTest.xml`
+contains the 6 test cases. Use the total for the bundle. For tier 1 of `imp`, the total is 7.
 
 These lines in the log are normal:
 
@@ -443,13 +488,98 @@ These lines in the log are normal:
 | A tier 1 test cannot get a bundle or a `BundleContext`. | Tier 1 has no OSGi framework. | Change the suffix of the class to `IT`. Do paragraph B.3. |
 | A tier 2 test finds no service. | Felix SCR is not in the framework. | Do step 4 of paragraph B.3. |
 | A tier 2 test cannot find Mockito classes. | Mockito is not in the Equinox framework. | Move the test to a `*Test` class. |
-| A window opens during the tests. | The JVM has a display. | Add the `argLine` in paragraph B.4. |
+| A window opens during the tests. | The JVM has a screen. | Add the `argLine` in paragraph B.4. |
 | The local result is different from the CI result. | The command `mvn` of Homebrew uses its own JDK when `JAVA_HOME` is not set. | Set `JAVA_HOME` to JDK 21 before the command. |
 | Test classes are in a bundle jar. | The tests are in `src/`, or `src_test/` is in `build.properties`. | Move the tests to `src_test/` and remove the entry. |
+
+---
+
+## Part D: The Tests of This Project
+
+### D.1 Test classes
+
+The project contains seven tier 1 classes with **48 tests** and two tier 2 classes with
+**6 tests**. The Javadoc of each class is a short lesson about one test idea.
+
+| Bundle | Class | Tier | Tests | What the class teaches |
+|--------|-------|------|-------|------------------------|
+| `com.kk.pde.ds.imp` | `GreetTest` | 1 | 1 | **Start here.** The smallest unit test: Arrange, Act, Assert. `@Test`. How JUnit 5 finds test methods. Where tests are, and the two tiers. |
+| `com.kk.pde.ds.mcp.api` | `JsonTest` | 1 | 13 | The hand-written `Json` parser: round trips, numeric and string IDs, control characters, `\uXXXX` escapes, incorrect input, and protection against JSON-RPC injection. |
+| `com.kk.pde.ds.spike.master` | `DockLayoutTest` | 1 | 8 | The grid calculation that the two spike JVMs share. The usual input first, then the limits. |
+| `com.kk.pde.ds.spike.master` | `SpikeValueObjectsTest` | 1 | 4 | The two contracts of a value object that goes through ECF: `equals`/`hashCode`, and a `Serializable` round trip. |
+| `com.kk.pde.ds.spike.master` | `CatalogServiceImplTest` | 1 | 10 | The state of a DS component. The test calls the `@Activate` method directly from `@BeforeEach`. |
+| `com.kk.pde.ds.imp` | `GreetHealthCheckTest` | 1 | 6 | **Mockito, part 1.** Why a test needs a test double. A hand-written double and `mock()`. `doThrow(...).when(mock).greet()` for a `void` method. `verify`, `times(1)` and `verifyNoMoreInteractions`. `@ExtendWith(MockitoExtension.class)`, `@Mock`, and `@InjectMocks` into a private `@Reference` field. |
+| `com.kk.pde.ds.spike.master` | `MasterAppTest` | 1 | 6 | **Mockito, part 2.** `when(...).thenReturn(...)`, `ArgumentCaptor`, `InOrder`, `spy()` and its two problems. Swing code without a screen, with `SwingUtilities.invokeAndWait`. |
+| `com.kk.pde.ds.imp` | `GreetServiceIT` | 2 | 3 | **In the framework, part 1.** The bundle is ACTIVE. SCR registers `IGreet`, and the service is a `Greet`. Real DS injection supplies the `@Reference` of the health check. |
+| `com.kk.pde.ds.spike.master` | `CatalogServiceIT` | 2 | 3 | **In the framework, part 2.** SCR calls `@Activate` (five items). SCR registers `ICatalogService` with the `service.exported.*` properties that the ECF export needs. |
+
+`com.kk.pde.ds.mcp.api` has no `*IT` class on purpose. A bundle that contains only an API
+registers no service, so a framework start can show nothing.
+
+Read the classes in this sequence:
+
+1. `GreetTest`
+2. `JsonTest`, `DockLayoutTest`, `SpikeValueObjectsTest` and `CatalogServiceImplTest`
+3. `GreetHealthCheckTest`
+4. `MasterAppTest`
+5. `GreetServiceIT`
+6. `CatalogServiceIT`
+
+For the design, read these specifications:
+
+- [2026-09-16-tycho-plugin-test-migration-design.md](superpowers/specs/2026-09-16-tycho-plugin-test-migration-design.md):
+  the two-tier layout, with the six items that the spike found.
+- [2026-07-28-mockito-osgi-test-mocking-design.md](superpowers/specs/2026-07-28-mockito-osgi-test-mocking-design.md):
+  Mockito in the test suites.
+
+### D.2 How the two tiers operate
+
+1. **The test sources are in the bundle.** The bundle keeps its PDE layout
+   (`source.. = src/`). The `.classpath` entry has the attribute `test="true"`. Tycho
+   reads the attribute and compiles `src_test/` into `target/test-classes` in the phase
+   `test-compile`. `build.properties` does not list the folder, so the jar contains no
+   test file.
+2. **The test libraries are usual Maven dependencies with the scope `test`.** The parent
+   `pom.xml` sets the versions. The setting `pomDependencies=consider` in the parent
+   `target-platform-configuration` adds them to the target platform of the module. No
+   manifest, `feature.xml` or `p2.product` lists them, so they never ship.
+3. **Tier 1 is plain Surefire.** The Tycho `eclipse-plugin` lifecycle does not bind
+   `maven-surefire-plugin`. Thus the parent `pluginManagement` has a `test` execution. A
+   bundle selects it when the bundle lists the plugin. The test JVM has a flat class
+   path with the bundle classes and the test dependencies. It has no framework and reads
+   no manifest.
+4. **Tier 2 is `tycho-surefire:plugin-test`.** For a bundle that lists
+   `tycho-surefire-plugin`, Tycho does these steps:
+   1. It makes a test fragment from `target/test-classes`. The bundle is the host.
+   2. It assembles a temporary Equinox from the target platform. The runtime contains
+      the bundle, its requirements, JUnit and the fragment.
+   3. It starts the runtime through `org.eclipse.equinox.launcher`. It runs the `*IT`
+      classes in it.
+
+   The goal `verify` then stops the build if a test fails. A manifest error or an
+   `Import-Package` that does not resolve causes a failure here, also when `javac`
+   accepted the code.
+5. **The tier 2 runtime needs two settings.** The `target-platform-configuration` block
+   of each tier 2 bundle holds them:
+   - `resolveWithExecutionEnvironmentConstraints` is `false`. The BREE of the bundle is
+     `JavaSE-1.8`, but the Tycho test harness needs `JavaSE-17`.
+   - `extraRequirements` adds Felix SCR. The Tycho packaging adds the header
+     `Require-Capability: osgi.extender=osgi.component`, and no other bundle in the
+     runtime supplies it.
+
+   The parent `tycho-surefire` configuration starts SCR at start level 1, so the
+   components activate.
+6. **Mockito operates only in tier 1.** Its inline mock maker attaches a Java agent.
+   Thus the log shows `Mockito is currently self-attaching`. The parent pins ByteBuddy
+   to `1.18.13-jdk5`, because the local JVM can be newer than the CI JVM.
+7. **Swing tests operate without a screen.** `com.kk.pde.ds.spike.master` gives
+   `-Djava.awt.headless=true` to the JVMs of the two tiers. `MasterAppTest` calls the
+   package-private method `buildPanels()`. `MasterApp.start()` has a headless guard.
+   Thus no window opens when SCR activates the real component in tier 2.
 
 ## Related Documents
 
 | Document | Contents |
 |----------|----------|
-| `README.md`, section 13 | The tutorial for the test layout and the list of all test classes. |
+| [`README.md`](../README.md) | Entry page. Its overview table links to this document. |
 | `docs/adding-tests-to-a-tycho-project.md` | How to apply the two tiers to a different Tycho project. |

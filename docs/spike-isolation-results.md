@@ -1,58 +1,100 @@
-# Two-App Isolation Spike — Results
+# Two-App Isolation Spike: Results
 
-A runnable proof-of-concept for the migration in `monolith-to-multi-jvm-migration.md`:
-two panel-groups in **separate JVMs / separate windows**, coordinated **only** by a shared
-ECF remote service — **no panel remoting**. It validates the architecture and de-risks the
-recovery story before committing teams.
+This spike is a runnable proof of concept for the design in [monolith-to-multi-jvm-migration.md](monolith-to-multi-jvm-migration.md).
+Two panel groups run in **separate JVMs and separate windows**. A shared ECF remote service is the **only** link between them. The spike does **not** send panels between JVMs.
+The spike tests the architecture and the recovery behavior before teams start the migration.
 
-## What it is
+## Bundles
 
 | Bundle | Role |
 |--------|------|
-| `com.kk.pde.ds.spike.api` | `ICatalogService` + `CatalogItem` (Serializable DTO) — the only cross-app coupling |
-| `com.kk.pde.ds.spike.master` | **App-1** (own JVM/window): `JList` of items; owns the data + selection; exports `ICatalogService` over ECF on `ecftcp://localhost:3289/catalog` |
-| `com.kk.pde.ds.spike.detail` | **App-2** (own JVM/window): consumes the service via static EDEF; polls the selection off-EDT and displays it |
+| `com.kk.pde.ds.spike.api` | The only coupling between the two apps. It holds `ICatalogService` and these serializable value objects: `CatalogItem`, `DockLayout`, `DockState`, `DockBounds`, `AnchorState`. |
+| `com.kk.pde.ds.spike.master` | **App-1** (own JVM). It keeps the catalog data and the selection. It exports `ICatalogService` over ECF on `ecftcp://localhost:3289/catalog`. Its frames show the CATALOG, SUMMARY, ACTIVITY and CONTROLS panels. |
+| `com.kk.pde.ds.spike.detail` | **App-2** (own JVM). It gets the service through a static EDEF file. It polls the master every 120 ms on a background thread and shows the selection. Its frames show the SELECTED ITEM, INSPECTOR, CONNECTION and CONTROLS panels. |
 
-Each app has Freeze/Crash buttons to demonstrate isolation interactively.
+`ICatalogService` has these methods:
+
+- Catalog and selection: `listItems`, `getItem`, `getSelectedId`, `setSelectedId`, `getSelectedItem`.
+- Combined UI, which the master writes: `setLayout`, `setAnchor`, `setClosing`.
+- `requestShutdown`. The close button (●) in a master frame calls it. The master sets the closing flag and exits approximately 450 ms later. The detail reads the flag in `DockState` on its next poll and exits too.
+- `getDockState`. The detail reads the layout, the closing flag, the selection and the anchor state in one remote call.
+
+## Frames
+
+Each app opens N borderless frames in one shared grid. The default is N = 2.
+
+- Set N on the master with the `SPIKE_FRAMES` environment variable or with `-Dspike.frames=N`. The environment variable has priority.
+- The master calculates a `DockLayout` and publishes it with `setLayout`. The detail reads N from that layout. Do not set N on the detail.
+- `DockLayout` contains six integers: `framesPerApp`, `tileWidth`, `tileHeight`, `originX`, `originY` and `columns`. The two apps calculate the frame positions from these numbers with the same formula. They do not send window positions to each other.
+- Master frames use the even grid slots and detail frames use the odd slots.
+- The first master frame (M-1) is the anchor. You can drag or minimize only the anchor. The other frames of the two apps move with it.
+
+Each app has a CONTROLS panel with the **Freeze 5s** and **Crash** buttons. Use them to show the isolation.
+
+For the design of the grid and the anchor, see [multi-jvm-isolation-journey.md](multi-jvm-isolation-journey.md), parts 5 to 7.
 
 ## Run it
 
-```bash
-mvn clean verify
-# Terminal 1 — start the master FIRST (it must be up before the detail connects)
-./distribution/scripts/run-spike-master.sh
-# Terminal 2
-./distribution/scripts/run-spike-detail.sh
-```
-Select an item in App-1; App-2's detail panel updates across JVMs. Use the Freeze/Crash
-buttons to see isolation.
+1. Build the products:
 
-## Verified results
+   ```bash
+   mvn clean verify
+   ```
 
-- **Cross-JVM coordination ✅** — master sets the selection locally; App-2 receives it over the
-  wire: `Detail now showing remote selection: Hex Bolt M8`. The selection state lives in App-1;
-  App-2 reads it through the ECF proxy.
-- **Crash isolation ✅** — killing App-1 left App-2 running; App-2 degraded gracefully
-  (`Lost connection to master ICatalogService`, via DS dynamic unbind). One app's crash does not
-  take down the other.
-- **EDT isolation ✅ (manual)** — "Freeze me 5s" freezes only that app's window; the other stays
-  responsive. App-1's UI freeze doesn't block App-2 because the service impl answers off the EDT.
+2. In terminal 1, start the master. Start it **before** the detail, because the detail connects to it at startup:
 
-## Key finding: restart-rejoin needs a discovery provider
+   ```bash
+   ./distribution/scripts/run-spike-master.sh
+   ```
 
-After restarting App-1, **App-2 did not auto-reconnect.** ECF's `EndpointDescriptionLocator`
-reads the static EDEF **once at startup** and does not re-import when a provider returns. So with
-static EDEF, discovery is "once," not "continuous."
+   To open 3 frames for each app, use `SPIKE_FRAMES=3 ./distribution/scripts/run-spike-master.sh`.
 
-**Implication for the real migration:** running many independently-restarting apps requires a
-**discovery provider** (ECF JmDNS/Zeroconf or ZooKeeper) or a central registry app, or
-programmatic re-import on disconnect — exactly as called out in the migration design. Static EDEF
-is fine for a fixed two-app demo, not for production elasticity.
+   On Windows `cmd.exe`, use these commands:
 
-## Notes / limitations
+   ```cmd
+   set SPIKE_FRAMES=3
+   distribution\scripts\run-spike-master.bat
+   ```
 
-- Start order matters with static EDEF: master before detail.
-- Endpoint port `:3289` (distinct from the greeting demo's `:3288`) so both demos coexist.
-- OSGi `Import-Package` is per-package — UI bundles import `javax.swing` **and**
-  `javax.swing.event/border/text` (a `NoClassDefFoundError` on `ListSelectionEvent` caught this).
-- Recovery-on-restart and a discovery provider are the natural next increments.
+   The command `set SPIKE_FRAMES=3` is optional.
+
+3. In terminal 2, start the detail:
+
+   ```bash
+   ./distribution/scripts/run-spike-detail.sh
+   ```
+
+   On Windows `cmd.exe`, use `distribution\scripts\run-spike-detail.bat`.
+
+4. Select an item in the App-1 CATALOG panel. Make sure that the App-2 SELECTED ITEM panel shows the same item.
+5. Push **Freeze 5s** or **Crash** in one app. Make sure that the other app continues to operate.
+6. Drag or minimize the anchor frame M-1. Make sure that all frames of the two apps move with it.
+7. Click the close button (●) in a master frame. Make sure that the two JVMs stop.
+
+## Results
+
+- **Cross-JVM coordination: pass.** The master sets the selection in its own JVM. App-2 receives it over the network and logs `Detail now showing remote selection: Hex Bolt M8`. The selection stays in App-1. App-2 reads it through the ECF proxy.
+- **Crash isolation: pass.** We killed the App-1 process, and App-2 continued to run. App-2 logged `Lost connection to master ICatalogService` through the DS dynamic unbind and showed that the host is unavailable. A crash in one app does not stop the other app.
+- **EDT isolation: pass (manual test).** **Freeze 5s** freezes only the windows of that app. The windows of the other app continue to operate. A freeze in the App-1 UI does not block App-2, because the service implementation does not use the event dispatch thread (EDT) to answer.
+
+## Key finding: a restarted master needs a discovery provider
+
+After we restarted App-1, **App-2 did not connect again automatically.** ECF's `EndpointDescriptionLocator` reads the static EDEF file **one time at startup**. It does not import the endpoint again when the provider comes back. With a static EDEF file, discovery occurs one time only. It is not continuous.
+
+The current `DetailApp` code has no import-again logic. Thus this finding is still applicable.
+
+**Effect on the real migration:** many apps that restart independently need one of these:
+
+- a **discovery provider** (ECF JmDNS/Zeroconf or ZooKeeper)
+- a central registry app
+- programmatic import of the endpoint again after a disconnect
+
+The migration design names the same options. A static EDEF file is sufficient for a fixed demo with two apps. It is not sufficient for a production system where apps start and stop.
+
+## Notes and limits
+
+- With a static EDEF file, the start order is important: start the master before the detail.
+- The spike uses port `:3289`. The greeting demo uses `:3288`. Thus the two demos can run at the same time.
+- OSGi `Import-Package` operates for each package separately. The UI bundles import `javax.swing` **and** `javax.swing.event`, `javax.swing.border` and `javax.swing.text`. We found this rule from a `NoClassDefFoundError` on `ListSelectionEvent`.
+- The tiled grid aligns only when the two apps use one physical screen, because the frames use screen coordinates.
+- The next steps are recovery after a restart and a discovery provider.
