@@ -167,8 +167,8 @@ For the WebConsole and the health checks, refer to [webconsole-and-health-checks
 
 1. Make sure that `config.ini` contains `felix.fileinstall.dir=configuration/configs`.
 2. Make sure that File Install is ACTIVE: `lb fileinstall`. The command `lb | grep fileinstall` does not find it, because `lb` shows the bundle name `Apache Felix File Install`. Use `lb -s | grep fileinstall` to filter on the symbolic name.
-3. Make sure that the `.cfg` files are in `configuration/configs/`.
-4. Make sure that the file names use the format `<factory.pid>-<instance>.cfg`.
+3. Make sure that the `.config` files are in `configuration/configs/`.
+4. Make sure that the file names use the format `<factory.pid>-<instance>.config`.
 
 ## LLM and chatbot problems
 

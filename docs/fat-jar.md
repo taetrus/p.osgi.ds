@@ -64,7 +64,7 @@ The assembly descriptor (`fatjar/src/assembly/fatjar.xml`) puts these items into
 - The compiled `Main` class.
 - All `*.jar` files from the `plugins/` directory of the built product, in `bundles/`.
 - `fatjar/src/main/resources/configuration/logback.xml`. This file is not the same file as `distribution/configuration/logback.xml`.
-- The health check files `distribution/configuration/configs/*.cfg`, in `configuration/configs/`.
+- The health check files `distribution/configuration/configs/*.config`, in `configuration/configs/`.
 
 The JAR contains only the main product. The ECF and spike bundles are not in it.
 

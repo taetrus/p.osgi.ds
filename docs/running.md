@@ -163,7 +163,7 @@ x86_64/
 │   ├── config.ini              # OSGi config
 │   ├── logback.xml             # Logging config
 │   └── configs/                # Health check configs
-│       └── *.cfg               # 6 health check files
+│       └── *.config               # 6 health check files
 ├── settings/
 │   └── mcp.json                # MCP client config (not read by the application)
 ├── p2/, artifacts.xml, eclipse.ini
@@ -176,7 +176,7 @@ macOS (`macosx/cocoa/x86_64/`):
 x86_64/
 ├── Eclipse.app/Contents/Eclipse/
 │   ├── plugins/
-│   ├── configuration/          # config.ini, logback.xml, configs/*.cfg
+│   ├── configuration/          # config.ini, logback.xml, configs/*.config
 │   └── run.sh
 └── settings/
     └── mcp.json                # Outside Eclipse.app/Contents/Eclipse
@@ -217,7 +217,7 @@ felix.fileinstall.noInitialDelay=true
 
 | Setting | Value | Description |
 |---------|-------|-------------|
-| `dir` | `configuration/configs` | Directory to monitor for `.cfg` files |
+| `dir` | `configuration/configs` | Directory to monitor for `.cfg` and `.config` files |
 | `poll` | `5000` | Poll interval in milliseconds |
 | `log.level` | `3` | Log level (DEBUG) |
 | `noInitialDelay` | `true` | Process the files immediately at startup |
@@ -225,24 +225,26 @@ felix.fileinstall.noInitialDelay=true
 **How File Install works:**
 
 1. File Install monitors the `configuration/configs/` directory.
-2. At startup and every 5 seconds, it scans for `.cfg` files.
+2. At startup and every 5 seconds, it scans for `.cfg` and `.config` files.
 3. It creates or updates OSGi configurations through Config Admin.
 4. The health check bundles receive the configurations and create the checks.
 
 **To add a health check:**
 
-1. Create a `.cfg` file in `distribution/configuration/configs/`.
-2. Use the factory PID name format: `<factory.pid>-<instance>.cfg`.
+1. Create a `.config` file in `distribution/configuration/configs/`.
+2. Use the factory PID name format: `<factory.pid>-<instance>.config`.
 3. Build the product again. As an alternative, copy the file into `configuration/configs/` of the running product.
 
 Example for a bundle check:
 
 ```properties
-# org.apache.felix.hc.generalchecks.BundlesStartedCheck-custom.cfg
-hc.name=Custom Bundle Check
-hc.tags=custom
-bundles.regex=my.custom.bundle
+# org.apache.felix.hc.generalchecks.BundlesStartedCheck-custom.config
+hc.name="Custom Bundle Check"
+hc.tags=["custom"]
+includesRegex="my[.]custom[.]bundle"
 ```
+
+The file uses the typed `.config` format: quotes for strings, square brackets for arrays. For the property names of each check type, see [webconsole-and-health-checks.md](webconsole-and-health-checks.md#file-based-health-checks).
 
 ## Logging
 

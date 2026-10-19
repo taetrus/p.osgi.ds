@@ -18,7 +18,6 @@ It lists the console tabs, the custom `GreetHealthCheck`, and the six file-based
   - [Architecture](#architecture)
   - [Custom health check: GreetHealthCheck](#custom-health-check-greethealthcheck)
   - [File-based health checks](#file-based-health-checks)
-  - [Known issue: three configuration files use wrong property names](#known-issue-three-configuration-files-use-wrong-property-names)
   - [Health check summary](#health-check-summary)
 - [Related documents](#related-documents)
 
@@ -145,120 +144,124 @@ felix.fileinstall.noInitialDelay=true
 
 File Install examines the folder each 5000 ms. Thus it also loads a changed file while the product runs.
 
-Each file name has the form `<factory PID>-<name>.cfg`.
+Each file name has the form `<factory PID>-<name>.config`.
 The factory PID selects the check type in `org.apache.felix.healthcheck.generalchecks`.
 Each of these check types needs a configuration (`configuration-policy="require"`).
 Thus a check exists only when a file configures it.
 
+The files use the typed File Install format (`.config`), not the plain `.cfg` format.
+In a `.config` file, a string value has quotes and an array value has square brackets.
+An integer value has the prefix `I`, for example `I"3000"`.
+Use this format, because several check properties are arrays.
+A `.cfg` file cannot give an array: the check gets the full text `a,b` as one value.
+
 #### 1. Application Bundles Check
 
-**File:** `org.apache.felix.hc.generalchecks.BundlesStartedCheck-app.cfg`
+**File:** `org.apache.felix.hc.generalchecks.BundlesStartedCheck-app.config`
 
 ```properties
-hc.name=Application Bundles Check
-hc.tags=application,bundles
-bundles.regex=com.kk.pde.ds.api|com.kk.pde.ds.imp|com.kk.pde.ds.app|com.kk.pde.ds.rest
+hc.name="Application Bundles Check"
+hc.tags=["application","bundles"]
+includesRegex="com[.]kk[.]pde[.]ds[.].*"
 ```
 
-Intent: make sure that the listed application bundles are ACTIVE.
-See the [known issue](#known-issue-three-configuration-files-use-wrong-property-names).
+Makes sure that all 10 `com.kk.pde.ds.*` bundles are ACTIVE.
+The pattern uses `[.]` for a literal dot. The `.config` parser removes a backslash escape such as `\\.`.
 
 #### 2. Core Bundles Check
 
-**File:** `org.apache.felix.hc.generalchecks.BundlesStartedCheck-core.cfg`
+**File:** `org.apache.felix.hc.generalchecks.BundlesStartedCheck-core.config`
 
 ```properties
-hc.name=Core Bundles Check
-hc.tags=system,bundles
-bundles.regex=org.apache.felix.scr|org.apache.felix.configadmin|org.apache.felix.eventadmin|org.apache.felix.http.jetty
+hc.name="Core Bundles Check"
+hc.tags=["system","bundles"]
+includesRegex="org[.]apache[.]felix[.](scr|configadmin|eventadmin|http[.]jetty)"
 ```
 
-Intent: make sure that the essential OSGi infrastructure bundles are ACTIVE.
-See the [known issue](#known-issue-three-configuration-files-use-wrong-property-names).
+Makes sure that the four core Felix bundles (SCR, Config Admin, Event Admin, HTTP Jetty) are ACTIVE.
 
 #### 3. DS Components Check
 
-**File:** `org.apache.felix.hc.generalchecks.DsComponentsCheck-app.cfg`
+**File:** `org.apache.felix.hc.generalchecks.DsComponentsCheck-app.config`
 
 ```properties
-hc.name=DS Components Check
-hc.tags=application,components
-components.regex=com.kk.pde.ds.*
+hc.name="DS Components Check"
+hc.tags=["application","components"]
+components.list=["com.kk.pde.ds.imp.Greet","com.kk.pde.ds.app.App","com.kk.pde.ds.rest.GreetServlet","com.kk.pde.ds.mcp.server.McpServlet","com.kk.pde.ds.mcp.server.McpToolRegistry","com.kk.pde.ds.mcp.llm.OpenRouterAgent","com.kk.pde.ds.mcp.llm.LlmChatServlet","com.kk.pde.ds.chatbot.ChatService","com.kk.pde.ds.rag.internal.DocumentIngestionServiceImpl"]
 ```
 
-Intent: make sure that all application DS components are satisfied.
-See the [known issue](#known-issue-three-configuration-files-use-wrong-property-names).
+Makes sure that the nine main application components are active.
+`components.list` takes component names. It does not take a pattern.
+When you add a main component, add its name to this list.
 
 #### 4. REST API Check
 
-**File:** `org.apache.felix.hc.generalchecks.HttpRequestsCheck-api.cfg`
+**File:** `org.apache.felix.hc.generalchecks.HttpRequestsCheck-api.config`
 
 ```properties
-hc.name=REST API Check
-hc.tags=application,http
-requests.json=["http://localhost:8080/api/greet"]
-connectTimeoutInMs=3000
-readTimeoutInMs=5000
+hc.name="REST API Check"
+hc.tags=["application","http"]
+requests=["/api/greet => 200"]
+connectTimeoutInMs=I"3000"
+readTimeoutInMs=I"5000"
 ```
 
-Intent: make sure that the REST endpoint is accessible and sends a response.
-See the [known issue](#known-issue-three-configuration-files-use-wrong-property-names).
+Makes sure that `GET /api/greet` gives HTTP 200.
+Each entry in `requests` has the form `<path or URL> => <expected status>`.
+A relative path goes to the local HTTP service.
 
 #### 5. Greet Service Available
 
-**File:** `org.apache.felix.hc.generalchecks.ServicesCheck-greet.cfg`
+**File:** `org.apache.felix.hc.generalchecks.ServicesCheck-greet.config`
 
 ```properties
-hc.name=Greet Service Available
-hc.tags=application,services
-services.list=com.kk.pde.ds.api.IGreet
+hc.name="Greet Service Available"
+hc.tags=["application","services"]
+services.list=["com.kk.pde.ds.api.IGreet"]
 ```
 
 Makes sure that the `IGreet` service is registered.
 
 #### 6. Health Check Services
 
-**File:** `org.apache.felix.hc.generalchecks.ServicesCheck-healthcheck.cfg`
+**File:** `org.apache.felix.hc.generalchecks.ServicesCheck-healthcheck.config`
 
 ```properties
-hc.name=Health Check Services
-hc.tags=system,services
-services.list=org.apache.felix.hc.api.HealthCheck,org.osgi.service.event.EventAdmin
+hc.name="Health Check Services"
+hc.tags=["system","services"]
+services.list=["org.apache.felix.hc.api.execution.HealthCheckExecutor","org.osgi.service.event.EventAdmin"]
 ```
 
-Makes sure that the health check infrastructure operates.
+Makes sure that the health check executor and Event Admin services are registered.
+Do not add `org.apache.felix.hc.api.HealthCheck` to this list.
+This check is itself a `HealthCheck` service, so SCR then logs `Circular reference detected`.
 
-### Known issue: three configuration files use wrong property names
+#### Expected result
 
-The metatype of `org.apache.felix.healthcheck.generalchecks` 2.0.6 defines the property names for each check type.
-Three files use property names that are not in that metatype.
-The check ignores an unknown property and uses its default value.
+On the **Health Check** tab, enter `*` as the tag and select **Force instant execution**.
+The result is `8 HealthCheck executed, 0 failures` (checked on a running product).
 
-| File | Property in the file | Property that the check reads | Default value of the check property |
-|------|----------------------|-------------------------------|-------------------------------------|
-| `BundlesStartedCheck-app.cfg`, `BundlesStartedCheck-core.cfg` | `bundles.regex` | `includesRegex` | `.*` (all bundles) |
-| `DsComponentsCheck-app.cfg` | `components.regex` | `components.list` (a list of component names, not a regex) | no default |
-| `HttpRequestsCheck-api.cfg` | `requests.json` | `requests` (request specs, for example `/api/greet => 200`) | example paths such as `/path/example.html` |
+#### History: the old `.cfg` files did not work
 
-`connectTimeoutInMs`, `readTimeoutInMs`, `services.list`, `hc.name` and `hc.tags` are correct names.
+Before commit `743e262`, these checks used `.cfg` files with property names that the checks do not read.
+A check ignores an unknown property and uses its default value. The live result was 4 failures in 8 checks:
 
-Possible effects (not tested on a running product):
-
-- The two bundle checks examine all bundles, not only the listed bundles. An inactive bundle gives WARN.
-- The DS components check does not get the list of application components.
-- The REST API check requests the example paths of the default value, not `/api/greet`. These requests can fail, and the check can give WARN.
-
-To correct the files, use the property names from the metatype. Then make sure that each check gives the expected result on the **Health Check** tab.
+| Old property | Property that the check reads | Result with the default value |
+|--------------|-------------------------------|-------------------------------|
+| `bundles.regex` | `includesRegex` | Both bundle checks examined all bundles and gave WARN for library bundles |
+| `components.regex` | `components.list` | The DS check examined 0 components and always gave OK |
+| `requests.json` | `requests` | The REST check sent the example requests of the default value, also to `api.example.com` |
+| `services.list=a,b` (in a `.cfg` file) | `services.list` (an array) | The check looked for one service named `a,b` and gave TEMPORARILY_UNAVAILABLE |
 
 ### Health check summary
 
 | Check | Type | Tags | Purpose |
 |-------|------|------|---------|
 | Greet Service Health Check | Custom | application, greet | Makes sure that the IGreet service works |
-| Application Bundles Check | BundlesStarted | application, bundles | App bundles ACTIVE (see the known issue) |
-| Core Bundles Check | BundlesStarted | system, bundles | System bundles ACTIVE (see the known issue) |
-| DS Components Check | DsComponents | application, components | Components satisfied (see the known issue) |
-| REST API Check | HttpRequests | application, http | REST endpoint accessible (see the known issue) |
+| Application Bundles Check | BundlesStarted | application, bundles | App bundles ACTIVE |
+| Core Bundles Check | BundlesStarted | system, bundles | System bundles ACTIVE |
+| DS Components Check | DsComponents | application, components | Components satisfied |
+| REST API Check | HttpRequests | application, http | REST endpoint accessible |
 | Greet Service Available | Services | application, services | IGreet registered |
 | Health Check Services | Services | system, services | HC infrastructure operational |
 

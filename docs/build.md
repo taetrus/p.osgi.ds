@@ -135,7 +135,7 @@ The parent POM has 19 modules. It also sets the versions of the test libraries (
 The `maven-antrun-plugin` step runs in the `verify` phase. It does these tasks:
 
 1. It changes the bundle paths in each `config.ini` from `reference:file:` to `reference:file:../plugins/`. This lets `java -jar` start the product.
-2. It copies `settings/mcp.json`, `logback.xml`, the health check `*.cfg` files and `run.sh`/`run.bat` into the main product.
+2. It copies `settings/mcp.json`, `logback.xml`, the health check `*.config` files and `run.sh`/`run.bat` into the main product.
 3. It copies `logback.xml` and the related run scripts into the ECF and spike products.
 4. It sets mode 755 on the `.sh` scripts.
 5. It makes the three main product archives again, with the changed `config.ini`. The `.tar.gz` archives keep mode 755 on `run.sh`.
@@ -498,7 +498,7 @@ p.osgi.ds/
     │   ├── config.ini                # OSGi framework config
     │   ├── logback.xml               # Logging configuration
     │   └── configs/                  # Health check configs
-    │       └── *.cfg                 # 6 health check files
+    │       └── *.config                 # 6 health check files
     └── scripts/                      # 10 launchers (.sh and .bat for each)
         ├── run.sh / run.bat                            # Main product
         ├── run-ecf-host.sh / run-ecf-host.bat
@@ -532,7 +532,7 @@ The tables below give the purpose of the important files. The tree in [Project s
 | `distribution/category.xml` | p2 repository category structure |
 | `distribution/configuration/config.ini` | OSGi framework configuration |
 | `distribution/configuration/logback.xml` | Logging configuration |
-| `distribution/configuration/configs/*.cfg` | Health check configurations |
+| `distribution/configuration/configs/*.config` | Health check configurations |
 
 ### Launcher scripts
 
