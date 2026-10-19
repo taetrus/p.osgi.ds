@@ -208,6 +208,15 @@ class WorkspaceScannerTest {
 				inv.warnings().toString());
 	}
 
+	/**
+	 * Format a path the way PDE writes it in a config.ini properties value: forward slashes and
+	 * escaped colons, for example {@code D\:/a/b.jar} on Windows. A raw Windows path does not work
+	 * there: java.util.Properties reads each backslash as an escape and removes it.
+	 */
+	private static String pdeFileRef(Path path) {
+		return path.toAbsolutePath().toString().replace('\\', '/').replace(":", "\\:");
+	}
+
 	@Test
 	void unreadableConfigIniIsAWarningAndTheLaunchIsKept() throws IOException {
 		ws.launch("app", "<launchConfiguration type=\"org.eclipse.pde.ui.EquinoxLauncher\">"
@@ -215,7 +224,7 @@ class WorkspaceScannerTest {
 				+ "</launchConfiguration>");
 		Path broken = Files.writeString(tmp.resolve("broken.jar"), "not a zip");
 		TestWorkspace.write(ws.plugins().resolve("org.eclipse.pde.core/app/config.ini"),
-				"osgi.bundles=reference\\:file\\:" + broken + "@2\\:start\n");
+				"osgi.bundles=reference\\:file\\:" + pdeFileRef(broken) + "@2\\:start\n");
 		Inventory inv = scan();
 		assertEquals(1, inv.launches().size());
 		assertTrue(inv.warnings().stream().anyMatch(w -> w.startsWith("Launch app: could not check")),
@@ -229,7 +238,7 @@ class WorkspaceScannerTest {
 				+ "</launchConfiguration>");
 		Path extra = TestJars.bundle(tmp.resolve("m2/org.extra.jar"), "org.extra", "1.0.0");
 		TestWorkspace.write(ws.plugins().resolve("org.eclipse.pde.core/app/config.ini"),
-				"osgi.bundles=reference\\:file\\:" + extra + "@2\\:start\n");
+				"osgi.bundles=reference\\:file\\:" + pdeFileRef(extra) + "@2\\:start\n");
 		Inventory inv = scan();
 		assertTrue(inv.warnings().stream().anyMatch(w -> w.contains("org.extra")), inv.warnings().toString());
 	}

@@ -34,3 +34,20 @@ jobs:
 
       - name: Check docs (STE lint and links)
         run: tools/doccheck/check-docs.sh
+
+  pde2tycho-windows:
+    # pde2tycho generates Windows run scripts and reads Windows paths, so its tests
+    # also run on Windows. The Tycho reactor build stays on Linux only.
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Test pde2tycho on Windows
+        run: .\mvnw.cmd --batch-mode --no-transfer-progress -f tools/pde2tycho verify
