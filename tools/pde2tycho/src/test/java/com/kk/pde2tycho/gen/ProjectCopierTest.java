@@ -52,4 +52,20 @@ class ProjectCopierTest {
 		assertTrue(Files.exists(dst.resolve("src/com/x/bin/Tool.java")));
 		assertTrue(Files.exists(dst.resolve("src/com/x/target/Aim.java")));
 	}
+
+	/** Finder and Explorer leave these files in every folder they open; they are never project content. */
+	@Test
+	void osJunkFilesAreSkippedAtEveryDepth() throws IOException {
+		Path src = tmp.resolve("p");
+		touch(src.resolve(".DS_Store"));
+		touch(src.resolve("src/com/x/.DS_Store"));
+		touch(src.resolve("icons/Thumbs.db"));
+		touch(src.resolve("src/com/x/A.java"));
+		Path dst = tmp.resolve("out/p");
+		ProjectCopier.copy(src, dst);
+		assertTrue(Files.exists(dst.resolve("src/com/x/A.java")));
+		assertFalse(Files.exists(dst.resolve(".DS_Store")));
+		assertFalse(Files.exists(dst.resolve("src/com/x/.DS_Store")));
+		assertFalse(Files.exists(dst.resolve("icons/Thumbs.db")));
+	}
 }
