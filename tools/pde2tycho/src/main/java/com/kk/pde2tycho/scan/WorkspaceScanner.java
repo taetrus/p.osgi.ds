@@ -304,6 +304,9 @@ public final class WorkspaceScanner {
 			collectLaunchFiles(project, 2, files);
 		}
 		List<Launch> launches = new ArrayList<>();
+		// A shared launch file in a project and its local copy in .metadata have the same name.
+		Map<String, Launch> firstByName = new TreeMap<>();
+		Map<String, Path> firstFile = new TreeMap<>();
 		for (Path file : files) {
 			try {
 				Launch launch = LaunchReader.read(file);
@@ -314,6 +317,18 @@ public final class WorkspaceScanner {
 					warnings.add("Launch " + launch.name() + " is a JUnit Plug-in Test launch; skipped (tests are not"
 							+ " migrated into the product)");
 					continue;
+				}
+				Launch first = firstByName.putIfAbsent(launch.name(), launch);
+				if (first != null) {
+					if (first.equals(launch)) {
+						warnings.add("Launch " + launch.name() + ": " + file + " is identical to "
+								+ firstFile.get(launch.name()) + "; kept one");
+						continue;
+					}
+					warnings.add("Launch " + launch.name() + ": " + file + " and " + firstFile.get(launch.name())
+							+ " have the same name but differ; both kept — select one in launches[].selected");
+				} else {
+					firstFile.put(launch.name(), file);
 				}
 				String application = LaunchReader.application(file);
 				if (application != null) {

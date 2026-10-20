@@ -5,6 +5,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
@@ -12,28 +13,52 @@ import java.util.Optional;
 import com.kk.pde2tycho.json.Json;
 
 /**
- * Maven Central's checksum search. Response times vary from 0.2 s to 30 s (measured),
- * so each request gets a generous timeout and the caller decides when to give up.
+ * Maven Central's checksum search. One request answers in 0.2 s, the next one for the same
+ * checksum in 17 s, 30 s or never (measured, over HTTP/1.1 and HTTP/2), and a retry is usually
+ * fast. So each attempt gets a short timeout, and only a timeout is retried. The connect timeout
+ * stays short, so an unreachable Central still fails fast; the caller decides when to give up.
  */
 public final class CentralResolver implements ArtifactResolver {
 
 	private static final String SEARCH = "https://search.maven.org/solrsearch/select?rows=1&wt=json&q=1:";
 
+	static final Duration ATTEMPT_TIMEOUT = Duration.ofSeconds(10);
+	static final int ATTEMPTS = 4;
+
 	private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
+	private final String search;
+	private final Duration timeout;
+	private final int attempts;
+
+	public CentralResolver() {
+		this(SEARCH, ATTEMPT_TIMEOUT, ATTEMPTS);
+	}
+
+	/** {@code search} is the query URL up to the checksum; tests point it at a local server. */
+	CentralResolver(String search, Duration timeout, int attempts) {
+		this.search = search;
+		this.timeout = timeout;
+		this.attempts = attempts;
+	}
 
 	@Override
 	public Optional<String> findBySha1(String sha1) throws IOException {
-		HttpRequest request = HttpRequest.newBuilder(URI.create(SEARCH + sha1)).timeout(Duration.ofSeconds(30)).GET()
-				.build();
-		try {
-			HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
-			if (response.statusCode() != 200) {
-				throw new IOException("Maven Central search returned HTTP " + response.statusCode());
+		HttpRequest request = HttpRequest.newBuilder(URI.create(search + sha1)).timeout(timeout).GET().build();
+		for (int attempt = 1;; attempt++) {
+			try {
+				HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
+				if (response.statusCode() != 200) {
+					throw new IOException("Maven Central search returned HTTP " + response.statusCode());
+				}
+				return parse(response.body());
+			} catch (HttpTimeoutException e) {
+				if (attempt >= attempts) {
+					throw new IOException(e.getMessage() + " (" + attempts + " attempts)", e);
+				}
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				throw new IOException("Interrupted while querying Maven Central", e);
 			}
-			return parse(response.body());
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			throw new IOException("Interrupted while querying Maven Central", e);
 		}
 	}
 
