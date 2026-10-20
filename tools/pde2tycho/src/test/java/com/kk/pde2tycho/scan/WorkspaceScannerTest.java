@@ -285,4 +285,38 @@ class WorkspaceScannerTest {
 		assertTrue(inv.warnings().stream().anyMatch(w -> w.contains("skipped")), inv.warnings().toString());
 		assertTrue(inv.launches().isEmpty(), inv.launches().toString());
 	}
+
+	private static final String APP_LAUNCH = "<launchConfiguration type=\"org.eclipse.pde.ui.EquinoxLauncher\">"
+			+ "<setAttribute key=\"selected_workspace_bundles\"><setEntry value=\"com.x.api@4:true\"/></setAttribute>"
+			+ "</launchConfiguration>";
+
+	/**
+	 * A launch saved as a shared file in a project and also kept as a local copy in .metadata
+	 * is one launch, not two: keep one, and preselect it as the only candidate.
+	 */
+	@Test
+	void identicalLaunchInMetadataAndInAProjectIsKeptOnce() throws IOException {
+		ws.bundle("com.x.api", "com.x.api");
+		Path deployment = ws.project("Deployment", "Deployment");
+		ws.launch("app", APP_LAUNCH);
+		TestWorkspace.write(deployment.resolve("launch/app.launch"), APP_LAUNCH);
+		Inventory inv = scan();
+		assertEquals(1, inv.launches().size(), inv.launches().toString());
+		assertTrue(inv.launches().get(0).selected());
+		assertTrue(inv.warnings().stream().anyMatch(w -> w.contains("Launch app") && w.contains("identical")),
+				inv.warnings().toString());
+	}
+
+	@Test
+	void differentLaunchesWithTheSameNameAreBothKeptWithAWarning() throws IOException {
+		ws.bundle("com.x.api", "com.x.api");
+		Path deployment = ws.project("Deployment", "Deployment");
+		ws.launch("app", APP_LAUNCH);
+		TestWorkspace.write(deployment.resolve("launch/app.launch"), APP_LAUNCH.replace("@4:true", "@5:true"));
+		Inventory inv = scan();
+		assertEquals(2, inv.launches().size(), inv.launches().toString());
+		assertFalse(inv.launches().stream().anyMatch(Launch::selected));
+		assertTrue(inv.warnings().stream().anyMatch(w -> w.contains("Launch app") && w.contains("differ")),
+				inv.warnings().toString());
+	}
 }
