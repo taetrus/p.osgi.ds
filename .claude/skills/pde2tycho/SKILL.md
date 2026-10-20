@@ -63,7 +63,8 @@ Otherwise the next regeneration silently undoes the fix.
    ```bash
    <outdir>/distribution/scripts/run.sh
    ```
-   (`run.bat` on Windows). Confirm `osgi>` appears; `ss` at the prompt shows no bundle
+   (`run.bat` on Windows). Confirm the console prompt appears (`osgi>`, or `g!` when the product
+   has the Gogo shell); `ss` at the prompt shows no bundle
    stuck in `INSTALLED`. Stop it with `exit` and `y`.
 
 8. **Report**: build result, anything vendored (those jars must be committed), launcher
