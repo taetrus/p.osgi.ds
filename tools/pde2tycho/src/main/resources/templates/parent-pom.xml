@@ -41,6 +41,17 @@
 @ENVIRONMENTS@					</environments>
 				</configuration>
 			</plugin>
+			<!-- PDE takes MANIFEST.MF as written. By default Tycho adds Require-Capability headers
+			     from annotations in the classes: with DS annotations 1.5, every @Component bundle
+			     would require osgi.component 1.5, which a DS 1.3 runtime cannot satisfy. -->
+			<plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>tycho-packaging-plugin</artifactId>
+				<version>${tycho.version}</version>
+				<configuration>
+					<deriveHeaderFromSource>false</deriveHeaderFromSource>
+				</configuration>
+			</plugin>
 			<!-- Test folders (.classpath test="true", e.g. src_test/) were copied but their test
 			     libraries were not migrated, and Tycho compiles them even with -Dmaven.test.skip.
 			     Delete this override when adding tests: docs/adding-tests-to-a-tycho-project.md -->
