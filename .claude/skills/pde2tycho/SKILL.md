@@ -49,9 +49,11 @@ Otherwise the next regeneration silently undoes the fix.
    `<outdir>/MIGRATION-REPORT.md`, and copy in any file it says belongs in
    `distribution/configuration/` (ask where the file is if it is unclear).
 
-5. **Build** with an explicit JDK, because Homebrew `mvn` may fork a different one:
+5. **Build** with the generated Maven Wrapper (Tycho 4 does not start on Maven 3.10) and an
+   explicit JDK, because Maven may fork a different one. Without internet, set `MVNW_REPOURL`
+   to the Maven mirror (for example `https://<nexus>/repository/maven-public`):
    ```bash
-   cd <outdir> && JAVA_HOME=$(/usr/libexec/java_home -v 21) mvn -B clean verify
+   cd <outdir> && JAVA_HOME=$(/usr/libexec/java_home -v 21) ./mvnw -B clean verify
    ```
 
 6. **Fix loop, at most 3 rounds.** Take the first `[ERROR]`, look it up in the

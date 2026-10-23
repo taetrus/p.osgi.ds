@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import com.kk.pde2tycho.model.Inventory;
@@ -67,9 +68,23 @@ public final class Generator {
 		DistributionGenerator.generate(inv, launch, args, out.resolve("distribution"));
 		ScriptGenerator.generate(inv, launch, args, out.resolve("distribution/scripts"));
 		Output.write(out.resolve("pom.xml"), PomGenerator.parent(inv, modules));
+		writeMavenWrapper(out);
 		// Anchored, so a source package or a module named "target" is never ignored.
 		Output.write(out.resolve(".gitignore"), "/target/\n/*/target/\n");
 		Output.write(out.resolve("MIGRATION-REPORT.md"), ReportGenerator.report(inv, launch, notes));
+	}
+
+	/**
+	 * Tycho 4 does not start on Maven 3.10, so the build pins Maven like this repository does.
+	 * MVNW_REPOURL points the download at a mirror (a Nexus, for example).
+	 */
+	private static void writeMavenWrapper(Path out) throws IOException {
+		Path mvnw = out.resolve("mvnw");
+		Output.write(mvnw, Templates.render("wrapper/mvnw", Map.of()));
+		mvnw.toFile().setExecutable(true, false);
+		Output.write(out.resolve("mvnw.cmd"), Templates.render("wrapper/mvnw.cmd", Map.of()).replace("\n", "\r\n"));
+		Output.write(out.resolve(".mvn/wrapper/maven-wrapper.properties"),
+				Templates.render("wrapper/maven-wrapper.properties", Map.of()));
 	}
 
 	/** An earlier run's product (another productId) or vendored jars would otherwise be built again. */

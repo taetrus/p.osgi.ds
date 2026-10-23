@@ -17,7 +17,7 @@ if exist "%SCRIPT_DIR%\plugins\" (
 for %%f in ("!PRODUCT_DIR!\plugins\org.eclipse.osgi_*.jar") do set "OSGI_JAR=%%f"
 if not defined OSGI_JAR (
     echo ERROR: Could not find org.eclipse.osgi jar in: !PRODUCT_DIR!\plugins\
-    echo Hint: run "mvn clean verify" from the project root first.
+    echo Hint: run "mvnw.cmd clean verify" from the project root first.
     exit /b 1
 )
 

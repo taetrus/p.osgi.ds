@@ -30,7 +30,7 @@ use the same form.
 tools/pde2tycho/pde2tycho.sh scan <workspace> -o migration.json
 # review/edit migration.json
 tools/pde2tycho/pde2tycho.sh generate migration.json <outdir>
-cd <outdir> && mvn clean verify
+cd <outdir> && ./mvnw clean verify                                    # or mvnw.cmd
 distribution/scripts/run.sh                                          # or run.bat
 ```
 
@@ -79,7 +79,8 @@ In Claude Code, the `pde2tycho` skill does these steps and the correction loop f
 
 | Output | Why it has this form |
 |--------|----------------------|
-| `pom.xml` (parent) | It contains the Tycho extension and the environments. It contains `target-platform-configuration`, which points to the target module with a **literal** version. Without the literal version, a bundle with a different `Bundle-Version` looks for a target that does not exist. It also contains an override that stops Tycho from compiling test folders (refer to §6). |
+| `pom.xml` (parent) | It contains the Tycho extension and the environments. It contains `target-platform-configuration`, which points to the target module with a **literal** version. Without the literal version, a bundle with a different `Bundle-Version` looks for a target that does not exist. It also contains an override that stops Tycho from compiling test folders (refer to §6). It sets `deriveHeaderFromSource` to `false` in `tycho-packaging-plugin`. Thus Tycho does not add `Require-Capability` headers from annotations, and `MANIFEST.MF` stays as PDE wrote it. Without this setting, DS annotations 1.5 make each `@Component` bundle require `osgi.component` 1.5. A DS 1.3 runtime cannot supply this requirement. |
+| `mvnw`, `mvnw.cmd`, `.mvn/wrapper/` | The Maven Wrapper pins Maven 3.9.x. Tycho 4 does not run on Maven 3.10. To download Maven from a mirror (for example a Nexus), set `MVNW_REPOURL` to the repository URL before the path `/org/apache/maven/`. |
 | `<project>/pom.xml` | Approximately 10 lines. Tycho is manifest-first: `MANIFEST.MF` and `build.properties` stay the source of truth. The pom version agrees with `Bundle-Version` (`1.2.3.qualifier` ↔ `1.2.3-SNAPSHOT`). |
 | `<groupId>.target/<groupId>.target` | It contains the Maven and p2 locations without change. The directory jars that the tool finds on Maven Central (by SHA-1) go into one Maven location. The other jars go into `vendor/plugins/`. The target refers to them as `${project_loc:/<groupId>.target}/vendor/plugins`. |
 | `distribution/category.xml` | It contains the selected features. It also contains, as `<bundle>` entries, the workspace bundles that no feature includes. |

@@ -40,12 +40,47 @@ class GeneratorTest {
 		for (String file : new String[] { "pom.xml", ".gitignore", "MIGRATION-REPORT.md", "com.x.target/pom.xml",
 				"com.x.target/com.x.target.target", "com.x.api/pom.xml", "com.x.api/META-INF/MANIFEST.MF",
 				"distribution/pom.xml", "distribution/category.xml", "distribution/com.x.product.product",
-				"distribution/scripts/run.sh", "distribution/scripts/run.bat" }) {
+				"distribution/scripts/run.sh", "distribution/scripts/run.bat", "mvnw", "mvnw.cmd",
+				".mvn/wrapper/maven-wrapper.properties" }) {
 			assertTrue(Files.exists(out.resolve(file)), file);
 		}
 		String parent = Files.readString(out.resolve("pom.xml"));
 		assertTrue(parent.indexOf("<module>com.x.target</module>") < parent.indexOf("<module>distribution</module>"));
 		assertTrue(Files.readString(out.resolve("MIGRATION-REPORT.md")).contains("-XstartOnFirstThread"));
+	}
+
+	/**
+	 * Tycho 4 does not start on Maven 3.10, and the failure comes before any plugin runs. The
+	 * output therefore pins Maven with the wrapper, as this repository does.
+	 */
+	@Test
+	void mavenWrapperPinsAMavenThatTychoStartsOn() throws Exception {
+		Generator.generate(GenFixtures.simple(project().toString()), tmp.resolve("out"), false);
+		Path out = tmp.resolve("out");
+		String properties = Files.readString(out.resolve(".mvn/wrapper/maven-wrapper.properties"));
+		assertTrue(properties.contains("distributionType=only-script"), properties);
+		assertTrue(properties.contains("/apache-maven-3.9."), properties);
+		assertFalse(Files.readString(out.resolve("mvnw")).contains("\r"), "mvnw needs LF line endings");
+		assertTrue(Files.readString(out.resolve("mvnw.cmd")).contains("\r\n"), "mvnw.cmd needs CRLF line endings");
+		if (!System.getProperty("os.name").startsWith("Windows")) {
+			assertTrue(Files.isExecutable(out.resolve("mvnw")));
+		}
+	}
+
+	/** The templates are copies of this repository's wrapper; a wrapper update must update both. */
+	@Test
+	void wrapperTemplatesMatchTheRepositoryWrapper() throws Exception {
+		Path root = Path.of("../..");
+		for (String[] pair : new String[][] { { "mvnw", "mvnw" }, { "mvnw.cmd", "mvnw.cmd" },
+				{ ".mvn/wrapper/maven-wrapper.properties", "maven-wrapper.properties" } }) {
+			Path repo = root.resolve(pair[0]);
+			if (!Files.isRegularFile(repo)) {
+				return; // the tool was built outside this repository
+			}
+			Path template = Path.of("src/main/resources/templates/wrapper").resolve(pair[1]);
+			assertEquals(Files.readString(repo).replace("\r\n", "\n"), Files.readString(template).replace("\r\n", "\n"),
+					pair[0]);
+		}
 	}
 
 	@Test

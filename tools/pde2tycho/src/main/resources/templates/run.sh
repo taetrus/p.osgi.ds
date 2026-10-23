@@ -22,7 +22,7 @@ fi
 OSGI_JAR=$(ls "$PRODUCT_DIR/plugins/org.eclipse.osgi_"*.jar 2>/dev/null | head -1)
 if [ -z "$OSGI_JAR" ]; then
     echo "ERROR: Could not find org.eclipse.osgi jar in: $PRODUCT_DIR/plugins/"
-    echo "Hint: run 'mvn clean verify' from the project root first."
+    echo "Hint: run './mvnw clean verify' from the project root first."
     exit 1
 fi
 
