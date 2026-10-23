@@ -150,7 +150,7 @@ public final class Main {
 			e.errors().forEach(message -> err.println("  - " + message));
 			return 1;
 		}
-		out.println("Generated a Tycho build in " + target + ". Read MIGRATION-REPORT.md, then run: mvn clean verify");
+		out.println("Generated a Tycho build in " + target + ". Read MIGRATION-REPORT.md, then run: ./mvnw clean verify");
 		return 0;
 	}
 }

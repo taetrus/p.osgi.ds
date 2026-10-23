@@ -36,6 +36,18 @@ class PomGeneratorTest {
 		assertTrue(pom.contains("<id>default-testCompile</id>"), pom);
 	}
 
+	/**
+	 * PDE takes the manifest as written. Tycho's packaging plugin would add Require-Capability
+	 * headers from annotations: DS annotations 1.5 make every @Component bundle require
+	 * osgi.component 1.5, which a DS 1.3 runtime (Felix SCR 2.0) cannot satisfy.
+	 */
+	@Test
+	void parentKeepsManifestHeadersAsPdeWritesThem() {
+		String pom = PomGenerator.parent(inv, List.of("com.x.target", "distribution"));
+		assertTrue(pom.contains("<artifactId>tycho-packaging-plugin</artifactId>"), pom);
+		assertTrue(pom.contains("<deriveHeaderFromSource>false</deriveHeaderFromSource>"), pom);
+	}
+
 	@Test
 	void moduleVersionFollowsBundleVersion() {
 		Project p = new Project("x", Kind.PLUGIN, "/x", "com.x.lib", "2.1.0.qualifier", null, List.of(), true);
