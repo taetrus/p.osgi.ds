@@ -87,7 +87,8 @@ The `windows-docs` job runs the Windows commands of the docs on `windows-latest`
 - A start of the product with `run.bat`, an HTTP request to `/api/greet` and a PowerShell call to the MCP server.
 - A pde2tycho scan with `pde2tycho.bat`, and a build that continues from `distribution`.
 
-The script [`.github/verify-windows/verify.ps1`](../.github/verify-windows/verify.ps1) finds each command by the text of its line in the doc. If you change such a line, change the anchor in the script too. If an anchor finds no line, or more than one line, the check fails. If one check fails, the job fails. The job summary shows a table of all results.
+The harness script `.github/verify-windows/verify.ps1` finds each command by the text of its line in the doc. If you change such a line, change the anchor in the script too.
+If an anchor finds no line, or more than one line, the check fails. If one check fails, the job fails. The job summary shows a table of all results.
 
 The `docs` job runs on `ubuntu-latest`. It runs [tools/doccheck/check-docs.sh](../tools/doccheck/check-docs.sh). The script does two checks:
 
