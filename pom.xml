@@ -9,7 +9,7 @@
 	<packaging>pom</packaging>
 
 	<properties>
-		<tycho.version>4.0.13</tycho.version>
+		<tycho.version>5.0.4</tycho.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
@@ -57,6 +57,21 @@
 			<dependency>
 				<groupId>org.junit.platform</groupId>
 				<artifactId>junit-platform-launcher</artifactId>
+				<version>${junit-platform.version}</version>
+				<scope>test</scope>
+			</dependency>
+			<!-- Tycho 5 only: its JUnit 5 provider fragment (org.eclipse.tycho.surefire.junit5)
+			     imports org.junit.platform.suite.api and .suite.engine, so the in-framework
+			     tier cannot resolve without them. No test here uses @Suite. -->
+			<dependency>
+				<groupId>org.junit.platform</groupId>
+				<artifactId>junit-platform-suite-api</artifactId>
+				<version>${junit-platform.version}</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.junit.platform</groupId>
+				<artifactId>junit-platform-suite-engine</artifactId>
 				<version>${junit-platform.version}</version>
 				<scope>test</scope>
 			</dependency>
@@ -183,6 +198,12 @@
 						     **/*IT.java by default, i.e. only in-framework classes. -->
 						<test>${it.test}</test>
 						<failIfNoTests>true</failIfNoTests>
+						<!-- Tycho builds one test fragment from all of src_test/, tier-1 classes
+						     included, and those import Mockito, which is not in the Equinox
+						     runtime. Tycho 4 made every import of the fragment optional; Tycho 5
+						     does so only on request. Without this the fragment stays INSTALLED
+						     and the run ends with "No tests found". -->
+						<importAdditionalPackagesOptional>true</importAdditionalPackagesOptional>
 						<!-- Felix SCR must be *started* early or no DS component activates and every
 						     service lookup in an IT fails. Modules pull SCR into the runtime with an
 						     extraRequirement (see a tier-2 module's pom); this makes it auto-start. -->
