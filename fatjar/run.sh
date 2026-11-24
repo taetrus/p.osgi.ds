@@ -1,6 +1,6 @@
 #!/bin/bash
 # Run the fat JAR. Build it first when it is missing.
-# The builds use the Maven Wrapper (Maven 3.9.16, the version CI uses). On Maven 3.10.2 the full build fails at com.kk.pde.ds.chatbot.
+# The builds use the Maven Wrapper. On Maven 3.10.2, the full build of this repository fails at `com.kk.pde.ds.chatbot`. The wrapper pins Maven 3.9.16, the version that CI uses.
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

@@ -75,7 +75,7 @@ public final class Generator {
 	}
 
 	/**
-	 * The wrapper pins the Maven version, as this repository does. Tycho 5 needs Maven 3.9.9 or later.
+	 * The wrapper pins Maven 3.9.16, as this repository does. The Tycho 5.0.0 release notes require Maven 3.9.9 or later.
 	 * MVNW_REPOURL points the download at a mirror (a Nexus, for example).
 	 */
 	private static void writeMavenWrapper(Path out) throws IOException {

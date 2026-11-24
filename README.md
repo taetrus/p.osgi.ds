@@ -47,7 +47,7 @@ This repository is a **showcase**. It is a Java 8 OSGi application built with **
 |-------------|---------|
 | **JDK to build** | 21 or newer, because Tycho 5 runs on Java 21. CI uses Temurin 21 |
 | **Java to run** | 8 or newer |
-| **Maven** | Use the Maven Wrapper: `./mvnw`. On Windows, use `mvnw.cmd` in `cmd.exe` or `.\mvnw.cmd` in PowerShell. It pins Maven 3.9.16, the version that CI uses. On Maven 3.10.2, the full build fails at `com.kk.pde.ds.chatbot` |
+| **Maven** | Use the Maven Wrapper: `./mvnw`. On Windows, use `mvnw.cmd` in `cmd.exe` or `.\mvnw.cmd` in PowerShell. On Maven 3.10.2, the full build of this repository fails at `com.kk.pde.ds.chatbot`. The wrapper pins Maven 3.9.16, the version that CI uses. |
 | **Internet** | Maven must download the target platform dependencies |
 
 For more detail, see [`docs/build.md`](docs/build.md).

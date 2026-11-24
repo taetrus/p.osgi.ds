@@ -32,7 +32,7 @@ Related documents:
 |-------------|---------|
 | **JDK to build** | 21 or newer. Tycho 5 runs on Java 21, and the tier-2 test runtime needs `JavaSE-17`. CI uses Temurin 21. |
 | **Java to run** | 8 or newer. All shipped bundles and the fat JAR launcher use Java 8 bytecode. |
-| **Maven** | Use the Maven Wrapper: `./mvnw`. On Windows, use `mvnw.cmd` in `cmd.exe` or `.\mvnw.cmd` in PowerShell. The wrapper pins Maven 3.9.16 in `.mvn/wrapper/maven-wrapper.properties`. On Maven 3.10.2, the full build of this repository fails at `com.kk.pde.ds.chatbot`. Refer to [troubleshooting.md](troubleshooting.md#maven-310-cannot-build-this-repository). |
+| **Maven** | Use the Maven Wrapper: `./mvnw`. On Windows, use `mvnw.cmd` in `cmd.exe` or `.\mvnw.cmd` in PowerShell. On Maven 3.10.2, the full build of this repository fails at `com.kk.pde.ds.chatbot`. The wrapper pins Maven 3.9.16, the version that CI uses. The wrapper reads the version from `.mvn/wrapper/maven-wrapper.properties`. Refer to [troubleshooting.md](troubleshooting.md#maven-310-cannot-build-this-repository). |
 | **Internet** | Maven must download the target platform dependencies. |
 
 > **Local JDK note:** Homebrew `mvn` can use a different JDK than `java -version` shows. To use the same JDK as CI on macOS, set `JAVA_HOME=$(/usr/libexec/java_home -v 21)`.

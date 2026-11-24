@@ -324,6 +324,7 @@ Without `junit-platform-launcher`, tier 2 cannot resolve. Tier 1 does not need i
 classes in it import Mockito. Mockito is not in the Equinox runtime. Tycho 5 makes these
 imports mandatory if the flag is not set. Without the flag, the fragment stays `INSTALLED`.
 Then the run reports `No tests found`.
+A missing package then shows at run time as `NoClassDefFoundError`, not at resolve time.
 
 **Note:** The block in step 4 does two things. It stops the check of the Java version of
 the bundle. It also adds Felix SCR to the framework. If SCR is not there, no DS component
@@ -362,8 +363,7 @@ If a test file or a test library is in the product, do one of these corrections:
 Do all commands in the project root.
 
 Use the Maven Wrapper `./mvnw` (on Windows, `mvnw.cmd` in `cmd.exe` or `.\mvnw.cmd` in
-PowerShell). It uses Maven 3.9.16, the version that CI uses. On Maven 3.10.2,
-the full build fails at `com.kk.pde.ds.chatbot`. CI uses `./mvnw` with the same goals.
+PowerShell). On Maven 3.10.2, the full build of this repository fails at `com.kk.pde.ds.chatbot`. The wrapper pins Maven 3.9.16, the version that CI uses. CI uses `./mvnw` with the same goals.
 
 **Note:** The build needs JDK 21 or later, because Tycho 5 runs on Java 21. CI uses Temurin 21. To get the same result as
 CI on macOS, put `JAVA_HOME=$(/usr/libexec/java_home -v 21)` before the command.
@@ -518,6 +518,8 @@ These lines in the log are normal:
 | A tier 1 test cannot get a bundle or a `BundleContext`. | Tier 1 has no OSGi framework. | Change the suffix of the class to `IT`. Do paragraph B.3. |
 | A tier 2 test finds no service. | Felix SCR is not in the framework. | Do step 4 of paragraph B.3. |
 | A tier 2 test cannot find Mockito classes. | Mockito is not in the Equinox framework. | Move the test to a `*Test` class. |
+| `NoClassDefFoundError` in a `*IT` class | The parent pom makes the extra imports of the test fragment optional (`importAdditionalPackagesOptional`), so the build resolves without the package. Tycho 4 behaved the same. | Make the host bundle import the package, or add the bundle with an `extraRequirement`. If the class is from Mockito, move the test to a `*Test` class. |
+| `You requested to install 'java.package; org.junit.platform.suite.api [1.0.0,2.0.0)' but it could not be found` | The Tycho 5 JUnit provider imports the JUnit suite packages. | Add `junit-platform-suite-api` and `junit-platform-suite-engine` as test dependencies of the bundle. |
 | A window opens during the tests. | The JVM has a screen. | Add the `argLine` in paragraph B.4. |
 | The local result is different from the CI result. | The command `mvn` of Homebrew uses its own JDK when `JAVA_HOME` is not set. | Set `JAVA_HOME` to JDK 21 before the command. |
 | Test classes are in a bundle jar. | The tests are in `src/`, or `src_test/` is in `build.properties`. | Move the tests to `src_test/` and remove the entry. |

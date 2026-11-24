@@ -341,8 +341,7 @@ mvn test   -pl … -Dtest='SomeTest#method'
 mvn verify -pl … -Dit.test=SomeIT                # tier 2 (the property from step 1c)
 ```
 
-**Note:** This repository runs these goals through the Maven Wrapper `./mvnw` (Maven
-3.9.16). On Maven 3.10.2, the full build of this repository fails at `com.kk.pde.ds.chatbot`.
+**Note:** This repository runs these goals through the Maven Wrapper `./mvnw`. On Maven 3.10.2, the full build of this repository fails at `com.kk.pde.ds.chatbot`. The wrapper pins Maven 3.9.16, the version that CI uses.
 
 Reports:
 
@@ -370,6 +369,7 @@ Tycho assembles the tier-2 runtime in `<bundle>/target/work/`:
 | `junit-jupiter-engine … requires 'org.junit.platform.launcher…' but it could not be found` | The aggregate `junit-jupiter` does not contain the launcher. | Add the `junit-platform-launcher` test dependency. |
 | `You requested to install 'java.package; org.junit.platform.suite.api [1.0.0,2.0.0)' but it could not be found` | The Tycho 5 JUnit provider imports the JUnit suite packages. | Add `junit-platform-suite-api` and `junit-platform-suite-engine` as test dependencies of the bundle. |
 | `No tests found`, after `Tests run: 0` | The generated test fragment has a mandatory import that the runtime does not have (for example `org.mockito`). The fragment stays `INSTALLED`. | Set `<importAdditionalPackagesOptional>true</importAdditionalPackagesOptional>` on `tycho-surefire-plugin`. To see the state, add `-Dtycho.printBundles=true`. |
+| `NoClassDefFoundError` in a `*IT` class | The parent pom makes the extra imports of the test fragment optional (`importAdditionalPackagesOptional`), so the build resolves without the package. Tycho 4 behaved the same. | Make the host bundle import the package, or add the bundle with an `extraRequirement`. If the class is from Mockito, move the test to a `*Test` class. |
 | The process stops with code 13. The Equinox log shows `Could not resolve module: <bundle> … Unresolved requirement: Require-Capability: osgi.extender; … osgi.component` | Tycho did not install SCR. | Add `extraRequirements` for `org.apache.felix.scr` (section 3). Add `bundleStartLevel` (1c). |
 | A `*IT` class passes, but service lookups return `null`. | Tycho installed SCR but did not start it. | Add `bundleStartLevel` with `autoStart=true` (1c). |
 | `mvn verify -Dtest=SomeTest` also runs `SomeTest` in Equinox. It fails because Mockito is not there. | The two plugins read `-Dtest`. | Bind the Tycho `<test>` to `${it.test}` with a default value that is not empty (1c). |

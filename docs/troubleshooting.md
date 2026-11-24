@@ -36,7 +36,8 @@ This document lists known problems with the build and the running product. Each 
 The modules before it build and pass their tests.
 
 **Cause:** on Maven 3.10.2, the full build with Tycho 5.0.4 fails at `com.kk.pde.ds.chatbot`.
-This bundle has a system-scoped `lib/` jar on its `Bundle-ClassPath`.
+Tycho gives the `lib/` jars on the `Bundle-ClassPath` of this bundle to Maven as system-scoped dependencies.
+The error names one of them. We did not isolate the root cause.
 
 **Fix:**
 
