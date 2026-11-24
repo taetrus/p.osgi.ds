@@ -46,12 +46,14 @@ class GeneratorTest {
 		}
 		String parent = Files.readString(out.resolve("pom.xml"));
 		assertTrue(parent.indexOf("<module>com.x.target</module>") < parent.indexOf("<module>distribution</module>"));
-		assertTrue(Files.readString(out.resolve("MIGRATION-REPORT.md")).contains("-XstartOnFirstThread"));
+		String report = Files.readString(out.resolve("MIGRATION-REPORT.md"));
+		assertTrue(report.contains("-XstartOnFirstThread"));
+		assertTrue(report.contains("(JDK 21+;"), report);
+		assertFalse(report.contains("JDK 17"), report);
 	}
 
 	/**
-	 * Tycho 4 does not start on Maven 3.10, and the failure comes before any plugin runs. The
-	 * output therefore pins Maven with the wrapper, as this repository does.
+	 * The wrapper pins the Maven version, as this repository does. Tycho 5 needs Maven 3.9.9 or later.
 	 */
 	@Test
 	void mavenWrapperPinsAMavenThatTychoStartsOn() throws Exception {
@@ -110,7 +112,7 @@ class GeneratorTest {
 		Files.writeString(out.resolve("com.x.gone/pom.xml"), "<project/>");
 
 		Launch renamed = GenFixtures.simple(api.toString()).selectedLaunch().withSelection(true, "com.x.renamed");
-		Inventory second = new Inventory("/ws", "com.x", "1.0.0-SNAPSHOT", "4.0.13", first.environments(),
+		Inventory second = new Inventory("/ws", "com.x", "1.0.0-SNAPSHOT", "5.0.4", first.environments(),
 				first.projects(), new Target(null, List.of(), List.of(), List.of()), List.of(renamed), List.of());
 		Generator.generate(second, out, true);
 		try (Stream<Path> files = Files.list(out.resolve("distribution"))) {

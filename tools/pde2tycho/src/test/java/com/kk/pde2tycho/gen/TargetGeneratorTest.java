@@ -20,9 +20,8 @@ import com.kk.pde2tycho.model.TargetJar;
 
 /**
  * Verbatim locations pass through, Central hits become one Maven location, and misses
- * are copied into vendor/plugins behind the only Directory path form Tycho 4.0.13
- * resolves: ${project_loc:/<module>}. Relative paths, ${project_loc} and ${basedir}
- * silently resolve to nothing (verified 2026-09-28).
+ * are copied into vendor/plugins. The Directory path form is ${project_loc:/<module>}.
+ * It is the form verified on Tycho 5.0.4. On Tycho 4.0.13 the other forms gave nothing.
  */
 class TargetGeneratorTest {
 

@@ -34,7 +34,7 @@ public final class WorkspaceScanner {
 
 	public static final List<String> DEFAULT_ENVIRONMENTS = List.of("macosx/cocoa/aarch64", "macosx/cocoa/x86_64",
 			"win32/win32/x86_64");
-	public static final String TYCHO_VERSION = "4.0.13";
+	public static final String TYCHO_VERSION = "5.0.4";
 
 	/** After this many failed lookups in a row, Central is treated as unreachable. */
 	private static final int MAX_CONSECUTIVE_LOOKUP_FAILURES = 3;

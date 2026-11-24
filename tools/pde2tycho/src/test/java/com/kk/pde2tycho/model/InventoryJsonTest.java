@@ -25,7 +25,7 @@ class InventoryJsonTest {
 		Launch launch = new Launch("app", true, "com.x.product", false,
 				List.of(new LaunchBundle("com.x.api", 4, true, true), new LaunchBundle("org.a", null, null, false)),
 				"-Dfoo=\"a b\"", "-consoleLog", "JavaSE-21");
-		return new Inventory("/ws", "com.x", "1.0.0-SNAPSHOT", "4.0.13", List.of("macosx/cocoa/aarch64"),
+		return new Inventory("/ws", "com.x", "1.0.0-SNAPSHOT", "5.0.4", List.of("macosx/cocoa/aarch64"),
 				List.of(api, feature), target, List.of(launch), List.of("a warning"));
 	}
 

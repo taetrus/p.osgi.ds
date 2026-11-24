@@ -61,7 +61,7 @@ final class DistributionGenerator {
 						steps.toString()));
 	}
 
-	/** Selected features, plus workspace bundles no selected feature covers (Tycho 4 accepts <bundle>). */
+	/** Selected features, plus workspace bundles no selected feature covers (Tycho accepts <bundle>). */
 	private static String category(Inventory inv, Launch launch) {
 		String group = Xml.escape(inv.groupId());
 		Set<String> covered = new HashSet<>();
