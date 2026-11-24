@@ -263,6 +263,8 @@ Do this procedure only if paragraph A.2 gives the answer "tier 2".
 2. Add these dependencies to the `pom.xml`, without versions:
 
    - `org.junit.platform:junit-platform-launcher`
+   - `org.junit.platform:junit-platform-suite-api`
+   - `org.junit.platform:junit-platform-suite-engine`
    - `org.osgi:org.osgi.framework`
 
 3. Add `tycho-surefire-plugin` to the `<build><plugins>` section of the `pom.xml`:
@@ -314,6 +316,15 @@ Do this procedure only if paragraph A.2 gives the answer "tier 2".
 **Note:** The OSGi manifest of the Jupiter engine requires the launcher capability.
 Without `junit-platform-launcher`, tier 2 cannot resolve. Tier 1 does not need it.
 
+**Note:** The Tycho 5 JUnit provider imports the JUnit suite packages. Without
+`junit-platform-suite-api` and `junit-platform-suite-engine`, tier 2 cannot resolve.
+
+**Note:** The parent pom sets `importAdditionalPackagesOptional` to `true` on
+`tycho-surefire-plugin`. Tycho builds one test fragment from all of `src_test/`. The tier 1
+classes in it import Mockito. Mockito is not in the Equinox runtime. Tycho 5 makes these
+imports mandatory if the flag is not set. Without the flag, the fragment stays `INSTALLED`.
+Then the run reports `No tests found`.
+
 **Note:** The block in step 4 does two things. It stops the check of the Java version of
 the bundle. It also adds Felix SCR to the framework. If SCR is not there, no DS component
 starts.
@@ -351,10 +362,10 @@ If a test file or a test library is in the product, do one of these corrections:
 Do all commands in the project root.
 
 Use the Maven Wrapper `./mvnw` (on Windows, `mvnw.cmd` in `cmd.exe` or `.\mvnw.cmd` in
-PowerShell). It uses Maven 3.9.16. Tycho 4.0.13
-does not start on Maven 3.10. CI uses `./mvnw` with the same goals.
+PowerShell). It uses Maven 3.9.16, the version that CI uses. On Maven 3.10.2,
+the full build fails at `com.kk.pde.ds.chatbot`. CI uses `./mvnw` with the same goals.
 
-**Note:** Tycho 4 must have JDK 17 or later. CI uses Temurin 21. To get the same result as
+**Note:** The build needs JDK 21 or later, because Tycho 5 runs on Java 21. CI uses Temurin 21. To get the same result as
 CI on macOS, put `JAVA_HOME=$(/usr/libexec/java_home -v 21)` before the command.
 
 Figure 5 shows the build phases and the tier that each phase does. The command `./mvnw test`
@@ -494,6 +505,8 @@ These lines in the log are normal:
 - `Mockito is currently self-attaching`. Mockito attaches a Java agent.
 - `ERROR ... Greet Service Health Check failed`. Three tests in `GreetHealthCheckTest`
   cause this error on purpose.
+- `The digest algorithms (sha-1) ... have severely compromised security`. Tycho 5 prints
+  this warning one time for each target bundle.
 
 ### C.8 Fault isolation
 

@@ -30,9 +30,9 @@ Related documents:
 
 | Requirement | Version |
 |-------------|---------|
-| **JDK to build** | 17 or newer. Tycho 4 needs it, and the tier-2 test runtime needs `JavaSE-17`. CI uses Temurin 21. |
+| **JDK to build** | 21 or newer. Tycho 5 runs on Java 21, and the tier-2 test runtime needs `JavaSE-17`. CI uses Temurin 21. |
 | **Java to run** | 8 or newer. All shipped bundles and the fat JAR launcher use Java 8 bytecode. |
-| **Maven** | Use the Maven Wrapper: `./mvnw`. On Windows, use `mvnw.cmd` in `cmd.exe` or `.\mvnw.cmd` in PowerShell. The wrapper pins Maven 3.9.16 in `.mvn/wrapper/maven-wrapper.properties`. Tycho 4.0.13 does not start on Maven 3.10. |
+| **Maven** | Use the Maven Wrapper: `./mvnw`. On Windows, use `mvnw.cmd` in `cmd.exe` or `.\mvnw.cmd` in PowerShell. The wrapper pins Maven 3.9.16 in `.mvn/wrapper/maven-wrapper.properties`. On Maven 3.10.2, the full build of this repository fails at `com.kk.pde.ds.chatbot`. Refer to [troubleshooting.md](troubleshooting.md#maven-310-cannot-build-this-repository). |
 | **Internet** | Maven must download the target platform dependencies. |
 
 > **Local JDK note:** Homebrew `mvn` can use a different JDK than `java -version` shows. To use the same JDK as CI on macOS, set `JAVA_HOME=$(/usr/libexec/java_home -v 21)`.
@@ -122,7 +122,7 @@ The fat JAR is a separate build. See [fat-jar.md](fat-jar.md).
 
 ```xml
 <properties>
-    <tycho.version>4.0.13</tycho.version>
+    <tycho.version>5.0.4</tycho.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>

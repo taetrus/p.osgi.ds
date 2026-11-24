@@ -4,7 +4,7 @@ This file gives guidance to Claude Code (claude.ai/code) for the code in this re
 
 ## Project Overview
 
-This project is an OSGi Declarative Services (DS) demo. Maven Tycho 4.0.13 builds it. It shows a
+This project is an OSGi Declarative Services (DS) demo. Maven Tycho 5.0.4 builds it. It shows a
 service-oriented architecture with separate API contracts, implementations and consumers. The
 build makes a p2 repository and a product archive for each platform.
 
@@ -67,7 +67,7 @@ Use the Maven Wrapper `./mvnw` for all builds. It pins the Maven version that CI
 ./mvnw -f tools/pde2tycho verify
 ```
 
-The build needs JDK 17+ (Tycho 4). The product runs on Java 8+.
+The build needs JDK 21 or later, because Tycho 5 runs on Java 21. CI uses Temurin 21. The product runs on Java 8+.
 
 ## Testing
 
@@ -102,7 +102,9 @@ This layout is the reference for a larger Tycho project. Keep it clean and easy 
 - **Add tier-2 tests to a bundle** (after the tier-1 steps):
   1. List `tycho-surefire-plugin` in the pom.
   2. Copy the `target-platform-configuration` block from `com.kk.pde.ds.imp/pom.xml` (EE constraints off + Felix SCR extraRequirement).
-  3. Add the `org.osgi.framework` and `org.junit.platform:junit-platform-launcher` test dependencies. Tier 2 cannot resolve without the launcher.
+  3. Add the `org.osgi.framework`, `org.junit.platform:junit-platform-launcher`,
+     `org.junit.platform:junit-platform-suite-api` and `org.junit.platform:junit-platform-suite-engine`
+     test dependencies. Tier 2 cannot resolve without the launcher. The Tycho 5 JUnit provider imports the suite packages.
   4. Write a `*IT` class.
   5. Do not add executions. The parent pom manages them.
 - **Never use `src/test/java`** here. The bundles use `source.. = src/`. Thus `src/test/java` is
@@ -110,10 +112,11 @@ This layout is the reference for a larger Tycho project. Keep it clean and easy 
 - **`-pl <module> -am` does not work.** Maven cannot see OSGi manifest dependencies. Thus `-am`
   builds only the parent and fails with `requires osgi.bundle ... but it could not be found`.
 - **Local Maven can fork a different JDK than `java -version` shows.** Homebrew `mvn` uses its own
-  OpenJDK (26) when `JAVA_HOME` is not set. CI uses Temurin 21. To get the CI JDK, run
+  OpenJDK (27) when `JAVA_HOME` is not set. CI uses Temurin 21. To get the CI JDK, run
   `JAVA_HOME=$(/usr/libexec/java_home -v 21) ./mvnw clean verify`. This JDK difference is why the parent pom pins ByteBuddy.
 - Expected log noise: a Mockito "self-attaching" warning. Also `ERROR ... Health Check failed`
-  lines from tests that force the catch branch on purpose. Trust the `Tests run:` totals.
+  lines from tests that force the catch branch on purpose. Tycho 5 prints one `The digest algorithms
+  (sha-1) ... have severely compromised security` warning for each target bundle. Trust the `Tests run:` totals.
 - `com.kk.pde.ds.spike.master` gives `-Djava.awt.headless=true` to both tiers. `MasterApp.start()`
   has a headless guard, because SCR activates the real component in the tier-2 runtime.
 - Test libraries (JUnit, Mockito, ByteBuddy) are test-scope dependencies in the pom. They are not
@@ -131,8 +134,8 @@ To apply the layout to a different project: `docs/adding-tests-to-a-tycho-projec
 - CI: `.github/workflows/build.yml` runs two steps on Temurin 21:
   1. `./mvnw --batch-mode --no-transfer-progress clean verify`
   2. `./mvnw --batch-mode --no-transfer-progress -f tools/pde2tycho verify`
-- The Maven Wrapper pins Maven 3.9.16. Tycho 4.0.13 does not start on Maven 3.10 (`No
-  implementation for MavenTargetLocationFactory was bound`). Do not use the system `mvn` of the runner.
+- The Maven Wrapper pins Maven 3.9.16. On Maven 3.10.2, the full build fails at `com.kk.pde.ds.chatbot`
+  (`Invalid Collect Request`). This bundle has a system-scoped `lib/` jar on its `Bundle-ClassPath`. Do not use the system `mvn` of the runner.
 - Dependency minimalism is a deliberate theme (hand-written JSON, OOXML read as a zip, Tesseract
   as a subprocess). Prefer this approach to a new library. Never add a dependency that needs slf4j 2.x.
 - The DS component XML in `OSGI-INF/` is hand-written. SCR reads the XML, not the annotations. When
@@ -426,8 +429,8 @@ Design and findings: see the spike documents in the Documentation Map.
 ## Technology Stack
 
 - **Java 8+** at runtime. All shipped bundles and the fat JAR launcher use Java 8 bytecode.
-  The build and the tests need JDK 17+.
-- **Tycho 4.0.13** (Maven OSGi build)
+  The build and the tests need JDK 21 or later.
+- **Tycho 5.0.4** (Maven OSGi build)
 - **Equinox 3.23 (2025-03 line)**: `org.eclipse.osgi` 3.23.0. The target platform comes from Maven Central, with no p2 URLs.
 - **JUnit 5.12 + Mockito 5.14** (test-only, never shipped)
 - **OSGi Declarative Services** with annotations in the source and hand-written XML descriptors

@@ -22,7 +22,7 @@
 		<junit-platform.version>1.12.2</junit-platform.version>
 		<mockito.version>5.14.2</mockito.version>
 		<!-- Pinned above Mockito's transitive default: the test JVM may be newer than CI's
-		     (Homebrew Maven forks JDK 26) and older ByteBuddy refuses new class-file versions. -->
+		     (Homebrew Maven forks JDK 27) and older ByteBuddy refuses new class-file versions. -->
 		<bytebuddy.version>1.18.13-jdk5</bytebuddy.version>
 		<maven-surefire.version>3.5.6</maven-surefire.version>
 		<!-- Which tier-2 classes tycho-surefire runs (its <test> parameter is bound to this

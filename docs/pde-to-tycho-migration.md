@@ -1,7 +1,7 @@
 # Migrate an Eclipse PDE Workspace to Tycho
 
 This guide tells what `tools/pde2tycho` does. Use it to run the tool, to examine its
-output, or to do the migration manually. The result is a self-contained Maven Tycho 4.0.13
+output, or to do the migration manually. The result is a self-contained Maven Tycho 5.0.4
 build with these parts:
 
 - A parent pom.
@@ -43,7 +43,7 @@ tools\pde2tycho\pde2tycho.bat scan <workspace> -o migration.json
 Do not put a comment after the command. `cmd.exe` gives the comment to the tool as more
 arguments, and the tool stops with `scan needs exactly one workspace directory`.
 
-The first run builds the tool. This needs JDK 17 or later and Maven. Tycho needs them too.
+The first run builds the tool. The tool needs JDK 17 or later and Maven. The generated build needs JDK 21 or later.
 In Claude Code, the `pde2tycho` skill does these steps and the correction loop for you.
 
 | Option | Command | Meaning |
@@ -80,7 +80,7 @@ In Claude Code, the `pde2tycho` skill does these steps and the correction loop f
 | Output | Why it has this form |
 |--------|----------------------|
 | `pom.xml` (parent) | It contains the Tycho extension and the environments. It contains `target-platform-configuration`, which points to the target module with a **literal** version. Without the literal version, a bundle with a different `Bundle-Version` looks for a target that does not exist. It also contains an override that stops Tycho from compiling test folders (refer to §6). It sets `deriveHeaderFromSource` to `false` in `tycho-packaging-plugin`. Thus Tycho does not add `Require-Capability` headers from annotations, and `MANIFEST.MF` stays as PDE wrote it. Without this setting, DS annotations 1.5 make each `@Component` bundle require `osgi.component` 1.5. A DS 1.3 runtime cannot supply this requirement. |
-| `mvnw`, `mvnw.cmd`, `.mvn/wrapper/` | The Maven Wrapper pins Maven 3.9.x. Tycho 4 does not run on Maven 3.10. To download Maven from a mirror (for example a Nexus), set `MVNW_REPOURL` to the repository URL before the path `/org/apache/maven/`. |
+| `mvnw`, `mvnw.cmd`, `.mvn/wrapper/` | The Maven Wrapper pins Maven 3.9.16, the version that the CI of this repository uses. On Maven 3.10.2, the full Tycho 5.0.4 build of this repository fails at a bundle with a system-scoped `lib/` jar (refer to [troubleshooting.md](troubleshooting.md#maven-310-cannot-build-this-repository)). To download Maven from a mirror (for example a Nexus), set `MVNW_REPOURL` to the repository URL before the path `/org/apache/maven/`. |
 | `<project>/pom.xml` | Approximately 10 lines. Tycho is manifest-first: `MANIFEST.MF` and `build.properties` stay the source of truth. The pom version agrees with `Bundle-Version` (`1.2.3.qualifier` ↔ `1.2.3-SNAPSHOT`). |
 | `<groupId>.target/<groupId>.target` | It contains the Maven and p2 locations without change. The directory jars that the tool finds on Maven Central (by SHA-1) go into one Maven location. The other jars go into `vendor/plugins/`. The target refers to them as `${project_loc:/<groupId>.target}/vendor/plugins`. |
 | `distribution/category.xml` | It contains the selected features. It also contains, as `<bundle>` entries, the workspace bundles that no feature includes. |
@@ -108,10 +108,10 @@ In Claude Code, the `pde2tycho` skill does these steps and the correction loop f
 
 ## 6. Unexpected behavior
 
-- **An incorrect Directory path does not cause an error.** Tycho 4.0.13 reads these paths
-  as empty folders, without a message: `vendor/plugins`, `${project_loc}/vendor/plugins`
-  and `${basedir}/vendor/plugins`. Only `${project_loc:/<module>}/vendor/plugins` works.
-  PDE also reads this form.
+- **An incorrect Directory path does not cause an error.** We verified `${project_loc:/<module>}/vendor/plugins` on
+  Tycho 5.0.4. PDE also reads this form. On Tycho 4.0.13, the other forms gave empty folders
+  without a message: `vendor/plugins`, `${project_loc}/vendor/plugins` and
+  `${basedir}/vendor/plugins`.
 - **`-Dmaven.test.skip=true` does not stop Tycho from compiling test folders.**
   `tycho-compiler-plugin:testCompile` compiles each folder that has the mark `test="true"`
   in `.classpath`. The generated parent pom unbinds `default-testCompile`. Remove that

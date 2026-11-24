@@ -5,7 +5,8 @@ This document lists known problems with the build and the running product. Each 
 ## Contents
 
 - [Build problems](#build-problems)
-  - [Maven 3.10 cannot start Tycho](#maven-310-cannot-start-tycho)
+  - [Maven 3.10 cannot build this repository](#maven-310-cannot-build-this-repository)
+  - [An old JDK cannot start Tycho](#an-old-jdk-cannot-start-tycho)
   - [`-pl X -am` cannot find an OSGi bundle](#-pl-x--am-cannot-find-an-osgi-bundle)
 - [Start problems](#start-problems)
   - [The script cannot find the OSGi jar](#the-script-cannot-find-the-osgi-jar)
@@ -24,21 +25,43 @@ This document lists known problems with the build and the running product. Each 
 
 ## Build problems
 
-### Maven 3.10 cannot start Tycho
+### Maven 3.10 cannot build this repository
 
-**Symptom:** the build stops with `No implementation for MavenTargetLocationFactory was bound`.
+**Symptom:** the build stops at the module `com.kk.pde.ds.chatbot` with this error:
 
-**Cause:** Tycho 4.0.13 does not start on Maven 3.10.
+```text
+[ERROR] Invalid Collect Request: null -> [... com.kk.pde.ds:com.kk.pde.ds.chatbot:jar:lib/commonmark-0.21.0.jar:1.0.0.qualifier (system) ...]
+```
+
+The modules before it build and pass their tests.
+
+**Cause:** on Maven 3.10.2, the full build with Tycho 5.0.4 fails at `com.kk.pde.ds.chatbot`.
+This bundle has a system-scoped `lib/` jar on its `Bundle-ClassPath`.
 
 **Fix:**
 
-1. Use the Maven Wrapper in the repository root. It pins Maven 3.9.16.
+1. Use the Maven Wrapper in the repository root. It pins Maven 3.9.16, the version that CI uses.
    ```bash
    ./mvnw clean verify
    ```
 2. Do not use the system `mvn` if it is Maven 3.10.
 
 For the build procedure, refer to [build.md](build.md).
+
+### An old JDK cannot start Tycho
+
+**Symptom:** the build stops before the first module with `UnsupportedClassVersionError` and
+`class file version 65.0`.
+
+**Cause:** Tycho 5.0.4 runs on Java 21 or later. The JDK that runs Maven is older.
+
+**Fix:**
+
+1. Set `JAVA_HOME` to a JDK 21 or later.
+   ```bash
+   JAVA_HOME=$(/usr/libexec/java_home -v 21) ./mvnw clean verify
+   ```
+2. The product still runs on Java 8 or later. This requirement is for the build only.
 
 ### `-pl X -am` cannot find an OSGi bundle
 
