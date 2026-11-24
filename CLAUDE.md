@@ -135,8 +135,9 @@ To apply the layout to a different project: `docs/adding-tests-to-a-tycho-projec
   1. `./mvnw --batch-mode --no-transfer-progress clean verify`
   2. `./mvnw --batch-mode --no-transfer-progress -f tools/pde2tycho verify`
 - On Maven 3.10.2, the full build of this repository fails at `com.kk.pde.ds.chatbot` (`Invalid Collect Request`).
-  The wrapper pins Maven 3.9.16, the version that CI uses. Tycho gives the `lib/` jars on the `Bundle-ClassPath` of this bundle
-  to Maven as system-scoped dependencies. The error names one of them. We did not isolate the root cause. Do not use the system `mvn` of the runner.
+  The wrapper pins Maven 3.9.16, the version that CI uses. Tycho 5.0.4 uses the path of each `Bundle-ClassPath` jar
+  (`lib/commonmark-0.21.0.jar`) as a Maven classifier, and Maven Resolver 2.x refuses a `/` in a classifier
+  (Tycho issue #6399, fixed in the `tycho-5.0.x` branch, not released on 2026-11-24). Do not use the system `mvn` of the runner.
 - Dependency minimalism is a deliberate theme (hand-written JSON, OOXML read as a zip, Tesseract
   as a subprocess). Prefer this approach to a new library. Never add a dependency that needs slf4j 2.x.
 - The DS component XML in `OSGI-INF/` is hand-written. SCR reads the XML, not the annotations. When

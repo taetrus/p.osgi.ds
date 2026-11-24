@@ -35,9 +35,19 @@ This document lists known problems with the build and the running product. Each 
 
 The modules before it build and pass their tests.
 
-**Cause:** on Maven 3.10.2, the full build with Tycho 5.0.4 fails at `com.kk.pde.ds.chatbot`.
-Tycho gives the `lib/` jars on the `Bundle-ClassPath` of this bundle to Maven as system-scoped dependencies.
-The error names one of them. We did not isolate the root cause.
+**Cause:** Tycho 5.0.4 gives each jar on the `Bundle-ClassPath` of a bundle to Maven as a
+system-scoped dependency. It uses the path of the jar as the classifier, for example
+`lib/commonmark-0.21.0.jar`. Maven 3.10 uses Maven Resolver 2.x. This resolver refuses a
+classifier that contains `/`. With `-e`, Maven shows the reason:
+
+```text
+Suppressed: java.lang.IllegalArgumentException: Invalid classifier: must not contain '..', '/', '\' or ':': lib/commonmark-0.21.0.jar
+```
+
+`com.kk.pde.ds.chatbot` is the only bundle in this repository with jars on its `Bundle-ClassPath`.
+This is Tycho issue [#6399](https://github.com/eclipse-tycho/tycho/issues/6399). The `tycho-5.0.x`
+branch has a fix (commit `fe12918ff`). On 2026-11-24, no Tycho release has this fix. The latest
+release is 5.0.4.
 
 **Fix:**
 

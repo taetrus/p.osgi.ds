@@ -419,6 +419,6 @@ Do this step only when the user asks. The PR body lists: the version change, the
 
 ## Out of scope
 
-- Compiling against a real Java 8 class library (`~/.m2/toolchains.xml` and `useJDK=BREE`). Tycho 4 and Tycho 5 both compile against the class library of the build JDK. Temurin 8 is installed on this machine, so this is a possible follow-up.
+- Compiling against a real Java 8 class library (`~/.m2/toolchains.xml` and `useJDK=BREE`). Not needed. A probe on 2026-11-24 showed that `tycho-compiler-plugin` already passes `--release 8` to the Eclipse compiler for a `JavaSE-1.8` bundle. Thus a call to `String.isBlank()` (Java 11) fails to compile on Tycho 4.0.13 and on Tycho 5.0.4, with JDK 21 and with JDK 27. `useJDK=BREE` with a Temurin 8 toolchain gave the same result and the same 54 + 6 tests. An earlier version of this line said that Tycho compiles against the class library of the build JDK. That was not correct.
 - Tycho 6. It is not released, and it needs Java 25 to run Maven.
 - A newer Maven in the wrapper.
