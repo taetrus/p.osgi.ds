@@ -72,13 +72,22 @@ For the test commands, see [testing.md](testing.md).
 
 Maven Tycho builds this Eclipse PDE / OSGi DS project without an IDE. Tycho resolves the target platform from Maven Central. Then it makes a p2 repository and runnable products for each platform.
 
-GitHub Actions runs the workflow on each push to `main` and on each pull request to `main`. The workflow is [.github/workflows/build.yml](../.github/workflows/build.yml). It has three jobs. The `build` job runs on `ubuntu-latest` and has these steps:
+GitHub Actions runs the workflow on each push to `main` and on each pull request to `main`. The workflow is [.github/workflows/build.yml](../.github/workflows/build.yml). It has four jobs. The `build` job runs on `ubuntu-latest` and has these steps:
 
 1. Set up JDK 21 (Temurin), with a Maven cache.
 2. Run `./mvnw --batch-mode --no-transfer-progress clean verify`.
 3. Run `./mvnw --batch-mode --no-transfer-progress -f tools/pde2tycho verify`. This step tests the PDE-to-Tycho migration tool, which is outside the Tycho reactor.
 
 The `pde2tycho-windows` job runs the pde2tycho tests on `windows-latest` with `.\mvnw.cmd`. pde2tycho reads Windows paths and generates Windows run scripts, so its tests must also pass on Windows.
+
+The `windows-docs` job runs the Windows commands of the docs on `windows-latest`. It runs each command exactly as the doc shows it, in `cmd.exe`, Windows PowerShell 5.1 and PowerShell 7. The job has 17 checks:
+
+- The full build with `.\mvnw.cmd` and `mvnw.cmd`, the fat JAR, and a build without tests.
+- The single-test commands of [testing.md](testing.md), in each shell.
+- A start of the product with `run.bat`, an HTTP request to `/api/greet` and a PowerShell call to the MCP server.
+- A pde2tycho scan with `pde2tycho.bat`, and a build that continues from `distribution`.
+
+The script [`.github/verify-windows/verify.ps1`](../.github/verify-windows/verify.ps1) finds each command by the text of its line in the doc. If you change such a line, change the anchor in the script too. If an anchor finds no line, or more than one line, the check fails. If one check fails, the job fails. The job summary shows a table of all results.
 
 The `docs` job runs on `ubuntu-latest`. It runs [tools/doccheck/check-docs.sh](../tools/doccheck/check-docs.sh). The script does two checks:
 

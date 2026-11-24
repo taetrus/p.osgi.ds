@@ -131,9 +131,12 @@ To apply the layout to a different project: `docs/adding-tests-to-a-tycho-projec
 - Commits: conventional subjects with a scope. Examples: `feat(rag): ...`, `fix(ecf): ...`,
   `test(spike): ...`, `docs(claude): ...`, `chore(serena): ...`.
 - Work goes to `main` through PRs from `feat/*`, `fix/*` or `docs/*` branches.
-- CI: `.github/workflows/build.yml` runs two steps on Temurin 21:
-  1. `./mvnw --batch-mode --no-transfer-progress clean verify`
-  2. `./mvnw --batch-mode --no-transfer-progress -f tools/pde2tycho verify`
+- CI: `.github/workflows/build.yml` runs on each pull request to `main` and each push to `main`, on Temurin 21:
+  1. `build` (Linux): `./mvnw --batch-mode --no-transfer-progress clean verify`, then `./mvnw --batch-mode --no-transfer-progress -f tools/pde2tycho verify`
+  2. `docs` (Linux): `tools/doccheck/check-docs.sh`
+  3. `pde2tycho-windows`: the pde2tycho tests with `.\mvnw.cmd`
+  4. `windows-docs`: 17 Windows commands of the docs, run as the docs show them (`.github/verify-windows/verify.ps1`).
+     The script finds each command by the text of its doc line. When you change such a line, change its anchor too.
 - On Maven 3.10.2, the full build of this repository fails at `com.kk.pde.ds.chatbot` (`Invalid Collect Request`).
   The wrapper pins Maven 3.9.16, the version that CI uses. Tycho 5.0.4 uses the path of each `Bundle-ClassPath` jar
   (`lib/commonmark-0.21.0.jar`) as a Maven classifier, and Maven Resolver 2.x refuses a `/` in a classifier
@@ -420,7 +423,7 @@ Design and findings: see the spike documents in the Documentation Map.
 | File | Purpose |
 |------|---------|
 | `com.kk.pde.ds.target/*.target` | Target platform. Maven-location dependencies, no p2 repository URLs. Most locations use `includeDependencyDepth="none"` and list each bundle explicitly. Two locations use `includeDependencyDepth="infinite"`: Logback, and the test harness (`org.eclipse.core.runtime` + the Equinox launcher). Test libraries are *not* here. They are pom test dependencies. |
-| `.github/workflows/build.yml` | CI on Temurin 21: `./mvnw clean verify`, then `./mvnw -f tools/pde2tycho verify` |
+| `.github/workflows/build.yml` | CI on Temurin 21: jobs `build`, `docs`, `pde2tycho-windows` and `windows-docs` (see Conventions) |
 | `distribution/p2.product` | Main product definition (bundles, start levels) |
 | `distribution/com.kk.pde.ds.ecf.host.product`, `distribution/com.kk.pde.ds.ecf.consumer.product` | ECF host and ECF consumer products |
 | `distribution/com.kk.pde.ds.spike.master.product`, `distribution/com.kk.pde.ds.spike.detail.product` | Spike master and spike detail products |
