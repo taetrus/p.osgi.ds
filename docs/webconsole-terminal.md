@@ -181,6 +181,15 @@ An `update` of this bundle from the page itself works. Before a fix on 2026-11-2
 the Gogo session interrupted the `update` command, and the bundle stayed INSTALLED. Now the shell
 closes its session after the command ends. `ShellIT` and the product run above showed this.
 
+The close of the session changed again later on 2026-11-25 (the limit below). A product run on
+that final code showed these facts after `update 13` (this bundle) from the page:
+
+1. `exec` gave 202. Five seconds later the bundle was ACTIVE.
+2. A reload gave a new token and `data-shell="true"`.
+3. `ss` gave 202. Its output was on the stream, with `13 ACTIVE` for this bundle.
+4. About 39 seconds after the update, `jstack` showed one `terminal-shell` thread, the new one.
+   The thread of the old bundle revision was gone. No `terminal-shell-close` thread was left.
+
 The wait for the command has a limit of 30 seconds (`Shell.DEFERRED_CLOSE_MILLIS`). After that
 limit, the shell closes the session and stops its worker. This interrupts the command. Thus a
 line such as `stop <this bundle>` followed by a long command does not keep the old worker, the old
@@ -191,20 +200,30 @@ on the product is not tested.
 
 A stop of the Gogo runtime makes SCR call the unbind method of the plugin, and the shell loses
 the `CommandProcessor`. When the stop comes from a page command, the shell closes its session
-only after the command, the same as for this bundle. `ShellIT` showed this. But Gogo 1.1.6 itself closes all its sessions when it stops.
-Thus `stop <Gogo runtime>` still ends with a red `java.lang.InterruptedException` line.
+only after the command, the same as for this bundle. `ShellIT` showed this. But on the product,
+`stop <Gogo runtime>` still ends with a red `java.lang.InterruptedException` line. A probable
+cause, from the Gogo 1.1.6 bytecode and not tested: Gogo closes all its sessions when it stops.
 
 After a `stop <Gogo runtime>` from a Gogo command, the next start of the Gogo runtime fails with
-`IllegalStateException: Thread Print Stream already set`. The bundle stays RESOLVED. The local
-console gives the same result (`gogo: InterruptedException: null`). Thus this is Gogo behavior,
-not behavior of this plugin. A stop and a start from the WebConsole Bundles page (not from a Gogo
-command) work. A product run on 2026-11-25 showed these facts:
+`IllegalStateException: Thread Print Stream already set`. The bundle stays RESOLVED. A stop and
+a start from the WebConsole Bundles page (not from a Gogo command) work. Product runs on
+2026-11-25 showed these facts:
 
 1. A stop from the Bundles page: the bundle was RESOLVED, a reload of the terminal page gave
    `data-shell="false"`, and `exec` gave 503.
 2. A start from the Bundles page: the bundle was ACTIVE, a reload gave `data-shell="true"`, and
    `ss` gave 202 and its output on the stream.
 3. `stop 21` from the page: the bundle was RESOLVED. A later start failed as described above.
+4. `stop 21` from the local console, with this bundle ACTIVE: the console wrote
+   `gogo: InterruptedException: null`, and a later start failed the same way.
+5. The same result with this bundle stopped from the Bundles page before the `stop 21`. The
+   error was in the Equinox log file in `configuration/`, not in the console log.
+6. The same result in a copy of the product where this bundle never started (no `start` flag
+   in `config.ini`).
+
+Thus the failure does not come from this plugin. A probable cause, from the Gogo 1.1.6 bytecode
+and not tested: after its stop, Gogo puts its own stream back into `System.out` when the command
+ends.
 
 Thus do not stop, update or refresh the Gogo runtime from a Gogo command. Use the Bundles page, or
 restart the application. An `update` or a `refresh` of the Gogo runtime is not tested.
