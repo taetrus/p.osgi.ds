@@ -3,7 +3,7 @@ package com.kk.pde.ds.webconsole.terminal;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -37,10 +37,12 @@ public final class StdCapture {
         originalOut = System.out;
         originalErr = System.err;
         AtomicBoolean reported = new AtomicBoolean();
-        teeOut = new Tee(originalOut, assembler("out"), originalErr, reported);
-        teeErr = new Tee(originalErr, assembler("err"), originalErr, reported);
-        streamOut = printStream(teeOut);
-        streamErr = printStream(teeErr);
+        Charset outCharset = consoleCharset("stdout.encoding", "sun.stdout.encoding");
+        Charset errCharset = consoleCharset("stderr.encoding", "sun.stderr.encoding");
+        teeOut = new Tee(originalOut, assembler("out", outCharset), originalErr, reported);
+        teeErr = new Tee(originalErr, assembler("err", errCharset), originalErr, reported);
+        streamOut = printStream(teeOut, outCharset);
+        streamErr = printStream(teeErr, errCharset);
         System.setOut(streamOut);
         System.setErr(streamErr);
         flusher = new Thread(this::flushLoop, "terminal-flush");
@@ -78,16 +80,35 @@ public final class StdCapture {
         return originalErr;
     }
 
-    private LineAssembler assembler(final String type) {
-        return new LineAssembler(StandardCharsets.UTF_8,
+    /**
+     * The charset of a console stream: the system property {@code property} (Java 18+), else
+     * {@code legacyProperty} (Java 8 to 17), else the default charset. An unknown or invalid
+     * name falls back to the next option. Thus the tee writes the same bytes as before.
+     */
+    static Charset consoleCharset(String property, String legacyProperty) {
+        for (String key : new String[] { property, legacyProperty }) {
+            String name = System.getProperty(key);
+            if (name != null) {
+                try {
+                    return Charset.forName(name);
+                } catch (IllegalArgumentException e) {
+                    // Unknown or invalid name: try the next option.
+                }
+            }
+        }
+        return Charset.defaultCharset();
+    }
+
+    private LineAssembler assembler(final String type, Charset charset) {
+        return new LineAssembler(charset,
                 text -> hub.append(type, TextSanitizer.colorByLevel(TextSanitizer.clean(text))));
     }
 
-    private static PrintStream printStream(OutputStream out) {
+    private static PrintStream printStream(OutputStream out, Charset charset) {
         try {
-            return new PrintStream(out, true, "UTF-8");
+            return new PrintStream(out, true, charset.name());
         } catch (UnsupportedEncodingException e) {
-            throw new IllegalStateException(e); // every JVM has UTF-8
+            throw new IllegalStateException(e); // the name comes from a Charset that exists
         }
     }
 

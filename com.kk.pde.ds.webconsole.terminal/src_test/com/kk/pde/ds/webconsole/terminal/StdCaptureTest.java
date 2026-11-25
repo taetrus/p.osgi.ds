@@ -20,7 +20,8 @@ import org.junit.jupiter.api.Test;
  * {@link LineAssembler}, which adds each complete line to the {@link OutputHub} with the
  * type {@code out} or {@code err}. A daemon thread gives out a partial line (a prompt) after
  * the flush interval. {@code uninstall} puts the originals back when they are still the
- * tee, and always disconnects the tee from the hub.
+ * tee, and always disconnects the tee from the hub. The tee encodes and decodes with the
+ * console charset of each stream, so the local console shows the same bytes as before.
  * </p>
  * <p>
  * Each test sets {@code System.out} and {@code System.err} to byte streams, so the test
@@ -121,6 +122,27 @@ class StdCaptureTest {
         tee.println("after");
         assertTrue(text(outBytes).contains("after"));
         assertEquals(0, hub.since(0).lines.size());
+    }
+
+    @Test
+    void charsetFollowsConsoleEncodingProperty() {
+        String saved = System.getProperty("stdout.encoding");
+        System.setProperty("stdout.encoding", "ISO-8859-1");
+        try {
+            capture = new StdCapture(hub, 1000);
+            capture.install();
+            System.out.println("é");
+            byte[] bytes = outBytes.toByteArray();
+            assertEquals((byte) 0xE9, bytes[0]);
+            assertEquals(System.lineSeparator().length() + 1, bytes.length);
+            assertEquals("é", hub.since(0).lines.get(0).text);
+        } finally {
+            if (saved == null) {
+                System.clearProperty("stdout.encoding");
+            } else {
+                System.setProperty("stdout.encoding", saved);
+            }
+        }
     }
 
     @Test
