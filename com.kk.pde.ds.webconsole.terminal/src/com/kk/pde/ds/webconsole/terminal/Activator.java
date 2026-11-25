@@ -15,10 +15,12 @@ public class Activator implements BundleActivator {
     static final int DEFAULT_SCROLLBACK = 50_000;
 
     static final String THREAD_IO = "org.apache.felix.service.threadio.ThreadIO";
-    static final String GOGO_FIRST_WARNING = "Terminal: this bundle started after the Gogo runtime."
+    static final String GOGO_FIRST_WARNING = "Terminal: this bundle started after the Gogo runtime,"
+            + " or it was restarted while Gogo runs."
             + " Printed output stops showing after the first command."
             + " Give com.kk.pde.ds.webconsole.terminal a lower start level than"
-            + " org.apache.felix.gogo.runtime, for example 1.";
+            + " org.apache.felix.gogo.runtime, for example 1,"
+            + " and restart the application after an update of this bundle.";
 
     private StdCapture capture;
 
@@ -32,7 +34,8 @@ public class Activator implements BundleActivator {
     }
 
     /**
-     * Warns when the Gogo runtime started first. The check uses the service name as a string, so
+     * Warns when the Gogo runtime runs already: it started first, or this bundle was stopped and
+     * started again (an update or a refresh). The check uses the service name as a string, so
      * the bundle needs no import. The text goes to the saved original err and to the hub.
      */
     static void warnIfGogoFirst(BundleContext context, OutputHub hub, PrintStream originalErr) {

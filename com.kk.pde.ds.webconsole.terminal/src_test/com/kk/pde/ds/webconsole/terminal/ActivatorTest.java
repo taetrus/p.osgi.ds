@@ -17,9 +17,10 @@ import org.osgi.framework.ServiceReference;
  *
  * <p>
  * Gogo puts its own stream back into {@code System.out} before each command. If this bundle
- * starts after the Gogo runtime, the capture is lost. {@link Activator#warnIfGogoFirst} checks
- * for the {@code ThreadIO} service by name and warns. The tests mock the {@link BundleContext}
- * and give a plain {@link OutputHub} and a byte buffer as the "original err" stream.
+ * starts after the Gogo runtime, or starts again while Gogo runs, the capture is lost.
+ * {@link Activator#warnIfGogoFirst} checks for the {@code ThreadIO} service by name and warns.
+ * The tests mock the {@link BundleContext} and give a plain {@link OutputHub} and a byte buffer
+ * as the "original err" stream. The test compares the full line with the constant.
  * </p>
  */
 class ActivatorTest {
@@ -38,8 +39,8 @@ class ActivatorTest {
         assertEquals(1, hub.since(0).lines.size());
         OutputHub.Line line = hub.since(0).lines.get(0);
         assertEquals("err", line.type);
-        assertTrue(line.text.contains("started after the Gogo runtime"));
-        assertTrue(new String(bytes.toByteArray()).contains("started after the Gogo runtime"));
+        assertEquals("\u001b[31m" + Activator.GOGO_FIRST_WARNING + "\u001b[0m", line.text);
+        assertEquals(Activator.GOGO_FIRST_WARNING + System.lineSeparator(), new String(bytes.toByteArray()));
     }
 
     @Test
