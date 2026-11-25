@@ -248,8 +248,27 @@ The plugin is generic. This repository is its first user. The integration is sma
 
 ## Facts to verify first
 
-These points come from the API signatures and from memory. They are **not tested**. The first
-task of the plan must prove them with a small running prototype, because the design depends on them.
+These points came from the API signatures and from memory. A prototype of the plugin bundle
+(Task 1 of the plan) tested them on the running product (Equinox 3.23, Felix WebConsole 4.3.16,
+Gogo runtime 1.1.6, Felix HTTP Jetty 4.2.26, JDK 21, macOS):
+
+| Fact | Result | Date |
+|------|--------|------|
+| 1 | Pass. `ss` and `scr:list` ran in a session from `createSession`. The bundle list and the component list were in the stream. | 2026-11-25 |
+| 2 | Pass. The page gave 200 in the WebConsole frame. `res/terminal.js` gave 200 (`text/javascript`). `POST exec` gave 202. | 2026-11-25 |
+| 3 | Pass. A Logback line from `GET /api/greet` arrived in an open `curl -N` stream 17 ms after the request. | 2026-11-25 |
+| 4 | Pass for all three types: Logback console lines, a direct `System.out.println` from the activator, and `!ENTRY` from `-consoleLog`. A second instance on port 8081 with HTTPS on the busy port 8080 caused the `!ENTRY`. | 2026-11-25 |
+| 5 | Pass. After the replacement, `ss` and `lb` in the local terminal gave their output and the local prompt. | 2026-11-25 |
+| 6 | Pass on the server. With 1,800 `lb` commands, the buffer stayed at 50,000 lines (4.4 MB of events). The page, the stream and `/api/greet` answered in less than 2 ms. The heap after a full GC was 14.6 MB before, then 19.8 MB and 18.4 MB with a full buffer. The browser part is **not tested**. | 2026-11-25 |
+
+Notes from the prototype:
+
+- The plugin bundle must start before the Gogo runtime (start level 1 here, Gogo at 3). The Gogo
+  runtime replaces `System.out` with its own stream for each thread, and that stream must wrap
+  the capture. The prototype did not test the reverse order.
+- The `lb` command writes about 45 lines, not 100.
+- The `ss` command of the session writes only to the session streams. It does not write to the
+  local terminal.
 
 1. A session from `CommandProcessor.createSession` can run `ss` and `scr:list`.
 2. `AbstractWebConsolePlugin` gets the GET and POST requests for the paths below its label, and
