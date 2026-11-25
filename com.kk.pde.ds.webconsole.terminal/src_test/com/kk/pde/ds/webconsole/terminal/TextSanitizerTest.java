@@ -56,6 +56,11 @@ class TextSanitizerTest {
     }
 
     @Test
+    void removesC1Controls() {
+        assertEquals("a2Jb0;tcd", TextSanitizer.clean("a\u009b2Jb\u009d0;t\u0007c\u0090d"));
+    }
+
+    @Test
     void colorByLevelMarksErrorRed() {
         String r = TextSanitizer.colorByLevel("12:00 ERROR boom");
         assertTrue(r.startsWith(RED));

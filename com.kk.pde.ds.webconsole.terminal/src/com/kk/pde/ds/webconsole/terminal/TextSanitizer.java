@@ -21,7 +21,7 @@ public final class TextSanitizer {
             if (c == ESC) {
                 i = skipEscape(text, i, out);
             } else {
-                if (c == '\t' || (c >= 0x20 && c != 0x7f)) {
+                if (c == '\t' || (c >= 0x20 && c != 0x7f && (c < 0x80 || c > 0x9f))) {
                     out.append(c);
                 }
                 i++;
