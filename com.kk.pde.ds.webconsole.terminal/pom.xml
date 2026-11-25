@@ -1,0 +1,123 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>com.kk.pde.ds</groupId>
+		<artifactId>parent</artifactId>
+		<version>1.0.0-SNAPSHOT</version>
+	</parent>
+
+	<artifactId>com.kk.pde.ds.webconsole.terminal</artifactId>
+	<packaging>eclipse-plugin</packaging>
+
+	<!-- Test-only. Versions and scope come from the parent's <dependencyManagement>.
+	     These never appear in the bundle manifest or the shipped jar. -->
+	<dependencies>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.platform</groupId>
+			<artifactId>junit-platform-launcher</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.platform</groupId>
+			<artifactId>junit-platform-suite-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.platform</groupId>
+			<artifactId>junit-platform-suite-engine</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-junit-jupiter</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>net.bytebuddy</groupId>
+			<artifactId>byte-buddy</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>net.bytebuddy</groupId>
+			<artifactId>byte-buddy-agent</artifactId>
+		</dependency>
+		<!-- The *IT tests talk to the framework. -->
+		<dependency>
+			<groupId>org.osgi</groupId>
+			<artifactId>org.osgi.framework</artifactId>
+		</dependency>
+	</dependencies>
+
+	<!-- Test sources live in src_test/ (marked test="true" in .classpath). Listing a plugin
+	     here opts this bundle in to that tier; the executions are managed in the parent. -->
+	<build>
+		<plugins>
+			<!-- Tier 1: *Test classes, plain JVM. Tier 2: *IT classes, inside Equinox. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>tycho-surefire-plugin</artifactId>
+				<configuration>
+					<!-- The resolver installs the Gogo runtime but does not start it. The IT needs its
+					     CommandProcessor service. The parent already starts Felix SCR.
+					     This bundle starts before Gogo, as in distribution/p2.product. Gogo's ThreadIO
+					     wraps the System.out that it finds at its start, and it sets that stream again
+					     for each command. A capture installed after Gogo is lost at the first command. -->
+					<bundleStartLevel combine.children="append">
+						<bundle>
+							<id>com.kk.pde.ds.webconsole.terminal</id>
+							<level>1</level>
+							<autoStart>true</autoStart>
+						</bundle>
+						<bundle>
+							<id>org.apache.felix.gogo.runtime</id>
+							<level>2</level>
+							<autoStart>true</autoStart>
+						</bundle>
+					</bundleStartLevel>
+				</configuration>
+			</plugin>
+			<!-- Needed by tier 2 only.
+			     1. plugin-test resolves its test runtime under this bundle's own BREE (JavaSE-1.8),
+			        but the Tycho test harness (org.eclipse.core.runtime and friends) requires
+			        JavaSE-17. The bundle still compiles against the Java 8 profile; only the
+			        resolver stops enforcing the EE. The test JVM is 21+ anyway.
+			     2. Tycho's packaging adds `Require-Capability: osgi.extender=osgi.component` to
+			        the built manifest (this bundle has DS components), but nothing in the target
+			        platform is *required* to provide it, so the resolver must be told to bring
+			        Felix SCR along. The parent's tycho-surefire configuration starts it.
+			     3. The Gogo import is optional, so the resolver does not bring the Gogo runtime
+			        by itself. The tier-2 tests need a real CommandProcessor. -->
+			<plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>target-platform-configuration</artifactId>
+				<configuration>
+					<resolveWithExecutionEnvironmentConstraints>false</resolveWithExecutionEnvironmentConstraints>
+					<dependency-resolution>
+						<extraRequirements>
+							<requirement>
+								<type>eclipse-plugin</type>
+								<id>org.apache.felix.scr</id>
+								<versionRange>0.0.0</versionRange>
+							</requirement>
+							<requirement>
+								<type>eclipse-plugin</type>
+								<id>org.apache.felix.gogo.runtime</id>
+								<versionRange>0.0.0</versionRange>
+							</requirement>
+						</extraRequirements>
+					</dependency-resolution>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+</project>

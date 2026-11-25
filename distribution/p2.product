@@ -32,6 +32,7 @@
       <plugin id="com.kk.pde.ds.app"/>
       <plugin id="com.kk.pde.ds.imp"/>
       <plugin id="com.kk.pde.ds.rest"/>
+      <plugin id="com.kk.pde.ds.webconsole.terminal"/>
       <plugin id="com.kk.pde.ds.mcp.api"/>
       <plugin id="com.kk.pde.ds.mcp.server"/>
       <plugin id="com.kk.pde.ds.mcp.client"/>
@@ -74,6 +75,7 @@
       <plugin id="com.kk.pde.ds.app" autoStart="true" startLevel="4" />
       <plugin id="com.kk.pde.ds.imp" autoStart="true" startLevel="4" />
       <plugin id="com.kk.pde.ds.rest" autoStart="true" startLevel="4" />
+      <plugin id="com.kk.pde.ds.webconsole.terminal" autoStart="true" startLevel="1" />
       <plugin id="com.kk.pde.ds.mcp.api" autoStart="true" startLevel="4" />
       <plugin id="com.kk.pde.ds.mcp.server" autoStart="true" startLevel="4" />
       <plugin id="com.kk.pde.ds.mcp.client" autoStart="true" startLevel="4" />

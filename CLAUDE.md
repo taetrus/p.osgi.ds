@@ -39,6 +39,7 @@ in the root. All documentation follows ASD-STE100 Simplified Technical English. 
 | `docs/declarative-services.md` | DS components, hand-written `OSGI-INF` XML, binding flow |
 | `docs/rest-api.md` | REST endpoints, limits and errors |
 | `docs/webconsole-and-health-checks.md` | Felix WebConsole and health checks |
+| `docs/webconsole-terminal.md` | The Terminal page of the WebConsole: console output, Gogo commands, properties, limits, manual test procedure |
 | `docs/mcp-server.md` | MCP server, the 9 tools, MCP client, how to add a tool |
 | `docs/llm-and-chatbot.md` | LLM agent loop, `/llm/chat`, chatbot UI and its configuration |
 | `docs/ecf-remote-services.md` | Narrative "how and why" of the ECF remote services, with the bugs and the lessons |
@@ -88,7 +89,7 @@ name selects the tier:
 - `*Test` is tier 1. A plain JVM runs it through maven-surefire (phase `test`).
 - `*IT` is tier 2. A live Equinox runs it through `tycho-surefire:plugin-test` (phase `integration-test`).
 
-There are 54 tier-1 tests and 6 tier-2 tests. The Javadoc of each test class is a short tutorial.
+There are 122 tier-1 tests and 10 tier-2 tests. The Javadoc of each test class is a short tutorial.
 This layout is the reference for a larger Tycho project. Keep it clean and easy to copy.
 
 ```bash
@@ -229,6 +230,15 @@ Open the web console at http://localhost:8080/system/console
 
 The DS tab shows all Declarative Services components and their status.
 
+### Terminal
+
+The bundle `com.kk.pde.ds.webconsole.terminal` adds the page http://localhost:8080/system/console/terminal.
+The page shows the console output of the application (`System.out` and `System.err`) and runs Gogo
+commands. The same WebConsole login protects it. The bundle must start before the Gogo runtime
+(start level 1 here, Gogo at level 3), or printed output stops showing after the first command.
+Properties: `terminal.scrollback.lines`, `terminal.shell.enabled`, `terminal.prompt`.
+Details: `docs/webconsole-terminal.md`.
+
 ## Module Structure
 
 ```
@@ -237,6 +247,7 @@ com.kk.pde.ds.api      → IGreet interface (service contract)
 com.kk.pde.ds.imp      → Greet implementation (service provider)
 com.kk.pde.ds.app      → App consumer (@Reference injection, starts Clock + Chatbot UI)
 com.kk.pde.ds.rest     → REST API via HTTP Whiteboard (@Reference injection)
+com.kk.pde.ds.webconsole.terminal → Terminal page for the Felix WebConsole (generic plugin: console output and Gogo commands)
 com.kk.pde.ds.mcp.api  → MCP tool contract (IMcpTool, IMcpToolRegistry)
 com.kk.pde.ds.mcp.server → MCP server (HTTP servlet + tool registry + 7 built-in tools)
 com.kk.pde.ds.mcp.client → MCP client (one-shot daemon thread: calls echo, greet, system_info via HTTP/JSON-RPC)
@@ -261,7 +272,7 @@ The MCP tool registry has 9 tools: 7 in `mcp.server` (`echo`, `greet`, `system_i
 `date_time`, `bundle_list`, `http_fetch`) and 2 in `rag` (`document_search`, `ingest_documents`).
 
 Tests (not shipped) are in `src_test/` of `imp` (`GreetTest`, `GreetHealthCheckTest`,
-`GreetServiceIT`), `mcp.api` (`JsonTest`), `chatbot` (`ChatConfigTest`) and `spike.master` (`DockLayoutTest`,
+`GreetServiceIT`), `mcp.api` (`JsonTest`), `chatbot` (`ChatConfigTest`), `webconsole.terminal` (10 `*Test` classes and `ShellIT`, `TerminalPluginIT`) and `spike.master` (`DockLayoutTest`,
 `SpikeValueObjectsTest`, `CatalogServiceImplTest`, `MasterAppTest`, `CatalogServiceIT`).
 See Testing above.
 

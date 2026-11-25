@@ -62,6 +62,7 @@ felix.webconsole.password=admin
 | **Components** | Shows the DS components through the DS plugin (all `@Component` definitions) |
 | **Health Check** | Shows the health check results through the health check WebConsole plugin |
 | **Configuration** | Shows the OSGi configurations, and lets you edit them |
+| **Terminal** | Shows the console output of the application and runs Gogo commands. See [webconsole-terminal.md](webconsole-terminal.md) |
 
 ### Included WebConsole bundles
 
@@ -70,6 +71,8 @@ The target platform (`com.kk.pde.ds.target/*.target`) supplies these bundles:
 - `org.apache.felix.webconsole:4.3.16`
 - `org.apache.felix.webconsole.plugins.ds:2.1.0` (DS plugin)
 - `org.apache.felix.inventory:1.1.0` (the DS plugin needs it)
+
+The bundle `com.kk.pde.ds.webconsole.terminal` of this repository adds the **Terminal** tab. See [webconsole-terminal.md](webconsole-terminal.md).
 
 ## Health checks
 

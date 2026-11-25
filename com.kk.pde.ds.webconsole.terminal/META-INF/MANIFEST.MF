@@ -1,0 +1,15 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: com.kk.pde.ds.webconsole.terminal
+Bundle-SymbolicName: com.kk.pde.ds.webconsole.terminal
+Bundle-Version: 1.0.0.qualifier
+Bundle-Activator: com.kk.pde.ds.webconsole.terminal.Activator
+Import-Package: javax.servlet;version="3.1.0",
+ javax.servlet.http;version="3.1.0",
+ org.apache.felix.service.command;version="[1.0,2)";resolution:=optional,
+ org.apache.felix.webconsole;version="[3.3,4)",
+ org.osgi.framework;version="1.8.0"
+Service-Component: OSGI-INF/com.kk.pde.ds.webconsole.terminal.TerminalPlugin.xml
+Bundle-Vendor: KK
+Automatic-Module-Name: com.kk.pde.ds.webconsole.terminal
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8

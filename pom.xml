@@ -266,6 +266,7 @@
 		<module>com.kk.pde.ds.imp</module>
 		<module>com.kk.pde.ds.app</module>
 		<module>com.kk.pde.ds.rest</module>
+		<module>com.kk.pde.ds.webconsole.terminal</module>
 		<module>com.kk.pde.ds.mcp.api</module>
 		<module>com.kk.pde.ds.mcp.server</module>
 		<module>com.kk.pde.ds.mcp.client</module>

@@ -21,6 +21,7 @@ This is by design.
 | 4 | `settings/chatbot.properties` | The user can type an API key in the Swing **Settings** dialog and save it. The dialog then writes the key to this file in **plaintext**, with default permissions. The dialog shows the saved key again in the password field. A key from an environment variable or from `-D` does not go into the file: the dialog shows only saved values. |
 | 5 | Logging | The code logs chat prompts, LLM responses and **retrieved document text** at `INFO` (the default level). Thus document contents can go into `consoleLog` and the log files. The code does not log API keys. |
 | 6 | Felix WebConsole | The WebConsole has the well-known demo credentials `admin`/`admin` (`distribution/configuration/config.ini`). |
+| 7 | `/system/console/terminal` | The page runs Gogo commands and shows all console output of the application. The WebConsole login (`admin`/`admin`) is the only protection. A request that runs a command also needs a random token, which only the page has. The console output can contain secrets that the application prints. A user who can log in can already install a bundle, so the page makes this access easier and does not add a new type. |
 
 ## Before you expose this outside localhost
 
@@ -43,6 +44,9 @@ Before you bind to a non-loopback interface, do all of these steps:
 10. **Change the log level of content logging** (chat text, retrieved documents) to `DEBUG`.
 11. **Change the WebConsole credentials** from `admin`/`admin`. Alternatively, remove the
     WebConsole from the product.
+12. **Protect the Terminal page.** The password change of item 11 protects it. Alternatively, set
+    `terminal.shell.enabled=false`. Then the page shows output only and runs no command. The output
+    stays readable for each user who can log in.
 
 The related code is in these bundles:
 

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.3.0" name="com.kk.pde.ds.webconsole.terminal.TerminalPlugin" activate="activate" deactivate="deactivate">
+   <property name="felix.webconsole.label" value="terminal"/>
+   <property name="felix.webconsole.title" value="Terminal"/>
+   <reference name="CommandProcessor" interface="org.apache.felix.service.command.CommandProcessor" cardinality="0..1" policy="dynamic" bind="bindProcessor" unbind="unbindProcessor"/>
+   <service>
+      <provide interface="javax.servlet.Servlet"/>
+   </service>
+   <implementation class="com.kk.pde.ds.webconsole.terminal.TerminalPlugin"/>
+</scr:component>

@@ -55,6 +55,7 @@ public class Main {
         // Start level 1: framework essentials
         cfg("org.apache.felix.configadmin",           1, true);
         cfg("org.apache.felix.metatype",              1, true);
+        cfg("com.kk.pde.ds.webconsole.terminal",      1, true);
 
         // Start level 2: core services
         cfg("org.apache.felix.scr",                   2, true);
