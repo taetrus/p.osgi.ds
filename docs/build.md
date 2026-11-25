@@ -143,7 +143,7 @@ The fat JAR is a separate build. See [fat-jar.md](fat-jar.md).
 </properties>
 ```
 
-The parent POM has 19 modules. It also sets the versions of the test libraries (JUnit 5.12.2, Mockito 5.14.2, ByteBuddy 1.18.13). The test libraries are test-scope dependencies only.
+The parent POM has 20 modules. It also sets the versions of the test libraries (JUnit 5.12.2, Mockito 5.14.2, ByteBuddy 1.18.13). The test libraries are test-scope dependencies only.
 
 ### Build plugins
 
@@ -339,7 +339,7 @@ The `distribution/` module also has four more product files: `com.kk.pde.ds.ecf.
 | Level | Bundles | Purpose |
 |-------|---------|---------|
 | **0** (default) | http.jetty, http.servlet-api, webconsole, webconsole.plugins.ds, inventory, osgi.service.servlet | HTTP infrastructure. Level 0 means "use the default start level". See the note below. |
-| **1** | osgi, configadmin, metatype | Core framework |
+| **1** | osgi, configadmin, metatype, webconsole.terminal | Core framework. The terminal bundle must start before the Gogo runtime (level 3). See [webconsole-terminal.md](webconsole-terminal.md#start-order). |
 | **2** | scr, service.component, service.component.annotations, util.function, util.promise, fileinstall, service.event, eventadmin, healthcheck.api, healthcheck.core | Services |
 | **3** | gogo.*, equinox.console, healthcheck.generalchecks, healthcheck.webconsoleplugin | Console and plugins |
 | **4** | api, imp, app, rest, mcp.api, mcp.server, mcp.client, mcp.llm, chatbot, rag | Application bundles (auto-start) |
@@ -358,11 +358,12 @@ The fat JAR uses a different start-level table. See [fat-jar.md](fat-jar.md#star
 
 `p2.product` lists the plugins below. Because `autoIncludeRequirements="true"`, Tycho also adds their requirements (for example Logback and slf4j) to the built product. Thus the `plugins/` directory contains more JARs than the list.
 
-**Application (10)**:
+**Application (11)**:
 
 - `com.kk.pde.ds.api`, `com.kk.pde.ds.imp`, `com.kk.pde.ds.app`, `com.kk.pde.ds.rest`
 - `com.kk.pde.ds.mcp.api`, `com.kk.pde.ds.mcp.server`, `com.kk.pde.ds.mcp.client`, `com.kk.pde.ds.mcp.llm`
 - `com.kk.pde.ds.chatbot`, `com.kk.pde.ds.rag`
+- `com.kk.pde.ds.webconsole.terminal` (start level 1, see [webconsole-terminal.md](webconsole-terminal.md#start-order))
 
 **RAG libraries**: `org.apache.pdfbox`, `org.apache.pdfbox.fontbox`, `org.apache.commons.commons-logging`
 
@@ -379,7 +380,7 @@ The fat JAR uses a different start-level table. See [fat-jar.md](fat-jar.md#star
 
 ```
 p.osgi.ds/
-├── pom.xml                           # Parent POM (Tycho build, 19 modules)
+├── pom.xml                           # Parent POM (Tycho build, 20 modules)
 ├── mvnw, mvnw.cmd                    # Maven Wrapper (use these, not the system mvn)
 ├── .mvn/wrapper/                     # Wrapper config (pins Maven 3.9.16)
 ├── .github/workflows/build.yml       # CI: 4 jobs on Temurin 21 (see Continuous integration)
@@ -429,6 +430,20 @@ p.osgi.ds/
 │   └── src/com/kk/pde/ds/rest/
 │       ├── GreetServlet.java         # HTTP Whiteboard servlet
 │       └── GreetResponse.java        # Response DTO
+│
+├── com.kk.pde.ds.webconsole.terminal/ # Terminal page of the WebConsole (generic plugin)
+│   ├── pom.xml
+│   ├── META-INF/MANIFEST.MF          # Bundle-Activator: starts the output capture
+│   ├── OSGI-INF/                     # DS descriptor of TerminalPlugin
+│   ├── res/                          # Browser files (xterm.js 6.0.0 and add-ons, terminal.js, CSS, licenses)
+│   ├── src/com/kk/pde/ds/webconsole/terminal/
+│   │   ├── Activator.java, TerminalRuntime.java  # Bundle start, shared parts
+│   │   ├── StdCapture.java, LineAssembler.java   # Capture of System.out and System.err
+│   │   ├── OutputHub.java, SseEncoder.java       # Ring buffer and event stream
+│   │   ├── Shell.java                            # Gogo session and worker thread
+│   │   ├── TerminalPlugin.java                   # WebConsole plugin (page, stream, exec)
+│   │   └── TextSanitizer.java, Token.java        # Output cleaning and request token
+│   └── src_test/                     # 9 *Test classes, ShellIT, TerminalPluginIT
 │
 ├── com.kk.pde.ds.mcp.api/            # MCP tool API bundle
 │   ├── pom.xml
@@ -604,9 +619,9 @@ The tables below give the purpose of the important files. The tree in [Project s
 
 | Metric | Count |
 |--------|-------|
-| Maven modules | 19 in the root pom. The reactor has 20 projects with the parent. `fatjar` and `tools/pde2tycho` build separately. |
-| Application bundles | 16 (api, imp, app, rest, mcp.api/server/client/llm, chatbot, rag, ecf.api/host/consumer, spike.api/master/detail) |
-| Tests | 60 in 10 classes across 4 bundles: 54 plain-JVM (`*Test`) and 6 in-framework (`*IT`). JUnit 5 and Mockito. |
+| Maven modules | 20 in the root pom. The reactor has 21 projects with the parent. `fatjar` and `tools/pde2tycho` build separately. |
+| Application bundles | 17 (api, imp, app, rest, webconsole.terminal, mcp.api/server/client/llm, chatbot, rag, ecf.api/host/consumer, spike.api/master/detail) |
+| Tests | 126 in 21 classes across 5 bundles: 117 plain-JVM (`*Test`) and 9 in-framework (`*IT`). JUnit 5 and Mockito. |
 | DS components | 31 (`OSGI-INF/*.xml` descriptors) |
 | MCP tools | 9 (echo, greet, system_info, calculator, date_time, bundle_list, http_fetch, document_search, ingest_documents) |
 | Health checks | 7 (1 custom and 6 file-based) |

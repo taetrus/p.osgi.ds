@@ -17,6 +17,7 @@ This document lists known problems with the build and the running product. Each 
   - [A service is not available](#a-service-is-not-available)
 - [WebConsole and health check problems](#webconsole-and-health-check-problems)
   - [The WebConsole is not accessible](#the-webconsole-is-not-accessible)
+  - [The Terminal page shows no output](#the-terminal-page-shows-no-output)
   - [The health checks do not show](#the-health-checks-do-not-show)
 - [LLM and chatbot problems](#llm-and-chatbot-problems)
   - [`No endpoints found for <model>`](#no-endpoints-found-for-model)
@@ -196,6 +197,34 @@ For the WebConsole and the health checks, refer to [webconsole-and-health-checks
 3. Make sure that `config.ini` contains `org.apache.felix.http.enable=true`.
 4. Make sure that no other process uses port 8080. Refer to [Port 8080 is already in use](#port-8080-is-already-in-use).
 5. The ECF and spike products do not include Felix HTTP or the WebConsole. Use the main product (`run.sh` or `run.bat`).
+
+### The Terminal page shows no output
+
+**Symptom:** the Terminal page at http://localhost:8080/system/console/terminal shows no output. Or output stops showing after the first command.
+
+**Causes and fixes:**
+
+1. **The bundle started after the Gogo runtime.** The Gogo runtime puts its own stream into
+   `System.out` before each command. If the bundle `com.kk.pde.ds.webconsole.terminal` starts
+   later, printed output stops showing after the first command. A tier-2 test failed this way.
+   In this case the bundle writes this warning on the original `System.err`. It also shows the
+   warning as a red line on the page:
+
+   ```text
+   Terminal: this bundle started after the Gogo runtime. Printed output stops showing after the first command. Give com.kk.pde.ds.webconsole.terminal a lower start level than org.apache.felix.gogo.runtime, for example 1.
+   ```
+
+   Give the bundle a lower start level than `org.apache.felix.gogo.runtime`. In this product the
+   bundle has level 1 (`distribution/p2.product`) and Gogo has level 3. Start level 1 is the
+   earliest level. A bundle cannot set its own start level.
+2. **The output came from before the bundle start.** The page does not show it. The capture
+   starts with the bundle.
+3. **A different component replaced `System.out` after the bundle.** The page does not capture
+   the output after that.
+4. **The connection is closed after a product restart.** The page says so and becomes read-only.
+   Reload the page.
+
+See [webconsole-terminal.md](webconsole-terminal.md).
 
 ### The health checks do not show
 

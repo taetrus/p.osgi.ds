@@ -263,15 +263,18 @@ Gogo runtime 1.1.6, Felix HTTP Jetty 4.2.26, JDK 21, macOS):
 
 Notes from the prototype:
 
-- The plugin bundle must start before the Gogo runtime (start level 1 here, Gogo at 3). The Gogo
-  runtime replaces `System.out` with its own stream for each thread, and that stream must wrap
-  the capture. The reverse order fails: in a tier-2 run with Gogo at level 2 and the plugin
-  bundle at level 4, the first Gogo command set `System.out` back to the Gogo stream, and
-  the capture got no more lines (2026-11-25, `TerminalPluginIT`). The module pom thus starts
-  the plugin bundle at level 1 in the tier-2 runtime.
+- The plugin bundle must start before the Gogo runtime (tested). The Gogo runtime puts its own
+  stream into `System.out` before each command, and that stream must wrap the capture. The
+  reverse order fails. In a tier-2 run with Gogo at level 2 and the plugin bundle at level 4,
+  the first Gogo command set `System.out` back to the Gogo stream, and the capture got no more
+  lines (2026-11-25, `TerminalPluginIT`). In this repository the plugin bundle starts at level 1
+  and Gogo at level 3. The module pom starts the plugin bundle at level 1 in the tier-2 runtime.
+  If the bundle starts after Gogo, it writes a warning (see `Activator`).
 - The `lb` command writes about 45 lines, not 100.
 - The `ss` command of the session writes only to the session streams. It does not write to the
   local terminal.
+
+The six facts above are tested. Their numbers in the table are the numbers of these points:
 
 1. A session from `CommandProcessor.createSession` can run `ss` and `scr:list`.
 2. `AbstractWebConsolePlugin` gets the GET and POST requests for the paths below its label, and

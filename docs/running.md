@@ -204,6 +204,16 @@ The source file is `distribution/configuration/config.ini`. The build puts it in
 
 For the WebConsole and the health checks, refer to [webconsole-and-health-checks.md](webconsole-and-health-checks.md).
 
+The Terminal page of the WebConsole reads three more properties. You can set them in `config.ini` or with `-D`:
+
+| Property | Default | Meaning |
+|----------|---------|---------|
+| `terminal.scrollback.lines` | `50000` | Lines in the server buffer and in the browser scrollback |
+| `terminal.shell.enabled` | `true` | `false` makes the page read-only (no commands) |
+| `terminal.prompt` | `osgi> ` | The prompt text on the page |
+
+For the page, refer to [webconsole-terminal.md](webconsole-terminal.md).
+
 ### Felix File Install
 
 Felix File Install loads OSGi configurations from files. These lines in `config.ini` configure it:
@@ -510,6 +520,7 @@ osgi> exit                               # then type y
 - [build.md](build.md): build the product.
 - [troubleshooting.md](troubleshooting.md): symptoms, causes and fixes.
 - [webconsole-and-health-checks.md](webconsole-and-health-checks.md): the WebConsole and the health checks.
+- [webconsole-terminal.md](webconsole-terminal.md): the Terminal page of the WebConsole.
 - [ecf-remote-services.md](ecf-remote-services.md): the two-JVM ECF demo.
 - [rag-reference.md](rag-reference.md): Document Q&A configuration.
 - [../SECURITY.md](../SECURITY.md): the HTTP surface on port 8080 is for localhost only.

@@ -28,6 +28,7 @@ This repository is a **showcase**. It is a Java 8 OSGi application built with **
 | **Declarative Services** | API, implementation and consumer in separate bundles, with `@Component`, `@Reference`, `@Activate` and `@Deactivate` (Felix SCR) | [`docs/declarative-services.md`](docs/declarative-services.md), [`docs/architecture.md`](docs/architecture.md) |
 | **HTTP Whiteboard (REST API)** | REST endpoints for an OSGi service through the HTTP Whiteboard servlet pattern | [`docs/rest-api.md`](docs/rest-api.md) |
 | **Felix WebConsole and Health Checks** | Web administration with the DS plugin, plus custom and file-configured health checks | [`docs/webconsole-and-health-checks.md`](docs/webconsole-and-health-checks.md) |
+| **WebConsole Terminal** | A WebConsole page that shows the console output in the browser and runs Gogo commands. The bundle is generic, so other applications can use it | [`docs/webconsole-terminal.md`](docs/webconsole-terminal.md) |
 | **MCP Server and Client** | A Model Context Protocol server (JSON-RPC 2.0 over HTTP) with 9 tools in an `IMcpTool` registry. A new tool is a new DS component | [`docs/mcp-server.md`](docs/mcp-server.md), [`docs/mcp-server-testing.md`](docs/mcp-server-testing.md) |
 | **LLM Integration and Chatbot UI** | A bridge to OpenAI-compatible APIs with an agent loop that calls MCP tools, and a Swing chat window | [`docs/llm-and-chatbot.md`](docs/llm-and-chatbot.md) |
 | **RAG (Document Q&A)** | Parse, chunk, embed and store documents. The LLM searches them with the `document_search` tool | [`docs/rag-reference.md`](docs/rag-reference.md), [`docs/rag-design.md`](docs/rag-design.md) |
@@ -35,7 +36,7 @@ This repository is a **showcase**. It is a Java 8 OSGi application built with **
 | **ECF Remote Services (RSA)** | A DS `@Reference` in one JVM that a service in a second JVM satisfies over `ecftcp://`, with file-based EDEF discovery | [`docs/ecf-remote-services.md`](docs/ecf-remote-services.md) |
 | **Spike: multi-frame, multi-JVM UI** | Two JVMs show one combined UI. They share only a few integers (`DockLayout`) over ECF | [`docs/spike-isolation-results.md`](docs/spike-isolation-results.md) |
 | **Fat JAR launcher** | The full application as one `java -jar` file, next to the p2 product | [`docs/fat-jar.md`](docs/fat-jar.md) |
-| **Two-tier testing** | Tests inside the bundles. `*Test` classes run in a plain JVM. `*IT` classes run inside a live Equinox. JUnit 5 and Mockito, 60 tests | [`docs/testing.md`](docs/testing.md) |
+| **Two-tier testing** | Tests inside the bundles. `*Test` classes run in a plain JVM. `*IT` classes run inside a live Equinox. JUnit 5 and Mockito, 126 tests | [`docs/testing.md`](docs/testing.md) |
 | **PDE to Tycho migration** | `tools/pde2tycho`, a CLI that moves an Eclipse PDE workspace to a Tycho build | [`docs/pde-to-tycho-migration.md`](docs/pde-to-tycho-migration.md) |
 | **Few dependencies** | A hand-written JSON parser, OOXML read as a zip (no POI or Tika), and Tesseract as a subprocess (no Tess4J) | [`docs/rag-design.md`](docs/rag-design.md) |
 
@@ -106,6 +107,7 @@ For more detail, see [`docs/build.md`](docs/build.md).
 
 4. Open the services:
    - WebConsole: http://localhost:8080/system/console (user `admin`, password `admin`)
+   - Terminal (console output and Gogo commands): http://localhost:8080/system/console/terminal (same login)
    - REST API: http://localhost:8080/api/greet
 
 5. To stop the application, type `exit` at the `osgi>` prompt. Then type `y`.
@@ -135,6 +137,7 @@ All documentation is in [`docs/`](docs/). It follows ASD-STE100 Simplified Techn
 | [`docs/declarative-services.md`](docs/declarative-services.md) | DS components, annotations, hand-written `OSGI-INF` XML, binding flow |
 | [`docs/rest-api.md`](docs/rest-api.md) | REST endpoints, limits and errors |
 | [`docs/webconsole-and-health-checks.md`](docs/webconsole-and-health-checks.md) | Felix WebConsole and health checks |
+| [`docs/webconsole-terminal.md`](docs/webconsole-terminal.md) | The Terminal page of the WebConsole: console output and Gogo commands |
 | [`docs/mcp-server.md`](docs/mcp-server.md) | MCP server, the 9 tools, MCP client, how to add a tool |
 | [`docs/mcp-server-testing.md`](docs/mcp-server-testing.md) | Manual JSON-RPC test procedure for the MCP server |
 | [`docs/llm-and-chatbot.md`](docs/llm-and-chatbot.md) | LLM agent loop, `/llm/chat`, chatbot UI, configuration |

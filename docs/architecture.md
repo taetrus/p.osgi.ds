@@ -10,7 +10,7 @@ The build makes five products. They make three separate runtimes:
 
 | Runtime | Products | Bundles | Transport |
 |---|---|---|---|
-| Main product | `distribution/p2.product` | `api`, `imp`, `app`, `rest`, `mcp.api`, `mcp.server`, `mcp.client`, `mcp.llm`, `chatbot`, `rag` | HTTP on port 8080 (`org.osgi.service.http.port=8080` in `distribution/configuration/config.ini`) |
+| Main product | `distribution/p2.product` | `api`, `imp`, `app`, `rest`, `webconsole.terminal`, `mcp.api`, `mcp.server`, `mcp.client`, `mcp.llm`, `chatbot`, `rag` | HTTP on port 8080 (`org.osgi.service.http.port=8080` in `distribution/configuration/config.ini`) |
 | ECF pair | `com.kk.pde.ds.ecf.host.product`, `com.kk.pde.ds.ecf.consumer.product` | `ecf.api`, `ecf.host`, `ecf.consumer` | ECF Generic provider on `ecftcp://localhost:3288/server`, static EDEF file |
 | Spike pair | `com.kk.pde.ds.spike.master.product`, `com.kk.pde.ds.spike.detail.product` | `spike.api`, `spike.master`, `spike.detail` | ECF Generic provider on `ecftcp://localhost:3289/catalog`, static EDEF file |
 
@@ -186,6 +186,7 @@ flowchart LR
 | `com.kk.pde.ds.imp` | Main | `Greet`, `GreetHealthCheck` | `IGreet`, `HealthCheck` | `GreetHealthCheck` → `IGreet` |
 | `com.kk.pde.ds.app` | Main | `App` | none | `IGreet`, `ChatService` |
 | `com.kk.pde.ds.rest` | Main | `GreetServlet` | `Servlet` at `/api/greet/*` | `IGreet` |
+| `com.kk.pde.ds.webconsole.terminal` | Main | `TerminalPlugin` | `Servlet` (WebConsole plugin, label `terminal`) | Gogo `CommandProcessor` (optional, 0..1, dynamic) |
 | `com.kk.pde.ds.mcp.api` | Main | none | exports `IMcpTool`, `IMcpToolRegistry`, `Json` | none |
 | `com.kk.pde.ds.mcp.server` | Main | `McpToolRegistry`, `McpServlet`, 7 tools | `IMcpToolRegistry`, `Servlet` at `/mcp`, 7 × `IMcpTool` | `IMcpTool` (0..n dynamic), `IMcpToolRegistry`, `IGreet` (`GreetTool`) |
 | `com.kk.pde.ds.mcp.client` | Main | `McpClient` | none | none (HTTP only) |

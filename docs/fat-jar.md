@@ -76,7 +76,7 @@ The JAR contains only the main product. The ECF and spike bundles are not in it.
 
 | Bundles | Fat JAR (`Main`) | Built product (`config.ini`) |
 |---------|------------------|------------------------------|
-| configadmin, metatype | 1, start | 1, start |
+| configadmin, metatype, webconsole.terminal | 1, start | 1, start |
 | scr, service.component, service.component.annotations, util.function, util.promise, eventadmin, service.event, fileinstall, healthcheck.api, healthcheck.core | 2, start | 2, start |
 | gogo.*, equinox.console, healthcheck.generalchecks, healthcheck.webconsoleplugin | 3, start | 3, start |
 | http.jetty, http.servlet-api, webconsole, webconsole.plugins.ds, inventory | 4, start | 4, start. `p2.product` sets level 0, which means the default level 4. |
