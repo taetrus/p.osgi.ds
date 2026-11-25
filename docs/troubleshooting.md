@@ -49,6 +49,10 @@ This is Tycho issue [#6399](https://github.com/eclipse-tycho/tycho/issues/6399).
 branch has a fix (commit `fe12918ff`). On 2026-11-24, no Tycho release has this fix. The latest
 release is 5.0.4.
 
+On 2026-11-25, a full build with Tycho 5.0.5-SNAPSHOT (built on 2026-11-20) passed on Maven
+3.10.0. All modules built, and the 54 tier-1 tests and 6 tier-2 tests passed. The final 5.0.5
+release is not tested.
+
 **Fix:**
 
 1. Use the Maven Wrapper in the repository root. It pins Maven 3.9.16, the version that CI uses.
