@@ -297,9 +297,13 @@
 
     // ---- Input -----------------------------------------------------------------------------
 
+    // Printable characters only. A tab becomes a space. Typed text and each pasted line use it.
+    function printable(text) {
+        return text.replace(/\t/g, ' ').replace(/[\x00-\x1f\x7f]/g, '');
+    }
+
     function insert(text) {
-        // Printable characters only. A tab becomes a space.
-        text = text.replace(/\t/g, ' ').replace(/[\x00-\x1f\x7f]/g, '');
+        text = printable(text);
         if (text.length === 0) {
             return;
         }
@@ -335,7 +339,7 @@
     }
 
     function paste(text) {
-        var lines = text.replace(/\r\n?/g, '\n').split('\n').filter(function (l) {
+        var lines = text.replace(/\r\n?/g, '\n').split('\n').map(printable).filter(function (l) {
             return l.trim().length > 0;
         });
         if (lines.length === 0) {
