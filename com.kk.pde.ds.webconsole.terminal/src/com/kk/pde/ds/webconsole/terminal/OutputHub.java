@@ -83,6 +83,11 @@ public final class OutputHub {
         }
     }
 
+    /** The maximum number of lines in the buffer. */
+    public int capacity() {
+        return capacity;
+    }
+
     public long lastSeq() {
         synchronized (lock) {
             return lastSeq;

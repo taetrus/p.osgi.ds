@@ -68,8 +68,16 @@
 				<artifactId>tycho-surefire-plugin</artifactId>
 				<configuration>
 					<!-- The resolver installs the Gogo runtime but does not start it. The IT needs its
-					     CommandProcessor service. The parent already starts Felix SCR. -->
+					     CommandProcessor service. The parent already starts Felix SCR.
+					     This bundle starts before Gogo, as in distribution/p2.product. Gogo's ThreadIO
+					     wraps the System.out that it finds at its start, and it sets that stream again
+					     for each command. A capture installed after Gogo is lost at the first command. -->
 					<bundleStartLevel combine.children="append">
+						<bundle>
+							<id>com.kk.pde.ds.webconsole.terminal</id>
+							<level>1</level>
+							<autoStart>true</autoStart>
+						</bundle>
 						<bundle>
 							<id>org.apache.felix.gogo.runtime</id>
 							<level>2</level>

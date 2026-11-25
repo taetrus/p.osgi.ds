@@ -265,7 +265,10 @@ Notes from the prototype:
 
 - The plugin bundle must start before the Gogo runtime (start level 1 here, Gogo at 3). The Gogo
   runtime replaces `System.out` with its own stream for each thread, and that stream must wrap
-  the capture. The prototype did not test the reverse order.
+  the capture. The reverse order fails: in a tier-2 run with Gogo at level 2 and the plugin
+  bundle at level 4, the first Gogo command set `System.out` back to the Gogo stream, and
+  the capture got no more lines (2026-11-25, `TerminalPluginIT`). The module pom thus starts
+  the plugin bundle at level 1 in the tier-2 runtime.
 - The `lb` command writes about 45 lines, not 100.
 - The `ss` command of the session writes only to the session streams. It does not write to the
   local terminal.

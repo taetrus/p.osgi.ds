@@ -1,0 +1,315 @@
+package com.kk.pde.ds.webconsole.terminal;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.startsWith;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.servlet.ReadListener;
+import javax.servlet.ServletInputStream;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.WriteListener;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+/**
+ * <h2>Tier 1: the HTTP contract of the terminal plugin, with a mock request and response</h2>
+ *
+ * <p>
+ * {@link TerminalPlugin} has a package-visible constructor that takes the {@link OutputHub}, the
+ * {@link Shell}, the page token and a property lookup. Thus these tests need no OSGi framework
+ * and no WebConsole. Mockito mocks {@link HttpServletRequest} and {@link HttpServletResponse}.
+ * The tests call {@code doGet}, {@code doPost} and {@code renderContent} directly, with the
+ * path info that the WebConsole gives ({@code /terminal/...}).
+ * </p>
+ * <p>
+ * The stream loop runs until a write fails. A stream test gives a response writer that fails
+ * on the second flush, and sets a short ping interval. {@code PrintWriter.checkError()} also
+ * flushes. Thus the loop writes one batch and ends. {@code TerminalPluginIT} checks the registration in a real framework.
+ * </p>
+ */
+class TerminalPluginTest {
+
+    private static final String TOKEN = "0123456789abcdef0123456789abcdef";
+
+    private OutputHub hub;
+    private Shell shell;
+    private Map<String, String> props;
+    private HttpServletRequest req;
+    private HttpServletResponse res;
+
+    @BeforeEach
+    void setUp() {
+        hub = new OutputHub(100);
+        shell = mock(Shell.class);
+        when(shell.available()).thenReturn(true);
+        when(shell.submit(anyString())).thenReturn(true);
+        props = new HashMap<String, String>();
+        req = mock(HttpServletRequest.class);
+        res = mock(HttpServletResponse.class);
+    }
+
+    private TerminalPlugin plugin() {
+        TerminalPlugin p = new TerminalPlugin(hub, shell, TOKEN, new TerminalPlugin.Config() {
+            @Override
+            public String get(String key, String defaultValue) {
+                String v = props.get(key);
+                return v != null ? v : defaultValue;
+            }
+        }) {
+            private static final long serialVersionUID = 1L;
+
+            // Tier 1 has no bundle jar on the class path. Read the module folder res/.
+            @Override
+            URL resource(String name) {
+                File f = new File("res", name);
+                try {
+                    return f.isFile() ? f.toURI().toURL() : null;
+                } catch (MalformedURLException e) {
+                    throw new IllegalStateException(e);
+                }
+            }
+        };
+        p.pingMillis = 50;
+        return p;
+    }
+
+    private void post(String token, String body) throws IOException {
+        when(req.getPathInfo()).thenReturn("/terminal/exec");
+        when(req.getHeader("X-Terminal-Token")).thenReturn(token);
+        when(req.getInputStream()).thenReturn(new BodyStream(body.getBytes(StandardCharsets.UTF_8)));
+        plugin().doPost(req, res);
+    }
+
+    @Test
+    void execWithoutTokenIs403() throws Exception {
+        post(null, "ss");
+        verify(res).sendError(403);
+        verify(shell, never()).submit(anyString());
+    }
+
+    @Test
+    void execWithWrongTokenIs403() throws Exception {
+        post("ffffffffffffffffffffffffffffffff", "ss");
+        verify(res).sendError(403);
+        verify(shell, never()).submit(anyString());
+    }
+
+    @Test
+    void execWithTokenSubmitsTheLineAndAnswers202() throws Exception {
+        post(TOKEN, "ss\n");
+        verify(shell).submit("ss");
+        verify(res).setStatus(202);
+    }
+
+    @Test
+    void execWhenShellDisabledIs403() throws Exception {
+        props.put("terminal.shell.enabled", "false");
+        post(TOKEN, "ss");
+        verify(res).sendError(403);
+        verify(shell, never()).submit(anyString());
+    }
+
+    @Test
+    void execWhenShellNotAvailableIs503() throws Exception {
+        when(shell.available()).thenReturn(false);
+        post(TOKEN, "ss");
+        verify(res).sendError(503);
+        verify(shell, never()).submit(anyString());
+    }
+
+    @Test
+    void execWithLineLongerThanLimitIs413() throws Exception {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 4097; i++) {
+            sb.append('a');
+        }
+        post(TOKEN, sb.toString());
+        verify(res).sendError(413);
+        verify(shell, never()).submit(anyString());
+    }
+
+    @Test
+    void execWithEmptyLineIs204() throws Exception {
+        post(TOKEN, "\r\n");
+        verify(res).setStatus(204);
+        verify(shell, never()).submit(anyString());
+    }
+
+    @Test
+    void resServesOnlyKnownNames() throws Exception {
+        TerminalPlugin p = plugin();
+        CapturingOutput body = new CapturingOutput();
+        when(res.getOutputStream()).thenReturn(body);
+        when(req.getPathInfo()).thenReturn("/terminal/res/terminal.js");
+        p.doGet(req, res);
+        verify(res).setContentType(startsWith("application/javascript"));
+        verify(res, never()).sendError(404);
+        assertTrue(body.bytes.size() > 0);
+
+        HttpServletResponse res2 = mock(HttpServletResponse.class);
+        when(req.getPathInfo()).thenReturn("/terminal/res/../META-INF/MANIFEST.MF");
+        p.doGet(req, res2);
+        verify(res2).sendError(404);
+
+        HttpServletResponse res3 = mock(HttpServletResponse.class);
+        when(req.getPathInfo()).thenReturn("/terminal/res/unknown.js");
+        p.doGet(req, res3);
+        verify(res3).sendError(404);
+    }
+
+    private String stream(String lastEventId) throws Exception {
+        FailingWriter out = new FailingWriter();
+        when(res.getWriter()).thenReturn(new PrintWriter(out));
+        when(req.getPathInfo()).thenReturn("/terminal/stream");
+        when(req.getHeader("Last-Event-ID")).thenReturn(lastEventId);
+        plugin().doGet(req, res);
+        verify(res).setHeader("Cache-Control", "no-cache");
+        verify(res).setHeader("X-Accel-Buffering", "no");
+        return out.text.toString();
+    }
+
+    @Test
+    void streamStartsAfterLastEventId() throws Exception {
+        hub.append("out", "one");
+        hub.append("out", "two");
+        hub.append("out", "three");
+        String text = stream("2");
+        verify(res).setContentType("text/event-stream; charset=UTF-8");
+        assertTrue(text.contains("id: 3\n"), text);
+        assertTrue(text.contains("data: three\n"), text);
+        assertFalse(text.contains("id: 2\n"), text);
+    }
+
+    @Test
+    void streamRestartsWhenLastEventIdIsAhead() throws Exception {
+        hub.append("out", "one");
+        hub.append("out", "two");
+        hub.append("out", "three");
+        String text = stream("99");
+        assertTrue(text.contains("id: 1\n"), text);
+    }
+
+    @Test
+    void streamReportsGoneLines() throws Exception {
+        hub = new OutputHub(2);
+        for (int i = 1; i <= 5; i++) {
+            hub.append("out", "line" + i);
+        }
+        String text = stream(null);
+        String first = text.substring(0, text.indexOf("\n\n"));
+        assertTrue(first.contains("event: gone\n"), text);
+        assertTrue(first.endsWith("data: 3"), text);
+        assertTrue(text.contains("data: line4\n"), text);
+    }
+
+    @Test
+    void pageContainsTokenAndFlags() throws Exception {
+        props.put("terminal.prompt", "<p> ");
+        StringWriter page = new StringWriter();
+        when(res.getWriter()).thenReturn(new PrintWriter(page));
+        plugin().renderContent(req, res);
+        String html = page.toString();
+        assertTrue(html.contains("data-token=\"" + TOKEN + "\""), html);
+        assertTrue(html.contains("data-shell=\"true\""), html);
+        assertTrue(html.contains("data-prompt=\"&lt;p&gt; \""), html);
+        assertTrue(html.contains("data-scrollback=\"100\""), html);
+        assertTrue(html.contains("terminal/res/terminal.js"), html);
+        assertEquals(-1, html.indexOf("<p> "), html);
+    }
+
+    /** A request body. */
+    private static final class BodyStream extends ServletInputStream {
+        private final ByteArrayInputStream in;
+
+        BodyStream(byte[] bytes) {
+            in = new ByteArrayInputStream(bytes);
+        }
+
+        @Override
+        public int read() {
+            return in.read();
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) {
+            return in.read(b, off, len);
+        }
+
+        @Override
+        public boolean isFinished() {
+            return in.available() == 0;
+        }
+
+        @Override
+        public boolean isReady() {
+            return true;
+        }
+
+        @Override
+        public void setReadListener(ReadListener listener) {
+        }
+    }
+
+    /** A response body. */
+    private static final class CapturingOutput extends ServletOutputStream {
+        final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+
+        @Override
+        public void write(int b) {
+            bytes.write(b);
+        }
+
+        @Override
+        public boolean isReady() {
+            return true;
+        }
+
+        @Override
+        public void setWriteListener(WriteListener listener) {
+        }
+    }
+
+    /** Keeps the text. The second flush fails, as when the browser closes the connection. */
+    private static final class FailingWriter extends Writer {
+        final StringBuilder text = new StringBuilder();
+        private int flushes;
+
+        @Override
+        public void write(char[] cbuf, int off, int len) {
+            text.append(cbuf, off, len);
+        }
+
+        @Override
+        public void flush() throws IOException {
+            if (++flushes >= 2) {
+                throw new IOException("connection closed");
+            }
+        }
+
+        @Override
+        public void close() {
+        }
+    }
+}
