@@ -148,7 +148,7 @@ To apply the layout to a different project: `docs/adding-tests-to-a-tycho-projec
   1. `build` (Linux): `./mvnw --batch-mode --no-transfer-progress clean verify`, then `./mvnw --batch-mode --no-transfer-progress -f tools/pde2tycho verify`
   2. `docs` (Linux): `tools/doccheck/check-docs.sh`
   3. `pde2tycho-windows`: the pde2tycho tests with `.\mvnw.cmd`
-  4. `windows-docs`: 17 Windows commands of the docs, run as the docs show them (`.github/verify-windows/verify.ps1`).
+  4. `windows-docs`: 21 Windows commands of the docs, run as the docs show them (`.github/verify-windows/verify.ps1`).
      The script finds each command by the text of its doc line. When you change such a line, change its anchor too.
 - On Maven 3.10.2, the full build of this repository fails at `com.kk.pde.ds.chatbot` (`Invalid Collect Request`).
   The wrapper pins Maven 3.9.16, the version that CI uses. Tycho 5.0.4 uses the path of each `Bundle-ClassPath` jar

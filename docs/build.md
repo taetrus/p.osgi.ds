@@ -80,11 +80,12 @@ GitHub Actions runs the workflow on each push to `main` and on each pull request
 
 The `pde2tycho-windows` job runs the pde2tycho tests on `windows-latest` with `.\mvnw.cmd`. pde2tycho reads Windows paths and generates Windows run scripts, so its tests must also pass on Windows.
 
-The `windows-docs` job runs the Windows commands of the docs on `windows-latest`. It runs each command exactly as the doc shows it, in `cmd.exe`, Windows PowerShell 5.1 and PowerShell 7. The job has 17 checks:
+The `windows-docs` job runs the Windows commands of the docs on `windows-latest`. It runs each command exactly as the doc shows it, in `cmd.exe`, Windows PowerShell 5.1 and PowerShell 7. The job has 21 checks:
 
 - The full build with `.\mvnw.cmd` and `mvnw.cmd`, the fat JAR, and a build without tests.
 - The single-test commands of [testing.md](testing.md), in each shell.
 - A start of the product with `run.bat`, an HTTP request to `/api/greet` and a PowerShell call to the MCP server.
+- With the same product, the terminal commands of [webconsole-terminal.md](webconsole-terminal.md#check-the-terminal-on-windows), in each PowerShell. They send `exec` without and with the token, read the stream and look for `echo äöü` output.
 - A pde2tycho scan with `pde2tycho.bat`, and a build that continues from `distribution`.
 
 The harness script `.github/verify-windows/verify.ps1` finds each command by the text of its line in the doc. If you change such a line, change the anchor in the script too.

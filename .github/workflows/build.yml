@@ -90,7 +90,7 @@ jobs:
           $fail = @($s | Where-Object { ($_ -split "`t")[1] -ne 'PASS' })
           if ($fail.Count) { $fail | ForEach-Object { Write-Host "::error::$_" }; exit 1 }
           # A phase that crashes writes no result; keep this equal to the checks in verify.ps1.
-          $expected = 17
+          $expected = 21
           if ($s.Count -ne $expected) { Write-Host "::error::$($s.Count) results, expected $expected"; exit 1 }
           Write-Host "All $($s.Count) checks passed."
 

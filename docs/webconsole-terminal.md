@@ -18,6 +18,7 @@ The design is in `docs/superpowers/specs/2026-11-25-webconsole-terminal-design.m
 - [Security](#security)
 - [Use the plugin in a different application](#use-the-plugin-in-a-different-application)
 - [Manual test procedure](#manual-test-procedure)
+- [Check the terminal on Windows](#check-the-terminal-on-windows)
 - [Related documents](#related-documents)
 
 ## What it is
@@ -339,6 +340,53 @@ macOS x86_64, the product of commit `fc7ef9c`):
 6. The log had no start-order warning and no `UnsupportedClassVersionError`.
 
 Not tested: a browser on Java 8, a headed (visible) browser, Firefox, Safari, Windows, and a runtime with no Gogo.
+
+## Check the terminal on Windows
+
+Use these commands to check the terminal on Windows without a browser. The commands work in
+Windows PowerShell 5.1 and in PowerShell 7. The `windows-docs` CI job runs them in both shells.
+
+1. Start the product with `distribution\scripts\run.bat`. See [running.md](running.md).
+2. Open a second PowerShell window.
+3. Paste this block. It gets the token, sends `exec` two times and reads the stream for 5 seconds.
+
+   ```powershell
+   $auth = @{ Authorization = 'Basic ' + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes('admin:admin')) }
+   $page = Invoke-WebRequest -UseBasicParsing -Headers $auth -Uri http://localhost:8080/system/console/terminal
+   $token = [regex]::Match($page.Content, 'data-token="([0-9a-f]+)"').Groups[1].Value
+   $exec = 'http://localhost:8080/system/console/terminal/exec'
+   try { Invoke-WebRequest -UseBasicParsing -Method Post -Uri $exec -Headers $auth -ContentType 'text/plain; charset=utf-8' -Body 'ss' } catch { "no token: $([int]$_.Exception.Response.StatusCode)" }
+   $r = Invoke-WebRequest -UseBasicParsing -Method Post -Uri $exec -Headers ($auth + @{ 'X-Terminal-Token' = $token }) -ContentType 'text/plain; charset=utf-8' -Body 'ss'
+   "with token: $($r.StatusCode)"
+   curl.exe -s -N --max-time 5 -u admin:admin http://localhost:8080/system/console/terminal/stream
+   ```
+
+4. Make sure that the output contains these lines:
+   - `no token: 403`. Without the token, `exec` refuses the command.
+   - `with token: 202`. With the token, `exec` queues the command.
+   - `data: osgi> ss`, then the bundle list, then `event: done`.
+5. In the same window, paste this block. It runs `echo äöü` and looks for `äöü` on the stream.
+
+   ```powershell
+   $umlauts = [string][char]0xE4 + [char]0xF6 + [char]0xFC
+   $u = Invoke-WebRequest -UseBasicParsing -Method Post -Uri $exec -Headers ($auth + @{ 'X-Terminal-Token' = $token }) -ContentType 'text/plain; charset=utf-8' -Body ([Text.Encoding]::UTF8.GetBytes("echo $umlauts"))
+   curl.exe -s -N --max-time 5 -u admin:admin -o "$env:TEMP\terminal-stream.txt" http://localhost:8080/system/console/terminal/stream
+   "echo status: $($u.StatusCode), umlauts on the stream: $((Get-Content -Encoding UTF8 "$env:TEMP\terminal-stream.txt") -ccontains "data: $umlauts")"
+   ```
+
+6. Make sure that the output is `echo status: 202, umlauts on the stream: True`.
+
+Notes:
+
+- `curl.exe` stops after 5 seconds with exit code 28. This is expected, because the stream does not end.
+- Use `curl.exe`, not `curl`. In Windows PowerShell 5.1, `curl` is an alias of `Invoke-WebRequest`.
+- `-ContentType 'text/plain; charset=utf-8'` is necessary. Without it, Windows PowerShell 5.1
+  sends a form content type.
+- The block of step 5 uses character codes for `äöü`. Thus the encoding of a script file has no effect.
+  The body goes as UTF-8 bytes.
+- Step 5 checks the shell output path. The command output goes from the Gogo session through a
+  UTF-8 stream of the plugin to the hub, and then to the stream. Step 5 does not check the
+  capture of `System.out` (`StdCapture`). That path uses the console charset of the JVM.
 
 ## Related documents
 
