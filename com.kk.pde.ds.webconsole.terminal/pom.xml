@@ -47,7 +47,7 @@
 			<groupId>net.bytebuddy</groupId>
 			<artifactId>byte-buddy-agent</artifactId>
 		</dependency>
-		<!-- Only because this module has *IT tests that talk to the framework. -->
+		<!-- The *IT tests talk to the framework. -->
 		<dependency>
 			<groupId>org.osgi</groupId>
 			<artifactId>org.osgi.framework</artifactId>
@@ -58,10 +58,25 @@
 	     here opts this bundle in to that tier; the executions are managed in the parent. -->
 	<build>
 		<plugins>
-			<!-- Tier 1: *Test classes, plain JVM. Tier 2 (tycho-surefire-plugin) comes with the first *IT class. -->
+			<!-- Tier 1: *Test classes, plain JVM. Tier 2: *IT classes, inside Equinox. -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>tycho-surefire-plugin</artifactId>
+				<configuration>
+					<!-- The resolver installs the Gogo runtime but does not start it. The IT needs its
+					     CommandProcessor service. The parent already starts Felix SCR. -->
+					<bundleStartLevel combine.children="append">
+						<bundle>
+							<id>org.apache.felix.gogo.runtime</id>
+							<level>2</level>
+							<autoStart>true</autoStart>
+						</bundle>
+					</bundleStartLevel>
+				</configuration>
 			</plugin>
 			<!-- Needed by tier 2 only.
 			     1. plugin-test resolves its test runtime under this bundle's own BREE (JavaSE-1.8),
