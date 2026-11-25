@@ -376,7 +376,7 @@ Windows PowerShell 5.1 and in PowerShell 7. The `windows-docs` CI job runs them 
 
 1. Start the product with `distribution\scripts\run.bat`. See [running.md](running.md).
 2. Open a second PowerShell window.
-3. Paste this block. It gets the token, sends `exec` two times and reads the stream for 5 seconds.
+3. Paste this block. It gets the token, sends `exec` two times and reads the stream for 15 seconds.
 
    ```powershell
    $auth = @{ Authorization = 'Basic ' + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes('admin:admin')) }
@@ -386,7 +386,7 @@ Windows PowerShell 5.1 and in PowerShell 7. The `windows-docs` CI job runs them 
    try { Invoke-WebRequest -UseBasicParsing -Method Post -Uri $exec -Headers $auth -ContentType 'text/plain; charset=utf-8' -Body 'ss' } catch { "no token: $([int]$_.Exception.Response.StatusCode)" }
    $r = Invoke-WebRequest -UseBasicParsing -Method Post -Uri $exec -Headers ($auth + @{ 'X-Terminal-Token' = $token }) -ContentType 'text/plain; charset=utf-8' -Body 'ss'
    "with token: $($r.StatusCode)"
-   curl.exe -s -N --max-time 5 -u admin:admin http://localhost:8080/system/console/terminal/stream
+   curl.exe -s -N --max-time 15 -u admin:admin http://localhost:8080/system/console/terminal/stream
    ```
 
 4. Make sure that the output contains these lines:
@@ -398,7 +398,7 @@ Windows PowerShell 5.1 and in PowerShell 7. The `windows-docs` CI job runs them 
    ```powershell
    $umlauts = [string][char]0xE4 + [char]0xF6 + [char]0xFC
    $u = Invoke-WebRequest -UseBasicParsing -Method Post -Uri $exec -Headers ($auth + @{ 'X-Terminal-Token' = $token }) -ContentType 'text/plain; charset=utf-8' -Body ([Text.Encoding]::UTF8.GetBytes("echo $umlauts"))
-   curl.exe -s -N --max-time 5 -u admin:admin -o "$env:TEMP\terminal-stream.txt" http://localhost:8080/system/console/terminal/stream
+   curl.exe -s -N --max-time 15 -u admin:admin -o "$env:TEMP\terminal-stream.txt" http://localhost:8080/system/console/terminal/stream
    "echo status: $($u.StatusCode), umlauts on the stream: $((Get-Content -Encoding UTF8 "$env:TEMP\terminal-stream.txt") -ccontains "data: $umlauts")"
    ```
 
@@ -406,7 +406,7 @@ Windows PowerShell 5.1 and in PowerShell 7. The `windows-docs` CI job runs them 
 
 Notes:
 
-- `curl.exe` stops after 5 seconds with exit code 28. This is expected, because the stream does not end.
+- `curl.exe` stops after 15 seconds with exit code 28. This is expected, because the stream does not end. The 15 seconds give the command time to complete on a slow computer.
 - Use `curl.exe`, not `curl`. In Windows PowerShell 5.1, `curl` is an alias of `Invoke-WebRequest`.
 - `-ContentType 'text/plain; charset=utf-8'` is necessary. Without it, Windows PowerShell 5.1
   sends a form content type.

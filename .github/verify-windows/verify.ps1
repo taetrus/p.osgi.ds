@@ -43,7 +43,7 @@ switch ($Phase) {
                 $tUmlauts = $tToken + @(
                     '$umlauts = [string][char]0xE4 + [char]0xF6 + [char]0xFC',
                     '$u = Invoke-WebRequest -UseBasicParsing -Method Post -Uri $exec -Headers ($auth + @{ ''X-Terminal-Token'' = $token }) -ContentType ''text/plain; charset=utf-8'' -Body ([Text.Encoding]::UTF8.GetBytes("echo $umlauts"))',
-                    'curl.exe -s -N --max-time 5 -u admin:admin -o "$env:TEMP\terminal-stream.txt" http://localhost:8080/system/console/terminal/stream',
+                    'curl.exe -s -N --max-time 15 -u admin:admin -o "$env:TEMP\terminal-stream.txt" http://localhost:8080/system/console/terminal/stream',
                     '"echo status: $($u.StatusCode), umlauts on the stream: $((Get-Content -Encoding UTF8 "$env:TEMP\terminal-stream.txt") -ccontains "data: $umlauts")"')
                 foreach ($sh in 'powershell', 'pwsh') {
                     Invoke-Doc -Id "V24-$sh-terminal-utf8" -File 'docs/webconsole-terminal.md' -Anchor $tUmlauts -Shell $sh -Expect 'echo status: 202, umlauts on the stream: True' -TimeoutSec 120 | Out-Null
