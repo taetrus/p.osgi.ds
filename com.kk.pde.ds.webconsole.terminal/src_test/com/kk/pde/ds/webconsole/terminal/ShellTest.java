@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -132,6 +133,28 @@ class ShellTest {
         shell.submit("a");
         Thread.sleep(200);
         verify(session).execute("a");
+    }
+
+    @Test
+    void errorBecomesRedErrLineAndWorkerSurvives() throws Exception {
+        when(session.execute("bad")).thenThrow(new NoClassDefFoundError("x/Y"));
+        shell.bind(processor);
+        shell.submit("bad");
+        assertTrue(waitForType("done"));
+        List<OutputHub.Line> lines = hub.since(0).lines;
+        int err = -1;
+        int done = -1;
+        for (int i = 0; i < lines.size(); i++) {
+            if (lines.get(i).type.equals("err") && lines.get(i).text.contains("NoClassDefFoundError")) {
+                err = i;
+            }
+            if (lines.get(i).type.equals("done")) {
+                done = i;
+            }
+        }
+        assertTrue(err >= 0 && err < done);
+        shell.submit("a");
+        verify(session, timeout(2000)).execute("a");
     }
 
     @Test

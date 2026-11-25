@@ -77,9 +77,13 @@ public final class Shell {
         return true;
     }
 
-    /** Closes the session and stops the worker. */
+    /**
+     * Closes the session and stops the worker. Lines still in the queue are dropped and get no
+     * done line, because the component is deactivating.
+     */
     public synchronized void close() {
         closed = true;
+        queue.clear();
         closeSession();
         worker.interrupt();
     }
@@ -112,18 +116,26 @@ public final class Shell {
             hub.append("done", "");
             return;
         }
+        Throwable fatal = null;
         try {
             Object result = current.execute(line);
             if (result != null) {
                 emitLines("out", String.valueOf(current.format(result, Converter.INSPECT)));
             }
-        } catch (Exception e) {
-            String message = e.getClass().getName() + (e.getMessage() == null ? "" : ": " + e.getMessage());
+        } catch (Throwable t) {
+            String message = t.getClass().getName() + (t.getMessage() == null ? "" : ": " + t.getMessage());
             hub.append("err", "\u001b[31m" + TextSanitizer.clean(message) + "\u001b[0m");
+            if (t instanceof OutOfMemoryError || t instanceof InternalError) {
+                fatal = t;
+            }
+        } finally {
+            outAssembler.flushPartial();
+            errAssembler.flushPartial();
+            hub.append("done", "");
         }
-        outAssembler.flushPartial();
-        errAssembler.flushPartial();
-        hub.append("done", "");
+        if (fatal instanceof Error) {
+            throw (Error) fatal;
+        }
     }
 
     private void emitLines(String type, String text) {
