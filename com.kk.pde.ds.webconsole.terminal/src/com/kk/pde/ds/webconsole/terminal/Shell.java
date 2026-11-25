@@ -78,9 +78,10 @@ public final class Shell {
      * <p>
      * A page command such as {@code stop <Gogo runtime>} makes SCR call this method on the Gogo
      * thread of that command. Thus this method uses the same rule as {@link #close()}, and the
-     * close of this shell does not interrupt the command. {@code ShellIT} checks this. Gogo 1.1.6
-     * itself still closes all its sessions at its stop, so that command still ends with an
-     * {@code InterruptedException} (product run, 2026-11-25).
+     * close of this shell does not interrupt the command. {@code ShellIT} checks this. On the
+     * product, that command still ends with an {@code InterruptedException} (product run,
+     * 2026-11-25). A probable cause, from the Gogo 1.1.6 bytecode and not tested: Gogo closes all
+     * its sessions at its stop.
      * </p>
      */
     public synchronized void unbind(Object oldProcessor) {
@@ -131,6 +132,7 @@ public final class Shell {
         queue.clear();
         if (!deferClose()) {
             closeSession();
+            closeRetiring(); // an unbind from a running command can still wait for it
             worker.interrupt();
         }
     }
@@ -153,7 +155,7 @@ public final class Shell {
             session = null;
             processor = null;
         } else {
-            closeSession(); // a newer session, bound while the own command runs: not own
+            closeSession(); // own is already retiring: close the session bound after that, if any
         }
         if (closer == null) {
             final long millis = deferredCloseMillis;
@@ -180,18 +182,13 @@ public final class Shell {
         try {
             Thread.sleep(millis);
         } catch (InterruptedException e) {
-            return; // the command ended, and the worker closed the session
+            return; // closeRetiring() ran: the session is closed already
         }
         synchronized (this) {
             if (closer != Thread.currentThread()) {
                 return;
             }
-            closer = null;
-            CommandSession old = retiring;
-            retiring = null;
-            if (old != null) {
-                old.close();
-            }
+            closeRetiring();
             if (closed) {
                 worker.interrupt();
             }
@@ -203,12 +200,20 @@ public final class Shell {
         if (retiring != current) {
             return;
         }
+        closeRetiring();
+    }
+
+    // Closes the retiring session now and ends the close thread. Guarded by this.
+    private void closeRetiring() {
+        CommandSession old = retiring;
         retiring = null;
-        current.close();
-        if (closer != null) {
-            closer.interrupt();
-            closer = null;
+        if (old != null) {
+            old.close();
         }
+        if (closer != null && closer != Thread.currentThread()) {
+            closer.interrupt();
+        }
+        closer = null;
     }
 
     private void closeSession() {

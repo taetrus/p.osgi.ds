@@ -104,6 +104,30 @@ public class ShellIT {
         }
     }
 
+    /** The command service. It unbinds the processor and then blocks. The test closes the shell. */
+    public static class UnbindBlocker {
+        static volatile Shell shell;
+        static volatile Object processor;
+        static final java.util.concurrent.CountDownLatch unbound = new java.util.concurrent.CountDownLatch(1);
+        static final java.util.concurrent.CountDownLatch release = new java.util.concurrent.CountDownLatch(1);
+        static final java.util.concurrent.CountDownLatch interrupted = new java.util.concurrent.CountDownLatch(1);
+
+        // Ignores an interrupt and blocks until the test releases it (at most 10 s).
+        public String unbindandblock() {
+            shell.unbind(processor);
+            unbound.countDown();
+            long end = System.nanoTime() + 10_000_000_000L;
+            while (System.nanoTime() < end && release.getCount() > 0) {
+                try {
+                    release.await(100, java.util.concurrent.TimeUnit.MILLISECONDS);
+                } catch (InterruptedException e) {
+                    interrupted.countDown();
+                }
+            }
+            return "blocked";
+        }
+    }
+
     private static Set<Thread> threads(String name) {
         Set<Thread> found = new HashSet<Thread>();
         for (Thread t : Thread.getAllStackTraces().keySet()) {
@@ -191,6 +215,45 @@ public class ShellIT {
             shell.bind(Unbinder.processor);
             assertTrue(shell.available(), "a new bind gives a new session");
         } finally {
+            shell.close();
+            context.ungetService(ref);
+            reg.unregister();
+        }
+    }
+
+    /**
+     * An unbind from the running command waits for the command. A close from outside (the
+     * component deactivates) does not wait: it closes that session at once and ends the close
+     * thread. The command ignores the interrupt and blocks on, so only the close itself can end
+     * the close thread. The test keeps the default bound of 30 s, longer than its 3 s deadline.
+     */
+    @Test
+    void closeFromOutsideEndsAPendingDeferredClose() throws Exception {
+        BundleContext context = FrameworkUtil.getBundle(Shell.class).getBundleContext();
+        Dictionary<String, Object> props = new Hashtable<String, Object>();
+        props.put("osgi.command.scope", "termtest");
+        props.put("osgi.command.function", new String[] { "unbindandblock" });
+        ServiceRegistration<Object> reg = context.registerService(Object.class, new UnbindBlocker(), props);
+        ServiceReference<CommandProcessor> ref = context.getServiceReference(CommandProcessor.class);
+        OutputHub hub = new OutputHub(100);
+        Shell shell = new Shell(hub, "osgi> ");
+        UnbindBlocker.shell = shell;
+        try {
+            UnbindBlocker.processor = context.getService(ref);
+            shell.bind(UnbindBlocker.processor);
+            assertTrue(shell.submit("termtest:unbindandblock"));
+            assertTrue(UnbindBlocker.unbound.await(3, java.util.concurrent.TimeUnit.SECONDS));
+            assertEquals(1, threads("terminal-shell-close").size(), "the deferral is pending");
+            shell.close();
+            assertTrue(UnbindBlocker.interrupted.await(3, java.util.concurrent.TimeUnit.SECONDS),
+                    "the close from outside closes the pending session");
+            long end = System.nanoTime() + 3_000_000_000L;
+            while (System.nanoTime() < end && !threads("terminal-shell-close").isEmpty()) {
+                Thread.sleep(20);
+            }
+            assertTrue(threads("terminal-shell-close").isEmpty(), "the close thread ends");
+        } finally {
+            UnbindBlocker.release.countDown();
             shell.close();
             context.ungetService(ref);
             reg.unregister();
