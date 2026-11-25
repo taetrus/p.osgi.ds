@@ -275,7 +275,17 @@ Start the product with `./distribution/scripts/run.sh`. Row 14 needs
 | 13 | Stop the product, start it again. Run `ss` in the old page. | The old page says that the connection is closed and gets 403. After a reload, `ss` works. |
 | 14 | Start with `-Dterminal.shell.enabled=false`. Open the page. | The page shows output and no prompt. Typing runs nothing. `exec` answers 403. |
 
-Not tested: a headed (visible) browser, Firefox, Safari, Windows, and a runtime with no Gogo.
+The tests and the browser run used JDK 21. A run on Java 8 used `curl` only (2026-11-25, Temurin 1.8.0_512,
+macOS x86_64, the product of commit `fc7ef9c`):
+
+1. The product started. The terminal bundle was `ACTIVE`.
+2. The page gave a token. All six `res/` files gave 200.
+3. `exec` gave 403 with no token, 202 for `ss` and 400 for a line with `ESC`.
+4. The stream gave `osgi> ss`, the bundle list and the end of the command.
+5. The log line of a later `GET /api/greet` came on the stream.
+6. The log had no start-order warning and no `UnsupportedClassVersionError`.
+
+Not tested: a browser on Java 8, a headed (visible) browser, Firefox, Safari, Windows, and a runtime with no Gogo.
 
 ## Related documents
 
