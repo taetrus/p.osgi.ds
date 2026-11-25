@@ -67,12 +67,11 @@ public final class Shell {
         return session != null;
     }
 
-    /** Echoes the line and queues it. It does not wait for the command. */
+    /** Queues the line. The worker echoes it when it runs. It does not wait for the command. */
     public boolean submit(String line) {
         if (closed || session == null) {
             return false;
         }
-        hub.append("cmd", prompt + line);
         queue.add(line);
         return true;
     }
@@ -110,6 +109,7 @@ public final class Shell {
     }
 
     private void run(String line) {
+        hub.append("cmd", prompt + line);
         CommandSession current = session;
         if (current == null) {
             hub.append("err", "Shell not available");

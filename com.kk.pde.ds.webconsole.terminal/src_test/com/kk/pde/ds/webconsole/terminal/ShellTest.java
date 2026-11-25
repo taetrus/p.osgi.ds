@@ -79,12 +79,46 @@ class ShellTest {
     }
 
     @Test
-    void submitEchoesThePromptAndTheCommand() {
+    void submitEchoesThePromptAndTheCommand() throws Exception {
         shell.bind(processor);
         assertTrue(shell.submit("ss"));
+        assertTrue(waitForType("done"));
         OutputHub.Line first = hub.since(0).lines.get(0);
         assertEquals("cmd", first.type);
         assertEquals("osgi> ss", first.text);
+    }
+
+    @Test
+    void echoShowsWhenTheCommandRuns() throws Exception {
+        final java.util.concurrent.CountDownLatch started = new java.util.concurrent.CountDownLatch(1);
+        final java.util.concurrent.CountDownLatch release = new java.util.concurrent.CountDownLatch(1);
+        when(session.execute("a")).thenAnswer(new org.mockito.stubbing.Answer<Object>() {
+            @Override
+            public Object answer(org.mockito.invocation.InvocationOnMock inv) throws Exception {
+                started.countDown();
+                release.await(5, java.util.concurrent.TimeUnit.SECONDS);
+                return null;
+            }
+        });
+        shell.bind(processor);
+        shell.submit("a");
+        shell.submit("b");
+        assertTrue(started.await(2, java.util.concurrent.TimeUnit.SECONDS));
+        for (OutputHub.Line l : hub.since(0).lines) {
+            assertFalse(l.text.equals("osgi> b"), "echo of b before a finished");
+        }
+        release.countDown();
+        long end = System.nanoTime() + 2_000_000_000L;
+        List<OutputHub.Line> lines = hub.since(0).lines;
+        while (System.nanoTime() < end && lines.size() < 4) {
+            Thread.sleep(10);
+            lines = hub.since(0).lines;
+        }
+        assertEquals(4, lines.size());
+        assertEquals("osgi> a", lines.get(0).text);
+        assertEquals("done", lines.get(1).type);
+        assertEquals("osgi> b", lines.get(2).text);
+        assertEquals("done", lines.get(3).type);
     }
 
     @Test
