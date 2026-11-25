@@ -153,6 +153,11 @@
         show('\x1b[2m' + text + '\x1b[22m');
     }
 
+    // Follow is on, and the user does not look at a search match or a selection.
+    function following() {
+        return follow && !term.hasSelection() && !(search && document.activeElement === search);
+    }
+
     function flush() {
         flushTimer = null;
         if (queue.length === 0) {
@@ -160,13 +165,14 @@
         }
         var lines = queue.join('\r\n') + '\r\n';
         queue = [];
-        if (!follow && holdY === null) {
+        var toBottom = following();
+        if (!toBottom && holdY === null) {
             holdY = term.buffer.active.viewportY;
         }
         writes++;
         term.write(eraseText() + lines + drawText(), function () {
             writes--;
-            if (follow) {
+            if (toBottom) {
                 term.scrollToBottom();
             } else if (holdY !== null) {
                 term.scrollToLine(holdY);
@@ -196,8 +202,19 @@
     source.addEventListener('open', function () {
         lostShown = false;
     });
+    var closedShown = false;
     source.addEventListener('error', function () {
-        if (!lostShown) {
+        if (source.readyState === EventSource.CLOSED) {
+            // The browser does not try again (for example after a non-200 answer during a
+            // restart). The token is then old too, so the page becomes read-only.
+            if (!closedShown) {
+                closedShown = true;
+                shellOn = false;
+                pasted = null;
+                term.write(eraseText());
+                dim('[the connection is closed, load the page again]');
+            }
+        } else if (!lostShown) {
             lostShown = true;
             dim('[connection lost, connecting again]');
         }
@@ -409,6 +426,7 @@
             return false; // the browser paste event gives the text to onData
         }
         if (e.ctrlKey && !e.metaKey && !e.altKey && key === 'l') {
+            e.preventDefault(); // xterm does not, so the browser would focus the address bar
             clearScreen();
             return false;
         }
