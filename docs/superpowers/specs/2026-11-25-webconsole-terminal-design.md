@@ -210,9 +210,9 @@ What the user sees:
 
 | Condition | Behavior |
 |-----------|----------|
-| No `CommandProcessor` service | The page shows "Shell not available" and stays read-only. |
+| No `CommandProcessor` service | At render time: the page is read-only (`data-shell="false"`) until a reload. After render: `exec` gives 503, and the page shows "Shell not available" and becomes read-only. Changed on 2026-11-25. |
 | Token missing or wrong (for example after a restart of the application) | Status 403. The page tells the user to load it again. |
-| The line contains a control character (below `0x20`, `0x7F`, or `0x80` to `0x9F`) | Status 400. Nothing runs. The check comes after the empty-line check (204) and before 202. Added in the final review, 2026-11-25. |
+| The line contains a control character (below `0x20` other than tab, `0x7F`, or `0x80` to `0x9F`) | Status 400. Nothing runs. The check comes after the empty-line check (204) and before 202. Added in the final review, 2026-11-25. A tab is accepted since a later fix on 2026-11-25. |
 | The command throws an exception | The message shows in red. The session stays open. |
 | A different component replaces `System.out` after the plugin | The plugin does not capture the output after that. It does not replace the stream again. |
 

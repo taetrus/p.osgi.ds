@@ -36,9 +36,15 @@ public final class Shell {
     private final LineAssembler outAssembler;
     private final LineAssembler errAssembler;
 
+    /** The bound of a deferred close: a command that runs longer is interrupted. */
+    static final long DEFERRED_CLOSE_MILLIS = 30_000;
+
     private CommandProcessor processor;
     private volatile CommandSession session;
     private volatile boolean closed;
+    private CommandSession retiring; // closes after its running command, guarded by this
+    private Thread closer; // the bounded close of retiring, guarded by this
+    private long deferredCloseMillis = DEFERRED_CLOSE_MILLIS; // guarded by this
 
     public Shell(OutputHub hub, String prompt) {
         this.hub = hub;
@@ -64,12 +70,32 @@ public final class Shell {
                 stream(outAssembler), stream(errAssembler));
     }
 
-    /** Closes the session. A processor that is not the bound one changes nothing. */
+    /**
+     * Closes the session now, or after the running command when this method runs inside the
+     * session's own command (see {@link #close()}). A processor that is not the bound one changes
+     * nothing.
+     *
+     * <p>
+     * A page command such as {@code stop <Gogo runtime>} makes SCR call this method on the Gogo
+     * thread of that command. Thus this method uses the same rule as {@link #close()}, and the
+     * close of this shell does not interrupt the command. {@code ShellIT} checks this. On the
+     * product, that command still ends with an {@code InterruptedException} (product run,
+     * 2026-11-25). A probable cause, from the Gogo 1.1.6 bytecode and not tested: Gogo closes all
+     * its sessions at its stop.
+     * </p>
+     */
     public synchronized void unbind(Object oldProcessor) {
         if (oldProcessor != processor) {
             return;
         }
-        closeSession();
+        if (!deferClose()) {
+            closeSession();
+        }
+    }
+
+    /** Sets the bound of a deferred close. For the tests. */
+    synchronized void deferredCloseMillis(long millis) {
+        deferredCloseMillis = millis;
     }
 
     public boolean available() {
@@ -86,8 +112,10 @@ public final class Shell {
     }
 
     /**
-     * Closes the session and stops the worker. Lines still in the queue are dropped and get no
-     * done line, because the component is deactivating.
+     * Called from outside the session, it closes the session and stops the worker now. Called
+     * from the session's own command, it closes the session and stops the worker after that
+     * command ends, or after {@link #DEFERRED_CLOSE_MILLIS}, whichever comes first. Lines still in
+     * the queue are dropped and get no done line, because the component is deactivating.
      *
      * <p>
      * A command of this session can stop this bundle, for example {@code update <id>} of this
@@ -95,23 +123,97 @@ public final class Shell {
      * interrupts the threads of the session ({@code shutdownNow}). The interrupted update stops
      * the bundle but does not start it again: the bundle stays INSTALLED (product run,
      * 2026-11-25). Thus, in that case, the worker closes the session after the command returns,
-     * and nothing interrupts the command. {@code ShellIT} checks this.
+     * and nothing interrupts the command. The bound stops a command that blocks after the close
+     * from keeping the old worker, session and class loader alive. {@code ShellIT} checks both.
      * </p>
      */
     public synchronized void close() {
         closed = true;
         queue.clear();
-        if (session != null && calledFromOwnCommand()) {
-            return; // run() closes the session when the command returns
+        if (!deferClose()) {
+            closeSession();
+            closeRetiring(); // an unbind from a running command can still wait for it
+            worker.interrupt();
         }
-        closeSession();
-        worker.interrupt();
+    }
+
+    /**
+     * When the current thread runs a command of this session, moves the session to
+     * {@code retiring} and starts the bounded close. The worker closes it after the command, or
+     * the close thread closes it after the bound. Returns false when the close can happen now.
+     */
+    private boolean deferClose() {
+        if (session == null && retiring == null) {
+            return false;
+        }
+        CommandSession own = ownSession(); // Gogo is present, because a session exists
+        if (own == null || (own != session && own != retiring)) {
+            return false;
+        }
+        if (own == session) {
+            retiring = session;
+            session = null;
+            processor = null;
+        } else {
+            closeSession(); // own is already retiring: close the session bound after that, if any
+        }
+        if (closer == null) {
+            final long millis = deferredCloseMillis;
+            closer = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    forceClose(millis);
+                }
+            }, "terminal-shell-close");
+            closer.setDaemon(true);
+            closer.start();
+        }
+        return true;
     }
 
     // Gogo types only. The caller makes sure that a session exists, thus that Gogo is present.
-    private boolean calledFromOwnCommand() {
+    private static CommandSession ownSession() {
         Job job = Job.Utils.current();
-        return job != null && job.session() == session;
+        return job != null ? job.session() : null;
+    }
+
+    // The close thread. It does nothing when the command ended first (closer is then null or new).
+    private void forceClose(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            return; // closeRetiring() ran: the session is closed already
+        }
+        synchronized (this) {
+            if (closer != Thread.currentThread()) {
+                return;
+            }
+            closeRetiring();
+            if (closed) {
+                worker.interrupt();
+            }
+        }
+    }
+
+    // The worker, after a command of the given session.
+    private synchronized void endDeferredClose(CommandSession current) {
+        if (retiring != current) {
+            return;
+        }
+        closeRetiring();
+    }
+
+    // Closes the retiring session now and ends the close thread. Guarded by this.
+    private void closeRetiring() {
+        CommandSession old = retiring;
+        retiring = null;
+        if (old != null) {
+            old.close();
+        }
+        if (closer != null && closer != Thread.currentThread()) {
+            closer.interrupt();
+        }
+        closer = null;
     }
 
     private void closeSession() {
@@ -158,11 +260,7 @@ public final class Shell {
         } finally {
             outAssembler.flushPartial();
             errAssembler.flushPartial();
-            if (closed) {
-                synchronized (this) {
-                    closeSession(); // close() was called from this command
-                }
-            }
+            endDeferredClose(current); // close() or unbind() was called from this command
             hub.append("done", "");
         }
         if (fatal instanceof Error) {

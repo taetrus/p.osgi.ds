@@ -175,6 +175,17 @@ class TerminalPluginTest {
         verify(shell, never()).submit(anyString());
     }
 
+    /**
+     * A tab is whitespace for Gogo, and the sanitizer keeps it. Thus a pasted tab is not refused.
+     * All other control characters still give 400 (see the test above).
+     */
+    @Test
+    void execAcceptsTab() throws Exception {
+        post(TOKEN, "lb\tterminal");
+        verify(shell).submit("lb\tterminal");
+        verify(res).setStatus(202);
+    }
+
     @Test
     void resServesOnlyKnownNames() throws Exception {
         TerminalPlugin p = plugin();
@@ -258,6 +269,20 @@ class TerminalPluginTest {
         assertTrue(html.contains("data-scrollback=\"100\""), html);
         assertTrue(html.contains("terminal/res/terminal.js"), html);
         assertEquals(-1, html.indexOf("<p> "), html);
+    }
+
+    /**
+     * With no bound command processor at render time, the page is read-only: it shows output and
+     * no prompt. A page that loaded before Gogo was available stays read-only until a reload.
+     */
+    @Test
+    void pageIsReadOnlyWithoutProcessor() throws Exception {
+        when(shell.available()).thenReturn(false);
+        StringWriter page = new StringWriter();
+        when(res.getWriter()).thenReturn(new PrintWriter(page));
+        plugin().renderContent(req, res);
+        String html = page.toString();
+        assertTrue(html.contains("data-shell=\"false\""), html);
     }
 
     /** A request body. */

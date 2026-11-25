@@ -132,16 +132,17 @@ Status codes of `exec`:
 |--------|---------|
 | 202 | The command is queued. |
 | 204 | The line is empty. Nothing runs. |
-| 400 | The line contains a control character: a character below `0x20` (also tab and line break), `0x7F`, or `0x80` to `0x9F`. Nothing runs. A line break would run a second statement. |
+| 400 | The line contains a control character: a character below `0x20` (also line break) other than tab, `0x7F`, or `0x80` to `0x9F`. Nothing runs. A line break would run a second statement. A tab (`0x09`) is accepted, because it is whitespace for Gogo. |
 | 403 | The token is missing or wrong, or `terminal.shell.enabled` is `false`. |
 | 413 | The line is longer than 4096 characters. |
-| 503 | There is no Gogo `CommandProcessor`, or the queue does not accept the line. Tier-1 tests (`TerminalPluginTest`, `NoGogoTest`) cover the status. It is not tested on a runtime. |
+| 503 | There is no Gogo `CommandProcessor`, or the queue does not accept the line. Tier-1 tests (`TerminalPluginTest`, `NoGogoTest`) cover the status. A product run on 2026-11-25 gave 503 for `ss` after a stop of the Gogo runtime. |
 
 The server checks in this sequence: token (403), `terminal.shell.enabled` (403), Gogo
 available (503), length (413), empty line (204), control characters (400). A request that passes
 all checks gets 202. The server strips one trailing line break (`\n` or `\r\n`) before the
-checks. On 2026-11-25 a product run gave 400 for `ss` + line break + `lb`, and 400 for a line
-with `ESC [2J`.
+checks. On 2026-11-25 a product run gave 400 for `ss` + line break + `lb`, 400 for a line
+with `ESC [2J`, and 202 for `lb` + tab + `terminal`. The page changes each tab to a space, in
+typed text and in each line of a paste with more than one line (not tested in a browser).
 
 Vendored browser files (MIT license, in `res/`): xterm.js 6.0.0, addon-search 0.16.0 and
 addon-fit 0.11.0. `res/VERSIONS.txt` lists the source and the SHA-256 of each file. The plugin
@@ -180,6 +181,53 @@ An `update` of this bundle from the page itself works. Before a fix on 2026-11-2
 the Gogo session interrupted the `update` command, and the bundle stayed INSTALLED. Now the shell
 closes its session after the command ends. `ShellIT` and the product run above showed this.
 
+The close of the session changed again later on 2026-11-25 (the limit below). A product run on
+that final code showed these facts after `update 13` (this bundle) from the page:
+
+1. `exec` gave 202. Five seconds later the bundle was ACTIVE.
+2. A reload gave a new token and `data-shell="true"`.
+3. `ss` gave 202. Its output was on the stream, with `13 ACTIVE` for this bundle.
+4. About 39 seconds after the update, `jstack` showed one `terminal-shell` thread, the new one.
+   The thread of the old bundle revision was gone. No `terminal-shell-close` thread was left.
+
+The wait for the command has a limit of 30 seconds (`Shell.DEFERRED_CLOSE_MILLIS`). After that
+limit, the shell closes the session and stops its worker. This interrupts the command. Thus a
+line such as `stop <this bundle>` followed by a long command does not keep the old worker, the old
+session and the old class loader alive. `ShellIT` showed this with a limit of 500 ms. A run
+on the product is not tested.
+
+### Stop of the Gogo runtime
+
+A stop of the Gogo runtime makes SCR call the unbind method of the plugin, and the shell loses
+the `CommandProcessor`. When the stop comes from a page command, the shell closes its session
+only after the command, the same as for this bundle. `ShellIT` showed this. But on the product,
+`stop <Gogo runtime>` still ends with a red `java.lang.InterruptedException` line. A probable
+cause, from the Gogo 1.1.6 bytecode and not tested: Gogo closes all its sessions when it stops.
+
+After a `stop <Gogo runtime>` from a Gogo command, the next start of the Gogo runtime fails with
+`IllegalStateException: Thread Print Stream already set`. The bundle stays RESOLVED. A stop and
+a start from the WebConsole Bundles page (not from a Gogo command) work. Product runs on
+2026-11-25 showed these facts:
+
+1. A stop from the Bundles page: the bundle was RESOLVED, a reload of the terminal page gave
+   `data-shell="false"`, and `exec` gave 503.
+2. A start from the Bundles page: the bundle was ACTIVE, a reload gave `data-shell="true"`, and
+   `ss` gave 202 and its output on the stream.
+3. `stop 21` from the page: the bundle was RESOLVED. A later start failed as described above.
+4. `stop 21` from the local console, with this bundle ACTIVE: the console wrote
+   `gogo: InterruptedException: null`, and a later start failed the same way.
+5. The same result with this bundle stopped from the Bundles page before the `stop 21`. The
+   error was in the Equinox log file in `configuration/`, not in the console log.
+6. The same result in a copy of the product where this bundle never started (no `start` flag
+   in `config.ini`).
+
+Thus the failure does not come from this plugin. A probable cause, from the Gogo 1.1.6 bytecode
+and not tested: after its stop, Gogo puts its own stream back into `System.out` when the command
+ends.
+
+Thus do not stop, update or refresh the Gogo runtime from a Gogo command. Use the Bundles page, or
+restart the application. An `update` or a `refresh` of the Gogo runtime is not tested.
+
 ## Limits
 
 - **No output from before the bundle start.** The capture starts with the bundle. Earlier output
@@ -194,7 +242,12 @@ closes its session after the command ends. `ShellIT` and the product run above s
 - A different component that replaces `System.out` after this bundle is not captured after that.
   The plugin does not replace the stream again.
 - WebConsole 4.x only (`javax.servlet`).
-- If the application has no Gogo `CommandProcessor` service, `exec` answers 503 and the page becomes read-only (see [Use the plugin in a different application](#use-the-plugin-in-a-different-application)).
+- If the application has no Gogo `CommandProcessor` service when the page loads, the page is
+  read-only and shows no prompt (`data-shell="false"`). A page that loaded before Gogo was
+  available stays read-only until a reload. If Gogo stops after the page loads, `exec` answers
+  503 and the page becomes read-only (see [Use the plugin in a different application](#use-the-plugin-in-a-different-application)).
+- A stop of the Gogo runtime from a Gogo command prevents a later start of the Gogo runtime (see
+  [Stop of the Gogo runtime](#stop-of-the-gogo-runtime)).
 - After a product restart, an open page says that the connection is closed and becomes
   read-only. Reload the page. This was tested (row 13 of the manual test).
 
@@ -210,7 +263,7 @@ closes its session after the command ends. `ShellIT` and the product run above s
 - **Escape sequences.** The server keeps the color and style sequences (`ESC [ ... m`). It strips
   all other escape sequences and the other C0 control characters (but not tab). The command echo
   `osgi> <command>` goes through the same filter. `exec` refuses a line with a control character
-  (status 400). Tier-1 tests (`TextSanitizerTest`, `ShellTest`, `TerminalPluginTest`) show that the
+  other than tab (status 400). Tier-1 tests (`TextSanitizerTest`, `ShellTest`, `TerminalPluginTest`) show that the
   output and the echo keep no other escape sequence. Thus output cannot move the cursor, clear the
   screen or change the title of the page. The effect in a browser is not tested.
 - **The output can contain secrets** that the application prints, for example keys in log lines.
@@ -244,7 +297,7 @@ refuses the Gogo package. The test showed these facts:
 
 - `getDeclaredMethods()` of the plugin class works. SCR and `HttpServlet.doOptions` call it.
 - The public constructor and `activate` work.
-- The page renders.
+- The page renders. It is read-only (`data-shell="false"`).
 - `exec` answers 503. On 503, `terminal.js` shows `[shell not available]` and stops the input (not tested in a browser without Gogo).
 
 An application with no Gogo bundle is not tested. WebConsole 5 (`jakarta.servlet`) is not supported.

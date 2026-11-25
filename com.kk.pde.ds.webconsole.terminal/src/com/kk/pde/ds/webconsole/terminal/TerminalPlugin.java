@@ -160,7 +160,10 @@ public class TerminalPlugin extends AbstractWebConsolePlugin {
         pw.println("  <button type=\"button\" id=\"terminal-clear\">Clear</button>");
         pw.println("  <label><input type=\"checkbox\" id=\"terminal-follow\" checked> Follow</label>");
         pw.println("</div>");
-        pw.println("<div id=\"terminal\" data-token=\"" + escape(token) + "\" data-shell=\"" + shellEnabled()
+        // Without a bound processor the page is read-only. A later bind needs a reload.
+        Shell current = shell;
+        boolean shellOn = shellEnabled() && current != null && current.available();
+        pw.println("<div id=\"terminal\" data-token=\"" + escape(token) + "\" data-shell=\"" + shellOn
                 + "\" data-prompt=\"" + escape(prompt()) + "\" data-scrollback=\"" + hub.capacity() + "\"></div>");
         pw.println("<script src=\"" + base + "xterm.js\"></script>");
         pw.println("<script src=\"" + base + "addon-search.js\"></script>");
@@ -306,10 +309,11 @@ public class TerminalPlugin extends AbstractWebConsolePlugin {
     }
 
     // A line break would run a second statement, and an escape sequence would reach every page.
+    // A tab is whitespace for Gogo, and TextSanitizer keeps it, so a pasted tab is accepted.
     private static boolean hasControlCharacter(String line) {
         for (int i = 0; i < line.length(); i++) {
             char c = line.charAt(i);
-            if (c < 0x20 || c == 0x7f || (c >= 0x80 && c <= 0x9f)) {
+            if ((c < 0x20 && c != '\t') || c == 0x7f || (c >= 0x80 && c <= 0x9f)) {
                 return true;
             }
         }

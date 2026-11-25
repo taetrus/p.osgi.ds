@@ -39,7 +39,8 @@ import org.osgi.framework.BundleContext;
  * other classes (servlet API, WebConsole, OSGi, Mockito) come from the normal class path. Then the
  * test does what SCR and the WebConsole do: it lists the declared methods, calls the public
  * no-argument constructor, activates the plugin with a mock {@link BundleContext}, renders the
- * page and sends a command. With no command processor, {@code exec} answers 503.
+ * page and sends a command. With no command processor, the page is read-only
+ * ({@code data-shell="false"}) and {@code exec} answers 503.
  * </p>
  */
 class NoGogoTest {
@@ -115,6 +116,7 @@ class NoGogoTest {
         assertTrue(page.toString().contains("id=\"terminal\""), page.toString());
 
         String html = page.toString();
+        assertTrue(html.contains("data-shell=\"false\""), "no processor: the page is read-only");
         int start = html.indexOf("data-token=\"") + "data-token=\"".length();
         String token = html.substring(start, html.indexOf('"', start));
         HttpServletRequest post = mock(HttpServletRequest.class);
