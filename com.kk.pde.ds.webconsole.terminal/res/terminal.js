@@ -38,30 +38,32 @@
 
     // ---- Layout ----------------------------------------------------------------------------
 
+    // Changes the height only when it differs, so the body observer below does not loop.
     function fit() {
         var top = el.getBoundingClientRect().top;
-        var height = Math.max(200, window.innerHeight - top - 16);
-        el.style.height = height + 'px';
+        var height = Math.max(200, window.innerHeight - top - 16) + 'px';
+        if (el.style.height === height) {
+            return;
+        }
+        el.style.height = height;
         try {
             fitAddon.fit();
         } catch (e) {
             // The element is not visible yet. The next resize fits again.
         }
     }
-    window.addEventListener('resize', fit);
+    window.addEventListener('resize', fit); // a viewport change does not always resize the body
     fit();
-    // The layout is not final at the first call. Fit again after it settles.
+    // The layout is not final at the first call. The WebConsole can move the terminal up after
+    // the load, without a resize event. Content above it that changes also changes the body size.
     try {
-        window.requestAnimationFrame(fit);
-    } catch (e) {
-        // No animation frame: the resize handler still fits.
-    }
-    try {
-        if (document.fonts && document.fonts.ready) {
-            document.fonts.ready.then(fit, function () { });
+        if (typeof ResizeObserver === 'function') {
+            new ResizeObserver(function () { fit(); }).observe(document.body);
+        } else {
+            window.requestAnimationFrame(fit);
         }
     } catch (e) {
-        // No font events: the resize handler still fits.
+        // No observer and no animation frame: the resize handler still fits.
     }
 
     // ---- Input line state ------------------------------------------------------------------
