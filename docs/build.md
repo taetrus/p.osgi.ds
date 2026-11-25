@@ -99,6 +99,8 @@ The `docs` job runs on `ubuntu-latest`. It runs [tools/doccheck/check-docs.sh](.
 
 The workflow uses the wrapper and not the system `mvn` of the runner. The reason is the Maven 3.10 problem in [Requirements](#requirements).
 
+A branch protection rule on `main` makes the 4 jobs required. A pull request can merge only when `build`, `docs`, `pde2tycho-windows` and `windows-docs` pass. The rule needs no review. It blocks force pushes to `main` and the deletion of `main`. It does not apply to repository admins. If you rename a job, also change the rule. Otherwise GitHub waits for a check with the old name, and no pull request can merge.
+
 ---
 
 ## Build outputs
@@ -378,7 +380,9 @@ p.osgi.ds/
 ├── pom.xml                           # Parent POM (Tycho build, 19 modules)
 ├── mvnw, mvnw.cmd                    # Maven Wrapper (use these, not the system mvn)
 ├── .mvn/wrapper/                     # Wrapper config (pins Maven 3.9.16)
-├── .github/workflows/build.yml       # CI: ./mvnw clean verify on Temurin 21
+├── .github/workflows/build.yml       # CI: 4 jobs on Temurin 21 (see Continuous integration)
+├── .github/verify-windows/           # Harness of the windows-docs job
+├── .github/pull_request_template.md  # PR description, with the documentation checklist
 ├── CLAUDE.md                         # IDE guidance
 ├── README.md                         # Project overview
 ├── SECURITY.md                       # Known exposures of the localhost HTTP surface
@@ -542,6 +546,8 @@ The tables below give the purpose of the important files. The tree in [Project s
 | `*/pom.xml` | Module-specific POMs |
 | `mvnw`, `mvnw.cmd`, `.mvn/wrapper/maven-wrapper.properties` | Maven Wrapper (Maven 3.9.16) |
 | `.github/workflows/build.yml` | CI workflow |
+| `.github/verify-windows/verify.ps1`, `lib.ps1` | Harness of the `windows-docs` job: the Windows commands of the docs and their anchors |
+| `.github/pull_request_template.md` | PR description template, with the documentation checklist |
 | `com.kk.pde.ds.target/*.target` | Target platform definition |
 
 ### Product configuration

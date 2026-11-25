@@ -17,6 +17,16 @@ in the root. All documentation follows ASD-STE100 Simplified Technical English. 
 `anthropic-skills:asd-ste100` skill. Before you commit a doc change, run
 `tools/doccheck/check-docs.sh` (STE lint and links). CI runs the same script.
 
+**Rule: update the documentation after each work item.** Work is not complete until the documentation agrees with it.
+1. After a change, find each document that describes what you changed. Search `README.md`, `CLAUDE.md`, `SECURITY.md`,
+   `docs/*.md`, `.claude/skills/` and the comments in the poms and scripts. Search for the names, versions, commands,
+   properties and error messages that you changed. Example: `git grep -n "4.0.13"`.
+2. Update each of these documents in the same pull request as the change. Do not leave the update for a later pull request.
+3. If you change a documented Windows command, also change its anchor in `.github/verify-windows/verify.ps1`.
+4. A document must state only facts that a build, a test or a run showed. Mark each other fact as "not tested".
+5. Run `tools/doccheck/check-docs.sh`. It must exit 0.
+6. In the pull request description, list the documents that you updated. If no document needed an update, write the reason.
+
 | File | Read it for |
 |------|-------------|
 | `README.md` | Entry page: feature overview, quick start, index of all docs |
@@ -130,7 +140,9 @@ To apply the layout to a different project: `docs/adding-tests-to-a-tycho-projec
 
 - Commits: conventional subjects with a scope. Examples: `feat(rag): ...`, `fix(ecf): ...`,
   `test(spike): ...`, `docs(claude): ...`, `chore(serena): ...`.
-- Work goes to `main` through PRs from `feat/*`, `fix/*` or `docs/*` branches.
+- Work goes to `main` through PRs from `feat/*`, `fix/*`, `docs/*`, `ci/*` or `chore/*` branches. A branch protection
+  rule on `main` requires the 4 CI jobs (`build`, `docs`, `pde2tycho-windows`, `windows-docs`) to pass before a merge.
+  The rule needs no review, blocks force pushes and deletion of `main`, and does not apply to admins.
 - CI: `.github/workflows/build.yml` runs on each pull request to `main` and each push to `main`, on Temurin 21:
   1. `build` (Linux): `./mvnw --batch-mode --no-transfer-progress clean verify`, then `./mvnw --batch-mode --no-transfer-progress -f tools/pde2tycho verify`
   2. `docs` (Linux): `tools/doccheck/check-docs.sh`
