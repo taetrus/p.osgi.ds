@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes the 16 application bundles and their Declarative Services (DS) wiring.
+This document describes the 17 application bundles and their Declarative Services (DS) wiring.
 Each diagram comes from the `OSGI-INF/*.xml` files, because Felix SCR reads those files.
 The `.java` annotations do not control SCR in this project. See "How SCR reads the wiring".
 

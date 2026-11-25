@@ -274,7 +274,7 @@ Notes from the prototype:
 - The `ss` command of the session writes only to the session streams. It does not write to the
   local terminal.
 
-The six facts above are tested. Their numbers in the table are the numbers of these points:
+The rows of the table above are the six facts. Their numbers are the numbers of these points:
 
 1. A session from `CommandProcessor.createSession` can run `ss` and `scr:list`.
 2. `AbstractWebConsolePlugin` gets the GET and POST requests for the paths below its label, and

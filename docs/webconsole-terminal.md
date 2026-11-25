@@ -134,7 +134,7 @@ Status codes of `exec`:
 | 204 | The line is empty. Nothing runs. |
 | 403 | The token is missing or wrong, or `terminal.shell.enabled` is `false`. |
 | 413 | The line is longer than 4096 characters. |
-| 503 | There is no Gogo `CommandProcessor`, or the queue does not accept the line. |
+| 503 | There is no Gogo `CommandProcessor`, or the queue does not accept the line. A tier-1 test covers the status. It is not tested on a runtime. |
 
 Vendored browser files (MIT license, in `res/`): xterm.js 6.0.0, addon-search 0.16.0 and
 addon-fit 0.11.0. `res/VERSIONS.txt` lists the source and the SHA-256 of each file. The plugin
@@ -171,7 +171,7 @@ Terminal: this bundle started after the Gogo runtime. Printed output stops showi
 - A different component that replaces `System.out` after this bundle is not captured after that.
   The plugin does not replace the stream again.
 - WebConsole 4.x only (`javax.servlet`).
-- If the application has no Gogo `CommandProcessor` service, the page is read-only.
+- If the application has no Gogo `CommandProcessor` service, the page is read-only (not tested on a runtime).
 - After a product restart, an open page says that the connection is closed and becomes
   read-only. Reload the page. This was tested (row 13 of the manual test).
 
@@ -183,7 +183,7 @@ Terminal: this bundle started after the Gogo runtime. Printed output stops showi
   no new type of access. It makes that access easier.
 - **Token.** The plugin makes a random token of 128 bits when it starts. The page contains the
   token. `exec` needs the token in the header `X-Terminal-Token`. A page from a different origin
-  cannot read the token. After an application restart the token is new, and an old page gets 403.
+  cannot read the token (not tested). After an application restart the token is new, and an old page gets 403.
 - **Escape sequences.** The server keeps the color and style sequences (`ESC [ ... m`). It strips
   all other escape sequences and the other C0 control characters (but not tab). Output cannot move
   the cursor, clear the screen or change the title of the page.
