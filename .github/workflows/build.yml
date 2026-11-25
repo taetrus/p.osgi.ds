@@ -35,9 +35,74 @@ jobs:
       - name: Check docs (STE lint and links)
         run: tools/doccheck/check-docs.sh
 
+  windows-docs:
+    # Runs the Windows commands of the docs (README.md, docs/*.md) on windows-latest, exactly
+    # as the docs show them, in cmd.exe, Windows PowerShell 5.1 and pwsh 7. This includes the
+    # full reactor build, the tests, a product start and a pde2tycho scan. The harness finds
+    # each command by the text of its line (.github/verify-windows/verify.ps1), so a doc change
+    # that moves or edits such a line must update its anchor. Each phase runs even when an
+    # earlier phase fails; the last step fails the job if any check failed.
+    runs-on: windows-latest
+    timeout-minutes: 150
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Block openrouter.ai (no LLM calls from CI)
+        run: |
+          Add-Content -Path C:\Windows\System32\drivers\etc\hosts -Value "`r`n127.0.0.1 openrouter.ai`r`n::1 openrouter.ai"
+
+      - name: Builds in PowerShell and cmd
+        continue-on-error: true
+        run: .github/verify-windows/verify.ps1 -Phase ps-build
+
+      - name: Test commands
+        continue-on-error: true
+        run: .github/verify-windows/verify.ps1 -Phase tests
+
+      - name: Runtime commands
+        continue-on-error: true
+        run: .github/verify-windows/verify.ps1 -Phase runtime
+
+      - name: Resume from distribution
+        continue-on-error: true
+        run: .github/verify-windows/verify.ps1 -Phase resume
+
+      - name: Summary
+        if: always()
+        run: |
+          Get-Process java -ErrorAction SilentlyContinue | Stop-Process -Force
+          $f = 'verify-logs/summary.tsv'
+          if (-not (Test-Path $f)) { Write-Host '::error::No check wrote a result'; exit 1 }
+          $s = @(Get-Content $f)
+          $s | ForEach-Object { Write-Host $_ }
+          "| id | result | where | shell | note |`n|---|---|---|---|---|" | Out-File $env:GITHUB_STEP_SUMMARY -Append
+          $s | ForEach-Object { '| ' + ($_.Replace('|', '\|') -replace "`t", ' | ') + ' |' } | Out-File $env:GITHUB_STEP_SUMMARY -Append
+          $fail = @($s | Where-Object { ($_ -split "`t")[1] -ne 'PASS' })
+          if ($fail.Count) { $fail | ForEach-Object { Write-Host "::error::$_" }; exit 1 }
+          # A phase that crashes writes no result; keep this equal to the checks in verify.ps1.
+          $expected = 17
+          if ($s.Count -ne $expected) { Write-Host "::error::$($s.Count) results, expected $expected"; exit 1 }
+          Write-Host "All $($s.Count) checks passed."
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-docs-logs
+          path: verify-logs/
+
   pde2tycho-windows:
     # pde2tycho generates Windows run scripts and reads Windows paths, so its tests
-    # also run on Windows. The Tycho reactor build stays on Linux only.
+    # also run on Windows.
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4

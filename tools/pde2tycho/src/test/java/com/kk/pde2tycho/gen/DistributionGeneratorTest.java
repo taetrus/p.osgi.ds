@@ -91,7 +91,7 @@ class DistributionGeneratorTest {
 	@Test
 	void groupIdIsXmlEscaped() throws Exception {
 		Inventory base = inventory();
-		Inventory odd = new Inventory("/ws", "com.x&y", "1.0.0-SNAPSHOT", "4.0.13", base.environments(), base.projects(),
+		Inventory odd = new Inventory("/ws", "com.x&y", "1.0.0-SNAPSHOT", "5.0.4", base.environments(), base.projects(),
 				base.target(), base.launches(), base.warnings());
 		Path dir = generate(odd); // parses pom.xml, category.xml and the product
 		assertTrue(Files.readString(dir.resolve("category.xml")).contains("<category name=\"com.x&amp;y\"/>"));

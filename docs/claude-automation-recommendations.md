@@ -1,7 +1,7 @@
 # Claude Code Automation Recommendations
 
 This document recommends Claude Code automations for the **p.osgi.ds** project. The project uses
-OSGi Declarative Services, Maven Tycho 4.0.13, Java 8 bytecode and a target platform from the
+OSGi Declarative Services, Maven Tycho 5.0.4, Java 8 bytecode and a target platform from the
 Eclipse 2025-03 line. The document combines the first top-pick recommendations with more options
 in all five categories.
 
@@ -20,7 +20,7 @@ in all five categories.
 
 - **Type:** Java 8 bytecode, OSGi Declarative Services, many bundles. The reactor has **19
   modules** (`pom.xml` `<modules>`). `fatjar` is not in the reactor. It has a separate build.
-- **Build:** Maven Tycho 4.0.13 on a target platform from Maven Central. The target pins
+- **Build:** Maven Tycho 5.0.4 on a target platform from Maven Central. The target pins
   `org.eclipse.osgi` 3.23.0 (Equinox, 2025-03 line).
 - **Bundles**, by cluster:
   - Core demo: `api`, `imp`, `app`, `rest`
@@ -72,7 +72,7 @@ in all five categories.
 ## 🔌 MCP Servers
 
 ### 1. context7: project-scoped registration *(top pick)*
-**Why:** The project uses Felix SCR 2.2.12, OSGi SCR annotations 1.5.1, Tycho 4.0.13 and Felix
+**Why:** The project uses Felix SCR 2.2.12, OSGi SCR annotations 1.5.1, Tycho 5.0.4 and Felix
 HTTP Whiteboard. These APIs change between minor versions. The global CLAUDE.md already prefers
 context7. A project-local `.mcp.json` gives context7 to *each* clone of this repository. Claude
 then uses it for Felix, Tycho and OSGi questions with no prompt.

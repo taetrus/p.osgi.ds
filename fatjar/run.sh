@@ -1,6 +1,6 @@
 #!/bin/bash
 # Run the fat JAR. Build it first when it is missing.
-# The builds use the Maven Wrapper (Maven 3.9.16): Tycho 4.0.13 does not start on Maven 3.10.
+# The builds use the Maven Wrapper. On Maven 3.10.2, the full build of this repository fails at `com.kk.pde.ds.chatbot`. The wrapper pins Maven 3.9.16, the version that CI uses.
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

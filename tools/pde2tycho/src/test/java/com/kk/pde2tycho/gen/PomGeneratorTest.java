@@ -65,7 +65,7 @@ class PomGeneratorTest {
 
 	@Test
 	void coordinatesAreXmlEscaped() throws Exception {
-		Inventory odd = new Inventory("/ws", "com.x&y", "1.0<2", "4.0.13", inv.environments(), inv.projects(),
+		Inventory odd = new Inventory("/ws", "com.x&y", "1.0<2", "5.0.4", inv.environments(), inv.projects(),
 				inv.target(), inv.launches(), inv.warnings());
 		Project p = new Project("x", Kind.PLUGIN, "/x", "com.x&lib", "2.1.0.<q>", null, List.of(), true);
 		String module = PomGenerator.module(odd, p);

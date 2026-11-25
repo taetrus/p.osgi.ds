@@ -49,8 +49,8 @@ Otherwise the next regeneration silently undoes the fix.
    `<outdir>/MIGRATION-REPORT.md`, and copy in any file it says belongs in
    `distribution/configuration/` (ask where the file is if it is unclear).
 
-5. **Build** with the generated Maven Wrapper (Tycho 4 does not start on Maven 3.10) and an
-   explicit JDK, because Maven may fork a different one. Without internet, set `MVNW_REPOURL`
+5. **Build** with the generated Maven Wrapper (it pins Maven 3.9.16, the version that the CI of this repository uses) and an
+   explicit JDK 21 or later (Tycho 5 runs on Java 21), because Maven may fork a different one. Without internet, set `MVNW_REPOURL`
    to the Maven mirror (for example `https://<nexus>/repository/maven-public`):
    ```bash
    cd <outdir> && JAVA_HOME=$(/usr/libexec/java_home -v 21) ./mvnw -B clean verify

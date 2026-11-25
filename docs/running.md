@@ -25,7 +25,7 @@ This document tells you how to start, configure, log, debug and control the OSGi
 ## Requirements
 
 - Java 8 or newer runs the product. The run scripts and CI use Java 21.
-- JDK 17 or newer builds the product. For the build, refer to [build.md](build.md).
+- JDK 21 or newer builds the product, because Tycho 5 runs on Java 21. For the build, refer to [build.md](build.md).
 - The run scripts use the `java` command on your `PATH`.
 
 ## Start the product

@@ -30,9 +30,9 @@ Related documents:
 
 | Requirement | Version |
 |-------------|---------|
-| **JDK to build** | 17 or newer. Tycho 4 needs it, and the tier-2 test runtime needs `JavaSE-17`. CI uses Temurin 21. |
+| **JDK to build** | 21 or newer. Tycho 5 runs on Java 21, and the tier-2 test runtime needs `JavaSE-17`. CI uses Temurin 21. |
 | **Java to run** | 8 or newer. All shipped bundles and the fat JAR launcher use Java 8 bytecode. |
-| **Maven** | Use the Maven Wrapper: `./mvnw`. On Windows, use `mvnw.cmd` in `cmd.exe` or `.\mvnw.cmd` in PowerShell. The wrapper pins Maven 3.9.16 in `.mvn/wrapper/maven-wrapper.properties`. Tycho 4.0.13 does not start on Maven 3.10. |
+| **Maven** | Use the Maven Wrapper: `./mvnw`. On Windows, use `mvnw.cmd` in `cmd.exe` or `.\mvnw.cmd` in PowerShell. On Maven 3.10.2, the full build of this repository fails at `com.kk.pde.ds.chatbot`. The wrapper pins Maven 3.9.16, the version that CI uses. The wrapper reads the version from `.mvn/wrapper/maven-wrapper.properties`. Refer to [troubleshooting.md](troubleshooting.md#maven-310-cannot-build-this-repository). |
 | **Internet** | Maven must download the target platform dependencies. |
 
 > **Local JDK note:** Homebrew `mvn` can use a different JDK than `java -version` shows. To use the same JDK as CI on macOS, set `JAVA_HOME=$(/usr/libexec/java_home -v 21)`.
@@ -72,13 +72,23 @@ For the test commands, see [testing.md](testing.md).
 
 Maven Tycho builds this Eclipse PDE / OSGi DS project without an IDE. Tycho resolves the target platform from Maven Central. Then it makes a p2 repository and runnable products for each platform.
 
-GitHub Actions runs the workflow on each push to `main` and on each pull request to `main`. The workflow is [.github/workflows/build.yml](../.github/workflows/build.yml). It has three jobs. The `build` job runs on `ubuntu-latest` and has these steps:
+GitHub Actions runs the workflow on each push to `main` and on each pull request to `main`. The workflow is [.github/workflows/build.yml](../.github/workflows/build.yml). It has four jobs. The `build` job runs on `ubuntu-latest` and has these steps:
 
 1. Set up JDK 21 (Temurin), with a Maven cache.
 2. Run `./mvnw --batch-mode --no-transfer-progress clean verify`.
 3. Run `./mvnw --batch-mode --no-transfer-progress -f tools/pde2tycho verify`. This step tests the PDE-to-Tycho migration tool, which is outside the Tycho reactor.
 
 The `pde2tycho-windows` job runs the pde2tycho tests on `windows-latest` with `.\mvnw.cmd`. pde2tycho reads Windows paths and generates Windows run scripts, so its tests must also pass on Windows.
+
+The `windows-docs` job runs the Windows commands of the docs on `windows-latest`. It runs each command exactly as the doc shows it, in `cmd.exe`, Windows PowerShell 5.1 and PowerShell 7. The job has 17 checks:
+
+- The full build with `.\mvnw.cmd` and `mvnw.cmd`, the fat JAR, and a build without tests.
+- The single-test commands of [testing.md](testing.md), in each shell.
+- A start of the product with `run.bat`, an HTTP request to `/api/greet` and a PowerShell call to the MCP server.
+- A pde2tycho scan with `pde2tycho.bat`, and a build that continues from `distribution`.
+
+The harness script `.github/verify-windows/verify.ps1` finds each command by the text of its line in the doc. If you change such a line, change the anchor in the script too.
+If an anchor finds no line, or more than one line, the check fails. If one check fails, the job fails. The job summary shows a table of all results.
 
 The `docs` job runs on `ubuntu-latest`. It runs [tools/doccheck/check-docs.sh](../tools/doccheck/check-docs.sh). The script does two checks:
 
@@ -88,6 +98,8 @@ The `docs` job runs on `ubuntu-latest`. It runs [tools/doccheck/check-docs.sh](.
 `ste-lint.py` is a copy of the linter of the `asd-ste100` skill, under the MIT license (`tools/doccheck/LICENSE-ste-lint`). Run the script locally before you push a doc change.
 
 The workflow uses the wrapper and not the system `mvn` of the runner. The reason is the Maven 3.10 problem in [Requirements](#requirements).
+
+A branch protection rule on `main` makes the 4 jobs required. A pull request can merge only when `build`, `docs`, `pde2tycho-windows` and `windows-docs` pass. The rule needs no review. It blocks force pushes to `main` and the deletion of `main`. It does not apply to repository admins. If you rename a job, also change the rule. Otherwise GitHub waits for a check with the old name, and no pull request can merge.
 
 ---
 
@@ -122,7 +134,7 @@ The fat JAR is a separate build. See [fat-jar.md](fat-jar.md).
 
 ```xml
 <properties>
-    <tycho.version>4.0.13</tycho.version>
+    <tycho.version>5.0.4</tycho.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
@@ -368,7 +380,9 @@ p.osgi.ds/
 ├── pom.xml                           # Parent POM (Tycho build, 19 modules)
 ├── mvnw, mvnw.cmd                    # Maven Wrapper (use these, not the system mvn)
 ├── .mvn/wrapper/                     # Wrapper config (pins Maven 3.9.16)
-├── .github/workflows/build.yml       # CI: ./mvnw clean verify on Temurin 21
+├── .github/workflows/build.yml       # CI: 4 jobs on Temurin 21 (see Continuous integration)
+├── .github/verify-windows/           # Harness of the windows-docs job
+├── .github/pull_request_template.md  # PR description, with the documentation checklist
 ├── CLAUDE.md                         # IDE guidance
 ├── README.md                         # Project overview
 ├── SECURITY.md                       # Known exposures of the localhost HTTP surface
@@ -532,6 +546,8 @@ The tables below give the purpose of the important files. The tree in [Project s
 | `*/pom.xml` | Module-specific POMs |
 | `mvnw`, `mvnw.cmd`, `.mvn/wrapper/maven-wrapper.properties` | Maven Wrapper (Maven 3.9.16) |
 | `.github/workflows/build.yml` | CI workflow |
+| `.github/verify-windows/verify.ps1`, `lib.ps1` | Harness of the `windows-docs` job: the Windows commands of the docs and their anchors |
+| `.github/pull_request_template.md` | PR description template, with the documentation checklist |
 | `com.kk.pde.ds.target/*.target` | Target platform definition |
 
 ### Product configuration

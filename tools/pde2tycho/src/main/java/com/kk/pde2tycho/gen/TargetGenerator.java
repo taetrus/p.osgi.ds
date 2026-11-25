@@ -45,7 +45,7 @@ final class TargetGenerator {
 				Files.copy(Path.of(jar.jar()), plugins.resolve(jar.bsn() + "_" + jar.version() + ".jar"),
 						StandardCopyOption.REPLACE_EXISTING);
 			}
-			// The only form Tycho 4.0.13 resolves; relative, ${project_loc} and ${basedir} yield nothing.
+			// ${project_loc:/<module>} is the form verified on Tycho 5.0.4. On Tycho 4.0.13 the other forms gave nothing.
 			locations.append("\t\t<location path=\"${project_loc:/").append(id)
 					.append("}/vendor/plugins\" type=\"Directory\"/>\n");
 		}

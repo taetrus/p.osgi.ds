@@ -26,7 +26,7 @@ final class GenFixtures {
 	}
 
 	static Inventory inventory(List<Project> projects, Target target, List<LaunchBundle> bundles) {
-		return new Inventory("/ws", "com.x", "1.0.0-SNAPSHOT", "4.0.13",
+		return new Inventory("/ws", "com.x", "1.0.0-SNAPSHOT", "5.0.4",
 				List.of("macosx/cocoa/aarch64", "macosx/cocoa/x86_64", "win32/win32/x86_64"), projects, target,
 				List.of(launch(bundles)), List.of());
 	}

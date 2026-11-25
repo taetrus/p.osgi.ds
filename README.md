@@ -20,7 +20,7 @@ This README is the entry page. All documentation is in [`docs/`](docs/). Each fe
 
 ## Overview
 
-This repository is a **showcase**. It is a Java 8 OSGi application built with **Maven Tycho 4.0.13**. Each module shows one technique from end to end.
+This repository is a **showcase**. It is a Java 8 OSGi application built with **Maven Tycho 5.0.4**. Each module shows one technique from end to end.
 
 | Feature | What it shows | Read more |
 |---------|---------------|-----------|
@@ -45,9 +45,9 @@ This repository is a **showcase**. It is a Java 8 OSGi application built with **
 
 | Requirement | Version |
 |-------------|---------|
-| **JDK to build** | 17 or newer. CI uses Temurin 21 |
+| **JDK to build** | 21 or newer, because Tycho 5 runs on Java 21. CI uses Temurin 21 |
 | **Java to run** | 8 or newer |
-| **Maven** | Use the Maven Wrapper: `./mvnw`. On Windows, use `mvnw.cmd` in `cmd.exe` or `.\mvnw.cmd` in PowerShell. It pins Maven 3.9.16. Tycho 4.0.13 does not start on Maven 3.10 |
+| **Maven** | Use the Maven Wrapper: `./mvnw`. On Windows, use `mvnw.cmd` in `cmd.exe` or `.\mvnw.cmd` in PowerShell. On Maven 3.10.2, the full build of this repository fails at `com.kk.pde.ds.chatbot`. The wrapper pins Maven 3.9.16, the version that CI uses. |
 | **Internet** | Maven must download the target platform dependencies |
 
 For more detail, see [`docs/build.md`](docs/build.md).

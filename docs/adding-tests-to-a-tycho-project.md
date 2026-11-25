@@ -3,10 +3,10 @@
 This guide shows the test layout of this repository. Apply it to a different (larger) Tycho
 project, one bundle at a time. We verified the layout on these versions:
 
-- Tycho 4.0.13
+- Tycho 5.0.4
 - JUnit 5.12 and Mockito 5.14
 - Equinox 3.23 (the target pins `org.eclipse.osgi` 3.23.0)
-- JDK 17 or later for the build (CI uses Temurin 21)
+- JDK 21 or later for the build, because Tycho 5 runs on Java 21 (CI uses Temurin 21)
 
 Copy from these two example bundles:
 
@@ -86,6 +86,11 @@ folder. Add the file name to `.gitignore`.
     <!-- Not a Maven-transitive dep of junit-jupiter, but the Jupiter engine's OSGi manifest
          requires the launcher capability; tier 2 cannot resolve without it. -->
     <dependency><groupId>org.junit.platform</groupId><artifactId>junit-platform-launcher</artifactId><version>${junit-platform.version}</version><scope>test</scope></dependency>
+    <!-- Tycho 5 only: its JUnit 5 provider fragment (org.eclipse.tycho.surefire.junit5)
+         imports org.junit.platform.suite.api and .suite.engine, so the in-framework
+         tier cannot resolve without them. No test here uses @Suite. -->
+    <dependency><groupId>org.junit.platform</groupId><artifactId>junit-platform-suite-api</artifactId><version>${junit-platform.version}</version><scope>test</scope></dependency>
+    <dependency><groupId>org.junit.platform</groupId><artifactId>junit-platform-suite-engine</artifactId><version>${junit-platform.version}</version><scope>test</scope></dependency>
     <dependency><groupId>org.mockito</groupId><artifactId>mockito-core</artifactId><version>${mockito.version}</version><scope>test</scope></dependency>
     <dependency><groupId>org.mockito</groupId><artifactId>mockito-junit-jupiter</artifactId><version>${mockito.version}</version><scope>test</scope></dependency>
     <dependency><groupId>net.bytebuddy</groupId><artifactId>byte-buddy</artifactId><version>${bytebuddy.version}</version><scope>test</scope></dependency>
@@ -131,6 +136,12 @@ The parent declares the executions too. Thus each bundle only lists the plugin t
              dragged into Equinox (where Mockito is absent). -->
         <test>${it.test}</test>
         <failIfNoTests>true</failIfNoTests>
+        <!-- Tycho builds one test fragment from all of src_test/, tier-1 classes
+             included, and those import Mockito, which is not in the Equinox
+             runtime. Tycho 4 made every import of the fragment optional; Tycho 5
+             does so only on request. Without this the fragment stays INSTALLED
+             and the run ends with "No tests found". -->
+        <importAdditionalPackagesOptional>true</importAdditionalPackagesOptional>
         <!-- Felix SCR must be started early or no DS component activates. Bundles pull SCR
              into the runtime with an extraRequirement (step 4); this makes it auto-start.
              Use org.eclipse.equinox.ds / org.apache.felix.scr as appropriate. -->
@@ -237,6 +248,8 @@ Add this to the same `pom.xml`:
 <dependencies>
   …tier-1 deps…
   <dependency><groupId>org.junit.platform</groupId><artifactId>junit-platform-launcher</artifactId></dependency>
+  <dependency><groupId>org.junit.platform</groupId><artifactId>junit-platform-suite-api</artifactId></dependency>
+  <dependency><groupId>org.junit.platform</groupId><artifactId>junit-platform-suite-engine</artifactId></dependency>
   <dependency><groupId>org.osgi</groupId><artifactId>org.osgi.framework</artifactId></dependency>
 </dependencies>
 <build>
@@ -328,8 +341,7 @@ mvn test   -pl … -Dtest='SomeTest#method'
 mvn verify -pl … -Dit.test=SomeIT                # tier 2 (the property from step 1c)
 ```
 
-**Note:** This repository runs these goals through the Maven Wrapper `./mvnw` (Maven
-3.9.16). Tycho 4.0.13 does not start on Maven 3.10.
+**Note:** This repository runs these goals through the Maven Wrapper `./mvnw`. On Maven 3.10.2, the full build of this repository fails at `com.kk.pde.ds.chatbot`. The wrapper pins Maven 3.9.16, the version that CI uses.
 
 Reports:
 
@@ -355,6 +367,9 @@ Tycho assembles the tier-2 runtime in `<bundle>/target/work/`:
 | `You requested to install 'osgi.bundle; org.eclipse.equinox.launcher 0.0.0' but it could not be found` | `plugin-test` starts through the launcher. | Add the launcher to the target platform (1d). |
 | `org.eclipse.core.jobs … requires Execution Environment … (version=17) but the current resolution context uses [a.jre.javase 1.8.0]` | Tycho resolved the runtime with the Java 8 BREE of the bundle. | Set `resolveWithExecutionEnvironmentConstraints=false` (section 3). |
 | `junit-jupiter-engine … requires 'org.junit.platform.launcher…' but it could not be found` | The aggregate `junit-jupiter` does not contain the launcher. | Add the `junit-platform-launcher` test dependency. |
+| `You requested to install 'java.package; org.junit.platform.suite.api [1.0.0,2.0.0)' but it could not be found` | The Tycho 5 JUnit provider imports the JUnit suite packages. | Add `junit-platform-suite-api` and `junit-platform-suite-engine` as test dependencies of the bundle. |
+| `No tests found`, after `Tests run: 0` | The generated test fragment has a mandatory import that the runtime does not have (for example `org.mockito`). The fragment stays `INSTALLED`. | Set `<importAdditionalPackagesOptional>true</importAdditionalPackagesOptional>` on `tycho-surefire-plugin`. To see the state, add `-Dtycho.printBundles=true`. |
+| `NoClassDefFoundError` in a `*IT` class | The parent pom makes the extra imports of the test fragment optional (`importAdditionalPackagesOptional`), so the build resolves without the package. Tycho 4 behaved the same. | Make the host bundle import the package, or add the bundle with an `extraRequirement`. If the class is from Mockito, move the test to a `*Test` class. |
 | The process stops with code 13. The Equinox log shows `Could not resolve module: <bundle> … Unresolved requirement: Require-Capability: osgi.extender; … osgi.component` | Tycho did not install SCR. | Add `extraRequirements` for `org.apache.felix.scr` (section 3). Add `bundleStartLevel` (1c). |
 | A `*IT` class passes, but service lookups return `null`. | Tycho installed SCR but did not start it. | Add `bundleStartLevel` with `autoStart=true` (1c). |
 | `mvn verify -Dtest=SomeTest` also runs `SomeTest` in Equinox. It fails because Mockito is not there. | The two plugins read `-Dtest`. | Bind the Tycho `<test>` to `${it.test}` with a default value that is not empty (1c). |
@@ -399,5 +414,5 @@ The target project can use one of these alternatives:
   still supports it, but the Tycho documentation calls it "legacy". It adds one module for
   each bundle that you test.
 - **JUnit tags instead of name suffixes.** Tags are cleaner in principle. But on Tycho
-  4.0.13, the documentation of the `plugin-test` parameter `groups` still describes JUnit 4
+  5.0.4, the documentation of the `plugin-test` parameter `groups` still describes JUnit 4
   behavior. Thus we did not use tags.

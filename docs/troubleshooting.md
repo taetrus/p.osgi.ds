@@ -5,7 +5,8 @@ This document lists known problems with the build and the running product. Each 
 ## Contents
 
 - [Build problems](#build-problems)
-  - [Maven 3.10 cannot start Tycho](#maven-310-cannot-start-tycho)
+  - [Maven 3.10 cannot build this repository](#maven-310-cannot-build-this-repository)
+  - [An old JDK cannot start Tycho](#an-old-jdk-cannot-start-tycho)
   - [`-pl X -am` cannot find an OSGi bundle](#-pl-x--am-cannot-find-an-osgi-bundle)
 - [Start problems](#start-problems)
   - [The script cannot find the OSGi jar](#the-script-cannot-find-the-osgi-jar)
@@ -24,21 +25,54 @@ This document lists known problems with the build and the running product. Each 
 
 ## Build problems
 
-### Maven 3.10 cannot start Tycho
+### Maven 3.10 cannot build this repository
 
-**Symptom:** the build stops with `No implementation for MavenTargetLocationFactory was bound`.
+**Symptom:** the build stops at the module `com.kk.pde.ds.chatbot` with this error:
 
-**Cause:** Tycho 4.0.13 does not start on Maven 3.10.
+```text
+[ERROR] Invalid Collect Request: null -> [... com.kk.pde.ds:com.kk.pde.ds.chatbot:jar:lib/commonmark-0.21.0.jar:1.0.0.qualifier (system) ...]
+```
+
+The modules before it build and pass their tests.
+
+**Cause:** Tycho 5.0.4 gives each jar on the `Bundle-ClassPath` of a bundle to Maven as a
+system-scoped dependency. It uses the path of the jar as the classifier, for example
+`lib/commonmark-0.21.0.jar`. Maven 3.10 uses Maven Resolver 2.x. This resolver refuses a
+classifier that contains `/`. With `-e`, Maven shows the reason:
+
+```text
+Suppressed: java.lang.IllegalArgumentException: Invalid classifier: must not contain '..', '/', '\' or ':': lib/commonmark-0.21.0.jar
+```
+
+`com.kk.pde.ds.chatbot` is the only bundle in this repository with jars on its `Bundle-ClassPath`.
+This is Tycho issue [#6399](https://github.com/eclipse-tycho/tycho/issues/6399). The `tycho-5.0.x`
+branch has a fix (commit `fe12918ff`). On 2026-11-24, no Tycho release has this fix. The latest
+release is 5.0.4.
 
 **Fix:**
 
-1. Use the Maven Wrapper in the repository root. It pins Maven 3.9.16.
+1. Use the Maven Wrapper in the repository root. It pins Maven 3.9.16, the version that CI uses.
    ```bash
    ./mvnw clean verify
    ```
 2. Do not use the system `mvn` if it is Maven 3.10.
 
 For the build procedure, refer to [build.md](build.md).
+
+### An old JDK cannot start Tycho
+
+**Symptom:** the build stops before the first module with `UnsupportedClassVersionError` and
+`class file version 65.0`.
+
+**Cause:** Tycho 5.0.4 runs on Java 21 or later. The JDK that runs Maven is older.
+
+**Fix:**
+
+1. Set `JAVA_HOME` to a JDK 21 or later.
+   ```bash
+   JAVA_HOME=$(/usr/libexec/java_home -v 21) ./mvnw clean verify
+   ```
+2. The product still runs on Java 8 or later. This requirement is for the build only.
 
 ### `-pl X -am` cannot find an OSGi bundle
 
