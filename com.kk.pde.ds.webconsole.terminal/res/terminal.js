@@ -50,6 +50,19 @@
     }
     window.addEventListener('resize', fit);
     fit();
+    // The layout is not final at the first call. Fit again after it settles.
+    try {
+        window.requestAnimationFrame(fit);
+    } catch (e) {
+        // No animation frame: the resize handler still fits.
+    }
+    try {
+        if (document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(fit, function () { });
+        }
+    } catch (e) {
+        // No font events: the resize handler still fits.
+    }
 
     // ---- Input line state ------------------------------------------------------------------
 
