@@ -12,9 +12,10 @@ import org.junit.jupiter.api.Test;
  * number it saw and asks for the lines after it.
  * </p>
  * <p>
- * These tests prove four things: sequence numbers start at 1 and grow by one; the
+ * These tests prove five things: sequence numbers start at 1 and grow by one; the
  * buffer drops the oldest lines when it is full; a reader learns how many lines it
- * missed; and {@code await} wakes up when a line arrives or when the time is over.
+ * missed; a reader near the end of a full buffer gets only its new lines; and
+ * {@code await} wakes up when a line arrives or when the time is over.
  * </p>
  */
 class OutputHubTest {
@@ -65,6 +66,22 @@ class OutputHubTest {
         assertEquals(3, batch.lines.size());
         assertEquals(8, batch.lines.get(0).seq);
         assertEquals(10, batch.lines.get(2).seq);
+    }
+
+    /** A reader near the end of a full buffer gets only its new lines. */
+    @Test
+    void sinceReturnsOnlyNewLinesFromFullBuffer() {
+        OutputHub hub = new OutputHub(50_000);
+        for (int i = 0; i < 50_000; i++) {
+            hub.append("out", "l" + i);
+        }
+        long last = hub.lastSeq();
+        OutputHub.Batch batch = hub.since(last - 2);
+        assertEquals(2, batch.lines.size());
+        assertEquals(last - 1, batch.lines.get(0).seq);
+        assertEquals(last, batch.lines.get(1).seq);
+        assertEquals(0, batch.dropped);
+        assertTrue(hub.since(last).lines.isEmpty());
     }
 
     @Test

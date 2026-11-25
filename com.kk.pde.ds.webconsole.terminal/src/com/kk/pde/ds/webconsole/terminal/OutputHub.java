@@ -1,7 +1,8 @@
 package com.kk.pde.ds.webconsole.terminal;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -94,14 +95,17 @@ public final class OutputHub {
         }
     }
 
-    // The caller holds the lock.
+    // The caller holds the lock. The sequence numbers in the buffer are contiguous, so the walk
+    // starts at the newest line and stops at afterSeq. The cost is the number of new lines, not
+    // the buffer size, and a writer waits less for the lock.
     private Batch snapshot(long afterSeq) {
-        List<Line> lines = new ArrayList<Line>();
-        for (Line line : buffer) {
-            if (line.seq > afterSeq) {
-                lines.add(line);
-            }
+        long wanted = Math.min(Math.max(0, lastSeq - afterSeq), buffer.size());
+        Line[] newest = new Line[(int) wanted];
+        Iterator<Line> it = buffer.descendingIterator();
+        for (int i = newest.length - 1; i >= 0; i--) {
+            newest[i] = it.next();
         }
+        List<Line> lines = Arrays.asList(newest);
         long dropped = 0;
         if (!buffer.isEmpty()) {
             long oldest = buffer.peekFirst().seq;
