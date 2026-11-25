@@ -7,9 +7,8 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -61,7 +60,7 @@ public class TerminalPlugin extends AbstractWebConsolePlugin {
 	}
 
 	public void bindProcessor(CommandProcessor processor) {
-		PrintStream out = new PrintStream(new Activator.Tee(new NullOutputStream(), Activator.LINES), true);
+		PrintStream out = new PrintStream(new HubOutputStream(), true);
 		InputStream in = new ByteArrayInputStream(new byte[0]);
 		session = processor.createSession(in, out, out);
 	}
@@ -116,16 +115,23 @@ public class TerminalPlugin extends AbstractWebConsolePlugin {
 	}
 
 	private static void run(CommandSession s, String line) {
-		Activator.LINES.add("osgi> " + line);
+		add("cmd", "osgi> " + line);
 		try {
 			Object result = s.execute(line);
 			if (result != null) {
 				for (String l : s.format(result, 0).toString().split("\r?\n", -1)) {
-					Activator.LINES.add(l);
+					add("out", l);
 				}
 			}
 		} catch (Exception e) {
-			Activator.LINES.add("gogo: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+			add("err", "gogo: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+		}
+	}
+
+	private static void add(String type, String text) {
+		TerminalRuntime runtime = TerminalRuntime.get();
+		if (runtime != null) {
+			runtime.hub().append(type, TextSanitizer.colorByLevel(TextSanitizer.clean(text)));
 		}
 	}
 
@@ -135,25 +141,26 @@ public class TerminalPlugin extends AbstractWebConsolePlugin {
 		res.setHeader("Cache-Control", "no-cache");
 		PrintWriter pw = res.getWriter();
 		long seq = 0;
-		List<String> batch = new ArrayList<>();
 		while (!pw.checkError()) {
-			batch.clear();
-			long next = Activator.LINES.drainTo(seq, batch);
-			long id = next - batch.size();
-			for (String l : batch) {
-				pw.print("id: " + id++ + "\ndata: " + l + "\n\n");
+			TerminalRuntime runtime = TerminalRuntime.get();
+			if (runtime == null) {
+				return;
 			}
-			if (batch.isEmpty()) {
-				pw.print(": keep-alive\n\n");
-			}
-			pw.flush();
-			seq = next;
+			OutputHub.Batch batch;
 			try {
-				Activator.LINES.await(seq, 15_000);
+				batch = runtime.hub().await(seq, 15_000);
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 				return;
 			}
+			for (OutputHub.Line l : batch.lines) {
+				pw.print("id: " + l.seq + "\ndata: " + l.text + "\n\n");
+				seq = l.seq;
+			}
+			if (batch.lines.isEmpty()) {
+				pw.print(": keep-alive\n\n");
+			}
+			pw.flush();
 		}
 	}
 
@@ -167,10 +174,18 @@ public class TerminalPlugin extends AbstractWebConsolePlugin {
 		return new String(buf.toByteArray(), StandardCharsets.UTF_8);
 	}
 
-	private static final class NullOutputStream extends OutputStream {
+	/** Sends the session output to the hub, one line at a time. */
+	private static final class HubOutputStream extends OutputStream {
+		private final LineAssembler lines = new LineAssembler(Charset.defaultCharset(), l -> add("out", l));
+
 		@Override
 		public void write(int b) {
-			// Discard. The session output goes to the buffer only.
+			write(new byte[] { (byte) b }, 0, 1);
+		}
+
+		@Override
+		public void write(byte[] b, int off, int len) {
+			lines.write(b, off, len);
 		}
 	}
 }
