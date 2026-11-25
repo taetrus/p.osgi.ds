@@ -224,8 +224,9 @@ public class ShellIT {
     /**
      * An unbind from the running command waits for the command. A close from outside (the
      * component deactivates) does not wait: it closes that session at once and ends the close
-     * thread. The command ignores the interrupt and blocks on, so only the close itself can end
-     * the close thread. The test keeps the default bound of 30 s, longer than its 3 s deadline.
+     * thread. The test keeps the default bound of 30 s, longer than its 3 s deadline. It is a
+     * guard: it also passed before {@code closeRetiring()}, because on Gogo 1.1.6 the interrupt
+     * of the worker makes {@code execute()} return, and the worker then ends the close thread.
      */
     @Test
     void closeFromOutsideEndsAPendingDeferredClose() throws Exception {
