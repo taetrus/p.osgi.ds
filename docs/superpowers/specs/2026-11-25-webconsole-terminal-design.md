@@ -1,7 +1,7 @@
 # WebConsole Terminal Plugin: Design
 
 **Date:** 2026-11-25
-**Status:** Draft, revision 2. It waits for approval.
+**Status:** Approved 2026-11-25. Implemented on branch feat/webconsole-terminal.
 
 ## Intent
 
@@ -153,6 +153,8 @@ browser page that opens the plugin is a view of the same console.
 - `exit`, `close` and `shutdown` stop the application, the same as in the local terminal.
 - A Gogo error (for example `gogo: CommandNotFoundException`) shows in red.
 - If the application has no Gogo `CommandProcessor` service, the page is read-only.
+- The server refuses a line with a control character (status 400). A line break would run two
+  statements under one echo. The echo goes through the same output filter as all other lines.
 
 ### Browser
 
@@ -210,6 +212,7 @@ What the user sees:
 |-----------|----------|
 | No `CommandProcessor` service | The page shows "Shell not available" and stays read-only. |
 | Token missing or wrong (for example after a restart of the application) | Status 403. The page tells the user to load it again. |
+| The line contains a control character (below `0x20`, `0x7F`, or `0x80` to `0x9F`) | Status 400. Nothing runs. The check comes after the empty-line check (204) and before 202. Added in the final review, 2026-11-25. |
 | The command throws an exception | The message shows in red. The session stays open. |
 | A different component replaces `System.out` after the plugin | The plugin does not capture the output after that. It does not replace the stream again. |
 

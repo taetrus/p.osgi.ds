@@ -59,7 +59,8 @@ In this project, a person writes each XML file by hand.
 The build does not make the XML files from the annotations.
 Thus the XML file is the source of truth, and the annotations are documentation only.
 
-The bundles import `org.osgi.service.component.annotations` with `resolution:=optional`.
+The bundles that use the annotations import `org.osgi.service.component.annotations` with `resolution:=optional`.
+`com.kk.pde.ds.webconsole.terminal` uses no annotations and does not import the package.
 At runtime, nothing reads the annotations.
 
 **Proof.** `App.stop()` has `@Deactivate`.

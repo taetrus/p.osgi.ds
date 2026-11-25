@@ -530,8 +530,8 @@ These lines in the log are normal:
 
 ### D.1 Test classes
 
-The project contains seventeen tier 1 classes with **117 tests** and four tier 2 classes with
-**9 tests**. The Javadoc of each class is a short lesson about one test idea.
+The project contains eighteen tier 1 classes with **122 tests** and four tier 2 classes with
+**10 tests**. The Javadoc of each class is a short lesson about one test idea.
 
 | Bundle | Class | Tier | Tests | What the class teaches |
 |--------|-------|------|-------|------------------------|
@@ -543,16 +543,17 @@ The project contains seventeen tier 1 classes with **117 tests** and four tier 2
 | `com.kk.pde.ds.spike.master` | `CatalogServiceImplTest` | 1 | 10 | The state of a DS component. The test calls the `@Activate` method directly from `@BeforeEach`. |
 | `com.kk.pde.ds.imp` | `GreetHealthCheckTest` | 1 | 6 | **Mockito, part 1.** Why a test needs a test double. A hand-written double and `mock()`. `doThrow(...).when(mock).greet()` for a `void` method. `verify`, `times(1)` and `verifyNoMoreInteractions`. `@ExtendWith(MockitoExtension.class)`, `@Mock`, and `@InjectMocks` into a private `@Reference` field. |
 | `com.kk.pde.ds.spike.master` | `MasterAppTest` | 1 | 6 | **Mockito, part 2.** `when(...).thenReturn(...)`, `ArgumentCaptor`, `InOrder`, `spy()` and its two problems. Swing code without a screen, with `SwingUtilities.invokeAndWait`. |
-| `com.kk.pde.ds.webconsole.terminal` | `OutputHubTest` | 1 | 7 | A bounded ring buffer: sequence numbers, continue after a number, lines that are gone. |
+| `com.kk.pde.ds.webconsole.terminal` | `OutputHubTest` | 1 | 8 | A bounded ring buffer: sequence numbers, continue after a number, lines that are gone, only the new lines from a full buffer. |
 | `com.kk.pde.ds.webconsole.terminal` | `LineAssemblerTest` | 1 | 6 | Bytes to lines: decoding, line ends and a partial line. |
 | `com.kk.pde.ds.webconsole.terminal` | `StdCaptureTest` | 1 | 7 | A tee on `System.out` and `System.err`: write to both targets, put the streams back, and do not replace a foreign stream. |
 | `com.kk.pde.ds.webconsole.terminal` | `TextSanitizerTest` | 1 | 12 | Control characters and escape sequences in output: keep the colors, remove the rest. |
 | `com.kk.pde.ds.webconsole.terminal` | `SseEncoderTest` | 1 | 3 | The text format of Server-Sent Events. |
 | `com.kk.pde.ds.webconsole.terminal` | `TokenTest` | 1 | 4 | The random request token and its check. |
-| `com.kk.pde.ds.webconsole.terminal` | `ShellTest` | 1 | 10 | The Gogo worker with a mock `CommandSession`: order of commands, echo, errors. |
+| `com.kk.pde.ds.webconsole.terminal` | `ShellTest` | 1 | 12 | The Gogo worker with a mock `CommandSession`: order of commands, echo, the filter on the echo, errors, a result that ends with a line break. |
 | `com.kk.pde.ds.webconsole.terminal` | `ActivatorTest` | 1 | 2 | The warning when the bundle starts after the Gogo runtime. |
-| `com.kk.pde.ds.webconsole.terminal` | `TerminalPluginTest` | 1 | 12 | The HTTP contract with a mock request and response: the status codes of `exec`, the stream and the static files. |
-| `com.kk.pde.ds.webconsole.terminal` | `ShellIT` | 2 | 1 | A real Gogo command in a running framework. The result arrives in the hub. |
+| `com.kk.pde.ds.webconsole.terminal` | `TerminalPluginTest` | 1 | 13 | The HTTP contract with a mock request and response: the status codes of `exec` (also 400 for a control character), the stream and the static files. |
+| `com.kk.pde.ds.webconsole.terminal` | `NoGogoTest` | 1 | 1 | An optional import in practice: a child-first class loader refuses the Gogo package, and the plugin still loads, activates, renders the page and answers 503. |
+| `com.kk.pde.ds.webconsole.terminal` | `ShellIT` | 2 | 2 | A real Gogo command in a running framework. The result arrives in the hub. A command that closes the shell is not interrupted. |
 | `com.kk.pde.ds.webconsole.terminal` | `TerminalPluginIT` | 2 | 2 | The plugin registers as a servlet service. A `System.out.println` of a different bundle arrives in the hub. The bundle must start before Gogo. |
 | `com.kk.pde.ds.imp` | `GreetServiceIT` | 2 | 3 | **In the framework, part 1.** The bundle is ACTIVE. SCR registers `IGreet`, and the service is a `Greet`. Real DS injection supplies the `@Reference` of the health check. |
 | `com.kk.pde.ds.spike.master` | `CatalogServiceIT` | 2 | 3 | **In the framework, part 2.** SCR calls `@Activate` (five items). SCR registers `ICatalogService` with the `service.exported.*` properties that the ECF export needs. |
