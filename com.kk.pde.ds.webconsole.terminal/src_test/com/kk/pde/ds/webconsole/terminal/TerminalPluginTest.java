@@ -32,6 +32,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 /**
  * <h2>Tier 1: the HTTP contract of the terminal plugin, with a mock request and response</h2>
@@ -46,7 +47,9 @@ import org.junit.jupiter.api.Test;
  * <p>
  * The stream loop runs until a write fails. A stream test gives a response writer that fails
  * on the second flush, and sets a short ping interval. {@code PrintWriter.checkError()} also
- * flushes. Thus the loop writes one batch and ends. {@code TerminalPluginIT} checks the registration in a real framework.
+ * flushes. Thus the loop writes one batch and ends. Each stream test has {@code @Timeout(10)}, so
+ * a loop that does not end fails the test and does not stop the build.
+ * {@code TerminalPluginIT} checks the registration in a real framework.
  * </p>
  */
 class TerminalPluginTest {
@@ -157,6 +160,21 @@ class TerminalPluginTest {
         verify(shell, never()).submit(anyString());
     }
 
+    /**
+     * A control character in the line is refused with 400, after the empty check. A line break
+     * would run a second Gogo statement under one echo. An escape sequence would reach each page.
+     */
+    @Test
+    void execWithControlCharacterIs400() throws Exception {
+        post(TOKEN, "ss\nlb");
+        HttpServletResponse first = res;
+        res = mock(HttpServletResponse.class);
+        post(TOKEN, "a\u001b[2Jb");
+        verify(first).sendError(400);
+        verify(res).sendError(400);
+        verify(shell, never()).submit(anyString());
+    }
+
     @Test
     void resServesOnlyKnownNames() throws Exception {
         TerminalPlugin p = plugin();
@@ -191,6 +209,7 @@ class TerminalPluginTest {
     }
 
     @Test
+    @Timeout(10)
     void streamStartsAfterLastEventId() throws Exception {
         hub.append("out", "one");
         hub.append("out", "two");
@@ -203,6 +222,7 @@ class TerminalPluginTest {
     }
 
     @Test
+    @Timeout(10)
     void streamRestartsWhenLastEventIdIsAhead() throws Exception {
         hub.append("out", "one");
         hub.append("out", "two");
@@ -212,6 +232,7 @@ class TerminalPluginTest {
     }
 
     @Test
+    @Timeout(10)
     void streamReportsGoneLines() throws Exception {
         hub = new OutputHub(2);
         for (int i = 1; i <= 5; i++) {

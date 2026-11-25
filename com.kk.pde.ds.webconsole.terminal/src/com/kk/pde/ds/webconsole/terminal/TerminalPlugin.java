@@ -17,7 +17,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.felix.service.command.CommandProcessor;
 import org.apache.felix.webconsole.AbstractWebConsolePlugin;
 import org.osgi.framework.BundleContext;
 
@@ -32,6 +31,12 @@ import org.osgi.framework.BundleContext;
  * names the methods {@code activate}, {@code deactivate}, {@code bindProcessor} and
  * {@code unbindProcessor}. SCR calls the bind method before {@code activate}, so the plugin
  * keeps the processor until the shell exists.
+ * </p>
+ * <p>
+ * The Gogo import is optional. Thus no field and no method signature of this class names a Gogo
+ * type: the bind methods take {@code Object}, and only {@link Shell} casts to the Gogo type.
+ * Without that, {@code Class.getDeclaredMethods()} (SCR, {@code HttpServlet.doOptions}) fails
+ * with {@code NoClassDefFoundError} in an application with no Gogo. {@code NoGogoTest} checks this.
  * </p>
  */
 public class TerminalPlugin extends AbstractWebConsolePlugin {
@@ -64,7 +69,7 @@ public class TerminalPlugin extends AbstractWebConsolePlugin {
     private transient volatile String token;
     private transient volatile Config config;
     private transient volatile boolean active;
-    private transient CommandProcessor processor; // guarded by this
+    private transient Object processor; // a Gogo CommandProcessor, guarded by this
 
     /** For SCR. */
     public TerminalPlugin() {
@@ -125,14 +130,15 @@ public class TerminalPlugin extends AbstractWebConsolePlugin {
         super.deactivate();
     }
 
-    public synchronized void bindProcessor(CommandProcessor newProcessor) {
+    /** SCR calls this with the Gogo {@code CommandProcessor}. */
+    public synchronized void bindProcessor(Object newProcessor) {
         processor = newProcessor;
         if (shell != null) {
             shell.bind(newProcessor);
         }
     }
 
-    public synchronized void unbindProcessor(CommandProcessor oldProcessor) {
+    public synchronized void unbindProcessor(Object oldProcessor) {
         if (processor == oldProcessor) {
             processor = null;
         }
@@ -198,6 +204,10 @@ public class TerminalPlugin extends AbstractWebConsolePlugin {
         }
         if (line.isEmpty()) {
             res.setStatus(HttpServletResponse.SC_NO_CONTENT);
+            return;
+        }
+        if (hasControlCharacter(line)) {
+            res.sendError(HttpServletResponse.SC_BAD_REQUEST);
             return;
         }
         if (!current.submit(line)) {
@@ -293,6 +303,17 @@ public class TerminalPlugin extends AbstractWebConsolePlugin {
             len--;
         }
         return len > MAX_LINE ? null : new String(buf, 0, len);
+    }
+
+    // A line break would run a second statement, and an escape sequence would reach every page.
+    private static boolean hasControlCharacter(String line) {
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i);
+            if (c < 0x20 || c == 0x7f || (c >= 0x80 && c <= 0x9f)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean shellEnabled() {

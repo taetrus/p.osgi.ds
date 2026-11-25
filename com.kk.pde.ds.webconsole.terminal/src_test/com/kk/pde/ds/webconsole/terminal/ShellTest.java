@@ -16,6 +16,7 @@ import java.util.List;
 
 import org.apache.felix.service.command.CommandProcessor;
 import org.apache.felix.service.command.CommandSession;
+import org.apache.felix.service.command.Converter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -86,6 +87,34 @@ class ShellTest {
         OutputHub.Line first = hub.since(0).lines.get(0);
         assertEquals("cmd", first.type);
         assertEquals("osgi> ss", first.text);
+    }
+
+    /** The echo goes through {@link TextSanitizer}, as all other output does. */
+    @Test
+    void echoIsSanitized() throws Exception {
+        shell.close();
+        shell = new Shell(hub, "osgi\u001b]0;x\u0007> ");
+        shell.bind(processor);
+        assertTrue(shell.submit("ss\u001b]0;x\u0007"));
+        assertTrue(waitForType("done"));
+        OutputHub.Line first = hub.since(0).lines.get(0);
+        assertEquals("cmd", first.type);
+        assertEquals(-1, first.text.indexOf('\u001b'), first.text);
+    }
+
+    /** A result that ends with a line break gives no empty line before the done line. */
+    @Test
+    void resultWithTrailingLineBreakGivesNoEmptyLine() throws Exception {
+        when(session.execute("r")).thenReturn("x");
+        when(session.format("x", Converter.INSPECT)).thenReturn("one\ntwo\n");
+        shell.bind(processor);
+        shell.submit("r");
+        assertTrue(waitForType("done"));
+        List<OutputHub.Line> lines = hub.since(0).lines;
+        assertEquals(4, lines.size());
+        assertEquals("one", lines.get(1).text);
+        assertEquals("two", lines.get(2).text);
+        assertEquals("done", lines.get(3).type);
     }
 
     @Test
