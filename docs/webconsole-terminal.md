@@ -249,10 +249,8 @@ restart the application. An `update` or a `refresh` of the Gogo runtime is not t
   503 and the page becomes read-only (see [Use the plugin in a different application](#use-the-plugin-in-a-different-application)).
 - A stop of the Gogo runtime from a Gogo command prevents a later start of the Gogo runtime (see
   [Stop of the Gogo runtime](#stop-of-the-gogo-runtime)).
-- The terminal can stay shorter than the window after the page loads. A resize of the window
-  fits it again (not tested). See the Windows run in [Manual test procedure](#manual-test-procedure).
-- After a product restart, an open page says that the connection is closed and becomes
-  read-only. Reload the page. This was tested (row 13 of the manual test).
+- After a product restart, an open page cannot run commands. Reload the page. Row 13 of the
+  manual test shows the two messages that the page can write.
 
 ## Security
 
@@ -328,8 +326,19 @@ Start the product with `./distribution/scripts/run.sh`. Row 14 needs
 | 10 | Paste two lines (`ss` and `lb`). Press Enter. | The page asks once. After Enter, `ss` runs, then `lb`. Each echo shows before its own output. |
 | 11 | Reload the page. | The same lines show again. |
 | 12 | Open a second tab. Run `lb` in it. | Both tabs show the same echo and the same output. |
-| 13 | Stop the product, start it again. Run `ss` in the old page. | The old page says that the connection is closed and gets 403. After a reload, `ss` works. |
+| 13 | Stop the product, start it again. Run `ss` in the old page. | One of two results (see below the table). After a reload, `ss` works. |
 | 14 | Start with `-Dterminal.shell.enabled=false`. Open the page. | The page shows output and no prompt. Typing runs nothing. `exec` answers 403. |
+
+Row 13 has two results. The timing of the restart selects one of them:
+
+- The stream connects again after the restart. `ss` gets 403, and the page writes
+  `[the page is old, load it again]`. The macOS run showed this (screenshot and network log).
+  Windows runs also showed it.
+- The browser stops the stream connection. A probable cause (not tested) is a non-200 answer during the
+  restart. The page writes `[the connection is closed, load the page again]` and becomes
+  read-only. `ss` sends no request. One Windows run showed this.
+
+While the product is down, the page writes `[connection lost, connecting again]` first.
 
 The tests and the browser run used JDK 21. A run on Java 8 used `curl` only (2026-11-25, Temurin 1.8.0_512,
 macOS x86_64, the product of commit `fc7ef9c`):
@@ -347,24 +356,28 @@ A run on Windows used the same 14 rows (2026-11-25, GitHub Actions `windows-late
 - Microsoft Windows Server 2025 Datacenter 10.0.26100, Temurin 21.0.13, Node v22.23.5.
 - Headless Google Chrome 157.0.8103.79, driven over the DevTools protocol.
 - The product started with `distribution\scripts\run.bat` and stopped with `Stop-Process`.
-- Result: 13 rows passed. Row 1 failed in 2 of 4 runs.
+- Result on the final code: 14 rows passed. Row 1 also ran 8 more times, each time in a new tab.
+  The 8 runs passed.
 
-The failure of row 1: the terminal does not fill the window height. The last run recorded this
-sequence for `#terminal`:
+Before a fix, row 1 failed in 2 of 4 runs. The terminal did not fill the window height. The
+runs recorded this sequence for `#terminal`:
 
-1. At 220 ms the top was at 255 px. `terminal.js` set the height to 534 px (805 - 255 - 16).
-2. At 250 ms, after the `load` event, the top moved to 132 px. The window height did not change.
+1. At about 220 ms the top was at 255 px. `terminal.js` set the height to 534 px (805 - 255 - 16).
+2. About 30 ms later, after the `load` event, the WebConsole page moved the top to 132 px. The
+   window height did not change.
 3. The page got no `resize` event, so the height stayed 534 px. The expected height was 657 px.
    An empty band of 123 px stayed below the terminal.
 
-The WebConsole page moved the terminal after `terminal.js` fitted it. The other fits (animation
-frame, `document.fonts.ready`) also came before the move. In the two runs that passed, the
-height was 657 px. The cause is not specific to Windows (not tested on macOS with this timing).
-A fix is not done yet.
+The fix: `terminal.js` observes `document.body` with a `ResizeObserver`. Content above the
+terminal that changes also changes the body size, so `fit()` runs again. `fit()` changes the
+height only when the value differs. Thus the observer does not loop. The `resize` listener
+stays. Without `ResizeObserver`, the page fits one time more in an animation frame (not tested).
+On the final code, each run recorded the same move (top 255 px, then 132 px), and the height
+became 657 px. In three workflow runs, all 27 runs of row 1 passed (3 in the full test, 24 in new tabs).
 
-In row 13 on Windows, the old page wrote `[connection lost, connecting again]` while the product
-was down. After the restart, the stream connected again. `ss` got 403, and the page wrote
-`[the page is old, load it again]`.
+A macOS run on the final code repeated rows 1 and 5 in headless Google Chrome 158.0.8127.38
+(2026-11-25). Row 1 passed in 5 of 5 new tabs (top 132 px, height 665 px, window height 813
+px). Row 5 passed.
 
 Not tested: a browser on Java 8, a headed (visible) browser, Firefox, Safari, a browser on
 Windows other than headless Chrome, and a runtime with no Gogo.
