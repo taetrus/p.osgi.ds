@@ -530,8 +530,8 @@ These lines in the log are normal:
 
 ### D.1 Test classes
 
-The project contains eighteen tier 1 classes with **122 tests** and four tier 2 classes with
-**10 tests**. The Javadoc of each class is a short lesson about one test idea.
+The project contains eighteen tier 1 classes with **124 tests** and four tier 2 classes with
+**12 tests**. The Javadoc of each class is a short lesson about one test idea.
 
 | Bundle | Class | Tier | Tests | What the class teaches |
 |--------|-------|------|-------|------------------------|
@@ -551,9 +551,9 @@ The project contains eighteen tier 1 classes with **122 tests** and four tier 2 
 | `com.kk.pde.ds.webconsole.terminal` | `TokenTest` | 1 | 4 | The random request token and its check. |
 | `com.kk.pde.ds.webconsole.terminal` | `ShellTest` | 1 | 12 | The Gogo worker with a mock `CommandSession`: order of commands, echo, the filter on the echo, errors, a result that ends with a line break. |
 | `com.kk.pde.ds.webconsole.terminal` | `ActivatorTest` | 1 | 2 | The warning when the bundle starts after the Gogo runtime. |
-| `com.kk.pde.ds.webconsole.terminal` | `TerminalPluginTest` | 1 | 13 | The HTTP contract with a mock request and response: the status codes of `exec` (also 400 for a control character), the stream and the static files. |
-| `com.kk.pde.ds.webconsole.terminal` | `NoGogoTest` | 1 | 1 | An optional import in practice: a child-first class loader refuses the Gogo package, and the plugin still loads, activates, renders the page and answers 503. |
-| `com.kk.pde.ds.webconsole.terminal` | `ShellIT` | 2 | 2 | A real Gogo command in a running framework. The result arrives in the hub. A command that closes the shell is not interrupted. |
+| `com.kk.pde.ds.webconsole.terminal` | `TerminalPluginTest` | 1 | 15 | The HTTP contract with a mock request and response: the status codes of `exec`, the stream and the static files. A control character gives 400, and a tab gives 202. A page with no processor is read-only. |
+| `com.kk.pde.ds.webconsole.terminal` | `NoGogoTest` | 1 | 1 | An optional import in practice: a child-first class loader refuses the Gogo package, and the plugin still loads, activates, renders the page and answers 503. The page is read-only. |
+| `com.kk.pde.ds.webconsole.terminal` | `ShellIT` | 2 | 4 | A real Gogo command in a running framework. The result arrives in the hub. A command that closes the shell or unbinds the processor is not interrupted. A command that blocks after the close is interrupted after the limit. |
 | `com.kk.pde.ds.webconsole.terminal` | `TerminalPluginIT` | 2 | 2 | The plugin registers as a servlet service. A `System.out.println` of a different bundle arrives in the hub. The bundle must start before Gogo. |
 | `com.kk.pde.ds.imp` | `GreetServiceIT` | 2 | 3 | **In the framework, part 1.** The bundle is ACTIVE. SCR registers `IGreet`, and the service is a `Greet`. Real DS injection supplies the `@Reference` of the health check. |
 | `com.kk.pde.ds.spike.master` | `CatalogServiceIT` | 2 | 3 | **In the framework, part 2.** SCR calls `@Activate` (five items). SCR registers `ICatalogService` with the `service.exported.*` properties that the ECF export needs. |
