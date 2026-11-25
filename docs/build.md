@@ -74,7 +74,7 @@ Maven Tycho builds this Eclipse PDE / OSGi DS project without an IDE. Tycho reso
 
 GitHub Actions runs the workflow on each push to `main` and on each pull request to `main`. The workflow is [.github/workflows/build.yml](../.github/workflows/build.yml). It has four jobs. The `build` job runs on `ubuntu-latest` and has these steps:
 
-1. Set up JDK 21 (Temurin), with a Maven cache.
+1. Set up JDK 21 (Temurin) with `actions/setup-java@v6` and `cache: maven`. This step restores two caches: the Maven repository (`~/.m2/repository`) and the Maven distribution of the wrapper (`~/.m2/wrapper/dists`). The other jobs use the same step.
 2. Run `./mvnw --batch-mode --no-transfer-progress clean verify`.
 3. Run `./mvnw --batch-mode --no-transfer-progress -f tools/pde2tycho verify`. This step tests the PDE-to-Tycho migration tool, which is outside the Tycho reactor.
 
@@ -98,6 +98,8 @@ The `docs` job runs on `ubuntu-latest`. It runs [tools/doccheck/check-docs.sh](.
 `ste-lint.py` is a copy of the linter of the `asd-ste100` skill, under the MIT license (`tools/doccheck/LICENSE-ste-lint`). Run the script locally before you push a doc change.
 
 The workflow uses the wrapper and not the system `mvn` of the runner. The reason is the Maven 3.10 problem in [Requirements](#requirements).
+
+The wrapper downloads Maven 3.9.16 from Maven Central when `~/.m2/wrapper/dists` does not contain it. With the cache, a job does not download it again. Thus a short Maven Central outage does not stop the job before Maven starts. The cache key is a hash of `.mvn/wrapper/maven-wrapper.properties`. When you change the Maven version in that file, the next run downloads the new version one time.
 
 A branch protection rule on `main` makes the 4 jobs required. A pull request can merge only when `build`, `docs`, `pde2tycho-windows` and `windows-docs` pass. The rule needs no review. It blocks force pushes to `main` and the deletion of `main`. It does not apply to repository admins. If you rename a job, also change the rule. Otherwise GitHub waits for a check with the old name, and no pull request can merge.
 
