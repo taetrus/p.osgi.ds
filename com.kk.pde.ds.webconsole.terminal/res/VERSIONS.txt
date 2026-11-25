@@ -1,0 +1,29 @@
+Vendored browser files of the WebConsole terminal (downloaded 2026-11-25)
+=========================================================================
+
+The files are copies of the npm registry tarballs, with no change. No npm install and no
+script of the packages ran. The SHA-512 integrity of each tarball matched the value in the
+registry metadata. License: MIT (see the LICENSE-*.txt files).
+
+Package               Version  Tarball
+@xterm/xterm          6.0.0    https://registry.npmjs.org/@xterm/xterm/-/xterm-6.0.0.tgz
+@xterm/addon-search   0.16.0   https://registry.npmjs.org/@xterm/addon-search/-/addon-search-0.16.0.tgz
+@xterm/addon-fit      0.11.0   https://registry.npmjs.org/@xterm/addon-fit/-/addon-fit-0.11.0.tgz
+
+Add-on versions: the newest releases on 2026-11-25 (dist-tag "latest"). Their package.json
+has no peerDependencies field. The three releases have the same gitHead
+(f447274f430fd22513f6adbf9862d19524471c04) and the same release day (2025-12-22). Thus they
+come from the same xterm.js release as @xterm/xterm 6.0.0.
+
+File in res/              File in the tarball          SHA-256
+xterm.js                  package/lib/xterm.js         14903579ff54664cd72f8e8699e6961a6272c21863ec1c3b118cdc8af5d4a972
+xterm.css                 package/css/xterm.css        854a7c0fb70e8b1a083c16797ab827299fb18744f5ad34f227b48337e33293c6
+addon-search.js           package/lib/addon-search.js  7bc1b8c7b3549411f6f6f779524c4ded6ca621fd80d64b40a70ae7c78aefbf55
+addon-fit.js              package/lib/addon-fit.js     ba3ea256ce0620a0992a197d6c9baea64823fc93d8da07a9e366ca9943c18527
+LICENSE-xterm.txt         package/LICENSE (xterm)      b569f629d00f2626a8100df2a1798210535621e42164dfd426a6fe5aac7b0ccd
+LICENSE-addon-search.txt  package/LICENSE (search)     689ceb10716bd7a87a804c14951d7c2b818cbd60aab83d540902470ce3b13444
+LICENSE-addon-fit.txt     package/LICENSE (fit)        e256f01188af527e4d06d21d06fbf785ae9c50d4b328bf03cbe0ba7f0aa4228f
+
+The .js files are UMD builds. They give these globals: Terminal (xterm.js),
+SearchAddon.SearchAddon (addon-search.js), FitAddon.FitAddon (addon-fit.js).
+Each .js file ends with a sourceMappingURL comment. The plugin does not serve the .map files.
