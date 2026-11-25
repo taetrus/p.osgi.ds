@@ -39,6 +39,6 @@ switch ($Phase) {
     }
     'resume' {
         Invoke-Doc -Id 'V30-install' -Literal 'mvnw.cmd clean install -DskipTests' -Shell cmd -Expect $ok -TimeoutSec 1800 -Note 'harness: install first' | Out-Null
-        Invoke-Doc -Id 'V31-rf-after-install' -File 'docs/build.md' -Anchor './mvnw verify -rf :distribution' -Replace @{ './mvnw' = 'mvnw.cmd' } -Shell cmd -Expect $ok -TimeoutSec 1800 | Out-Null
+        Invoke-Doc -Id 'V31-rf-after-install' -File 'docs/build.md' -Anchor './mvnw verify -rf :distribution-BROKEN' -Replace @{ './mvnw' = 'mvnw.cmd' } -Shell cmd -Expect $ok -TimeoutSec 1800 | Out-Null
     }
 }
