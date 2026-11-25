@@ -249,6 +249,8 @@ restart the application. An `update` or a `refresh` of the Gogo runtime is not t
   503 and the page becomes read-only (see [Use the plugin in a different application](#use-the-plugin-in-a-different-application)).
 - A stop of the Gogo runtime from a Gogo command prevents a later start of the Gogo runtime (see
   [Stop of the Gogo runtime](#stop-of-the-gogo-runtime)).
+- The terminal can stay shorter than the window after the page loads. A resize of the window
+  fits it again (not tested). See the Windows run in [Manual test procedure](#manual-test-procedure).
 - After a product restart, an open page says that the connection is closed and becomes
   read-only. Reload the page. This was tested (row 13 of the manual test).
 
@@ -339,7 +341,33 @@ macOS x86_64, the product of commit `fc7ef9c`):
 5. The log line of a later `GET /api/greet` came on the stream.
 6. The log had no start-order warning and no `UnsupportedClassVersionError`.
 
-Not tested: a browser on Java 8, a headed (visible) browser, Firefox, Safari, Windows, and a runtime with no Gogo.
+A run on Windows used the same 14 rows (2026-11-25, GitHub Actions `windows-latest`, image
+`win25-vs2026 20261116.315.1`):
+
+- Microsoft Windows Server 2025 Datacenter 10.0.26100, Temurin 21.0.13, Node v22.23.5.
+- Headless Google Chrome 157.0.8103.79, driven over the DevTools protocol.
+- The product started with `distribution\scripts\run.bat` and stopped with `Stop-Process`.
+- Result: 13 rows passed. Row 1 failed in 2 of 4 runs.
+
+The failure of row 1: the terminal does not fill the window height. The last run recorded this
+sequence for `#terminal`:
+
+1. At 220 ms the top was at 255 px. `terminal.js` set the height to 534 px (805 - 255 - 16).
+2. At 250 ms, after the `load` event, the top moved to 132 px. The window height did not change.
+3. The page got no `resize` event, so the height stayed 534 px. The expected height was 657 px.
+   An empty band of 123 px stayed below the terminal.
+
+The WebConsole page moved the terminal after `terminal.js` fitted it. The other fits (animation
+frame, `document.fonts.ready`) also came before the move. In the two runs that passed, the
+height was 657 px. The cause is not specific to Windows (not tested on macOS with this timing).
+A fix is not done yet.
+
+In row 13 on Windows, the old page wrote `[connection lost, connecting again]` while the product
+was down. After the restart, the stream connected again. `ss` got 403, and the page wrote
+`[the page is old, load it again]`.
+
+Not tested: a browser on Java 8, a headed (visible) browser, Firefox, Safari, a browser on
+Windows other than headless Chrome, and a runtime with no Gogo.
 
 ## Check the terminal on Windows
 
