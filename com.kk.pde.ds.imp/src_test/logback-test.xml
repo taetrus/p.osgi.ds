@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Test-only Logback configuration. It is in src_test/, so it never ships in the bundle.
+
+     GreetHealthCheckTest forces the catch branch of GreetHealthCheck.execute() on purpose.
+     That branch logs "Greet Service Health Check failed" with a stack trace at ERROR level.
+     The tests assert the CRITICAL result, so the log line is noise in the build output.
+     This file turns off only that logger. All other loggers keep the INFO level. -->
+<configuration>
+	<appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+		</encoder>
+	</appender>
+
+	<logger name="com.kk.pde.ds.imp.GreetHealthCheck" level="OFF"/>
+
+	<root level="INFO">
+		<appender-ref ref="CONSOLE"/>
+	</root>
+</configuration>
