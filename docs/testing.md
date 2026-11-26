@@ -503,10 +503,12 @@ contains the 6 test cases. Use the total for the bundle. For tier 1 of `imp`, th
 These lines in the log are normal:
 
 - `Mockito is currently self-attaching`. Mockito attaches a Java agent.
-- `ERROR ... Greet Service Health Check failed`. Three tests in `GreetHealthCheckTest`
-  cause this error on purpose.
 - `The digest algorithms (sha-1) ... have severely compromised security`. Tycho 5 prints
   this warning one time for each target bundle.
+
+Three tests in `GreetHealthCheckTest` cause the error `Greet Service Health Check failed`
+on purpose. The file `com.kk.pde.ds.imp/src_test/logback-test.xml` stops this error in the
+log. The file is in `src_test/`, thus it is not in the bundle jar.
 
 ### C.8 Fault isolation
 

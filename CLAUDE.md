@@ -125,9 +125,10 @@ This layout is the reference for a larger Tycho project. Keep it clean and easy 
 - **Local Maven can fork a different JDK than `java -version` shows.** Homebrew `mvn` uses its own
   OpenJDK (27) when `JAVA_HOME` is not set. CI uses Temurin 21. To get the CI JDK, run
   `JAVA_HOME=$(/usr/libexec/java_home -v 21) ./mvnw clean verify`. This JDK difference is why the parent pom pins ByteBuddy.
-- Expected log noise: a Mockito "self-attaching" warning. Also `ERROR ... Health Check failed`
-  lines from tests that force the catch branch on purpose. Tycho 5 prints one `The digest algorithms
+- Expected log noise: a Mockito "self-attaching" warning. Tycho 5 prints one `The digest algorithms
   (sha-1) ... have severely compromised security` warning for each target bundle. Trust the `Tests run:` totals.
+  `GreetHealthCheckTest` forces the catch branch on purpose. `imp/src_test/logback-test.xml`
+  turns off the `GreetHealthCheck` logger in tier 1, so its ERROR line does not show.
 - `com.kk.pde.ds.spike.master` gives `-Djava.awt.headless=true` to both tiers. `MasterApp.start()`
   has a headless guard, because SCR activates the real component in the tier-2 runtime.
 - Test libraries (JUnit, Mockito, ByteBuddy) are test-scope dependencies in the pom. They are not
