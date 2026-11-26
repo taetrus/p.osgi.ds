@@ -18,6 +18,7 @@ The design is in `docs/superpowers/specs/2026-11-25-webconsole-terminal-design.m
 - [Security](#security)
 - [Use the plugin in a different application](#use-the-plugin-in-a-different-application)
 - [Manual test procedure](#manual-test-procedure)
+- [Check the terminal on Windows](#check-the-terminal-on-windows)
 - [Related documents](#related-documents)
 
 ## What it is
@@ -248,8 +249,8 @@ restart the application. An `update` or a `refresh` of the Gogo runtime is not t
   503 and the page becomes read-only (see [Use the plugin in a different application](#use-the-plugin-in-a-different-application)).
 - A stop of the Gogo runtime from a Gogo command prevents a later start of the Gogo runtime (see
   [Stop of the Gogo runtime](#stop-of-the-gogo-runtime)).
-- After a product restart, an open page says that the connection is closed and becomes
-  read-only. Reload the page. This was tested (row 13 of the manual test).
+- After a product restart, an open page cannot run commands. Reload the page. Row 13 of the
+  manual test shows the two messages that the page can write.
 
 ## Security
 
@@ -325,8 +326,19 @@ Start the product with `./distribution/scripts/run.sh`. Row 14 needs
 | 10 | Paste two lines (`ss` and `lb`). Press Enter. | The page asks once. After Enter, `ss` runs, then `lb`. Each echo shows before its own output. |
 | 11 | Reload the page. | The same lines show again. |
 | 12 | Open a second tab. Run `lb` in it. | Both tabs show the same echo and the same output. |
-| 13 | Stop the product, start it again. Run `ss` in the old page. | The old page says that the connection is closed and gets 403. After a reload, `ss` works. |
+| 13 | Stop the product, start it again. Run `ss` in the old page. | One of two results (see below the table). After a reload, `ss` works. |
 | 14 | Start with `-Dterminal.shell.enabled=false`. Open the page. | The page shows output and no prompt. Typing runs nothing. `exec` answers 403. |
+
+Row 13 has two results. The timing of the restart selects one of them:
+
+- The stream connects again after the restart. `ss` gets 403, and the page writes
+  `[the page is old, load it again]`. The macOS run showed this (screenshot and network log).
+  Windows runs also showed it.
+- The browser stops the stream connection. A probable cause (not tested) is a non-200 answer during the
+  restart. The page writes `[the connection is closed, load the page again]` and becomes
+  read-only. `ss` sends no request. One Windows run showed this.
+
+While the product is down, the page writes `[connection lost, connecting again]` first.
 
 The tests and the browser run used JDK 21. A run on Java 8 used `curl` only (2026-11-25, Temurin 1.8.0_512,
 macOS x86_64, the product of commit `fc7ef9c`):
@@ -338,7 +350,84 @@ macOS x86_64, the product of commit `fc7ef9c`):
 5. The log line of a later `GET /api/greet` came on the stream.
 6. The log had no start-order warning and no `UnsupportedClassVersionError`.
 
-Not tested: a browser on Java 8, a headed (visible) browser, Firefox, Safari, Windows, and a runtime with no Gogo.
+A run on Windows used the same 14 rows (2026-11-25, GitHub Actions `windows-latest`, image
+`win25-vs2026 20261116.315.1`):
+
+- Microsoft Windows Server 2025 Datacenter 10.0.26100, Temurin 21.0.13, Node v22.23.5.
+- Headless Google Chrome 157.0.8103.79, driven over the DevTools protocol.
+- The product started with `distribution\scripts\run.bat` and stopped with `Stop-Process`.
+- Result on the final code: 14 rows passed. Row 1 also ran 8 more times, each time in a new tab.
+  The 8 runs passed.
+
+Before a fix, row 1 failed in 2 of 4 runs. The terminal did not fill the window height. The
+runs recorded this sequence for `#terminal`:
+
+1. At about 220 ms the top was at 255 px. `terminal.js` set the height to 534 px (805 - 255 - 16).
+2. About 30 ms later, after the `load` event, the WebConsole page moved the top to 132 px. The
+   window height did not change.
+3. The page got no `resize` event, so the height stayed 534 px. The expected height was 657 px.
+   An empty band of 123 px stayed below the terminal.
+
+The fix: `terminal.js` observes `document.body` with a `ResizeObserver`. Content above the
+terminal that changes also changes the body size, so `fit()` runs again. `fit()` changes the
+height only when the value differs. Thus the observer does not loop. The `resize` listener
+stays. Without `ResizeObserver`, the page fits one time more in an animation frame (not tested).
+On the final code, each run recorded the same move (top 255 px, then 132 px), and the height
+became 657 px. In three workflow runs, all 27 runs of row 1 passed (3 in the full test, 24 in new tabs).
+
+A macOS run on the final code repeated rows 1 and 5 in headless Google Chrome 158.0.8127.38
+(2026-11-25). Row 1 passed in 5 of 5 new tabs (top 132 px, height 665 px, window height 813
+px). Row 5 passed.
+
+Not tested: a browser on Java 8, a headed (visible) browser, Firefox, Safari, a browser on
+Windows other than headless Chrome, and a runtime with no Gogo.
+
+## Check the terminal on Windows
+
+Use these commands to check the terminal on Windows without a browser. The commands work in
+Windows PowerShell 5.1 and in PowerShell 7. The `windows-docs` CI job runs them in both shells.
+
+1. Start the product with `distribution\scripts\run.bat`. See [running.md](running.md).
+2. Open a second PowerShell window.
+3. Paste this block. It gets the token, sends `exec` two times and reads the stream for 15 seconds.
+
+   ```powershell
+   $auth = @{ Authorization = 'Basic ' + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes('admin:admin')) }
+   $page = Invoke-WebRequest -UseBasicParsing -Headers $auth -Uri http://localhost:8080/system/console/terminal
+   $token = [regex]::Match($page.Content, 'data-token="([0-9a-f]+)"').Groups[1].Value
+   $exec = 'http://localhost:8080/system/console/terminal/exec'
+   try { Invoke-WebRequest -UseBasicParsing -Method Post -Uri $exec -Headers $auth -ContentType 'text/plain; charset=utf-8' -Body 'ss' } catch { "no token: $([int]$_.Exception.Response.StatusCode)" }
+   $r = Invoke-WebRequest -UseBasicParsing -Method Post -Uri $exec -Headers ($auth + @{ 'X-Terminal-Token' = $token }) -ContentType 'text/plain; charset=utf-8' -Body 'ss'
+   "with token: $($r.StatusCode)"
+   curl.exe -s -N --max-time 15 -u admin:admin http://localhost:8080/system/console/terminal/stream
+   ```
+
+4. Make sure that the output contains these lines:
+   - `no token: 403`. Without the token, `exec` refuses the command.
+   - `with token: 202`. With the token, `exec` queues the command.
+   - `data: osgi> ss`, then the bundle list, then `event: done`.
+5. In the same window, paste this block. It runs `echo äöü` and looks for `äöü` on the stream.
+
+   ```powershell
+   $umlauts = [string][char]0xE4 + [char]0xF6 + [char]0xFC
+   $u = Invoke-WebRequest -UseBasicParsing -Method Post -Uri $exec -Headers ($auth + @{ 'X-Terminal-Token' = $token }) -ContentType 'text/plain; charset=utf-8' -Body ([Text.Encoding]::UTF8.GetBytes("echo $umlauts"))
+   curl.exe -s -N --max-time 15 -u admin:admin -o "$env:TEMP\terminal-stream.txt" http://localhost:8080/system/console/terminal/stream
+   "echo status: $($u.StatusCode), umlauts on the stream: $((Get-Content -Encoding UTF8 "$env:TEMP\terminal-stream.txt") -ccontains "data: $umlauts")"
+   ```
+
+6. Make sure that the output is `echo status: 202, umlauts on the stream: True`.
+
+Notes:
+
+- `curl.exe` stops after 15 seconds with exit code 28. This is expected, because the stream does not end. The 15 seconds give the command time to complete on a slow computer.
+- Use `curl.exe`, not `curl`. In Windows PowerShell 5.1, `curl` is an alias of `Invoke-WebRequest`.
+- `-ContentType 'text/plain; charset=utf-8'` is necessary. Without it, Windows PowerShell 5.1
+  sends a form content type.
+- The block of step 5 uses character codes for `äöü`. Thus the encoding of a script file has no effect.
+  The body goes as UTF-8 bytes.
+- Step 5 checks the shell output path. The command output goes from the Gogo session through a
+  UTF-8 stream of the plugin to the hub, and then to the stream. Step 5 does not check the
+  capture of `System.out` (`StdCapture`). That path uses the console charset of the JVM.
 
 ## Related documents
 

@@ -29,6 +29,25 @@ switch ($Phase) {
                 foreach ($sh in 'powershell', 'pwsh') {
                     Invoke-Doc -Id "V21-$sh-convertto-json" -File 'docs/mcp-server-testing.md' -Anchor '-Body ''{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"echo","arguments":{"message":"hello from powershell"}}}'' |' -Offset -2 -Count 4 -Shell $sh -Expect 'Echo: hello from powershell' | Out-Null
                 }
+                # Terminal plugin: token, exec without and with the token, the stream (step 3).
+                $tAuth = '$auth = @{ Authorization = ''Basic '' + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(''admin:admin'')) }'
+                $tToken = @($tAuth,
+                    '$page = Invoke-WebRequest -UseBasicParsing -Headers $auth -Uri http://localhost:8080/system/console/terminal',
+                    '$token = [regex]::Match($page.Content, ''data-token="([0-9a-f]+)"'').Groups[1].Value',
+                    '$exec = ''http://localhost:8080/system/console/terminal/exec''')
+                foreach ($sh in 'powershell', 'pwsh') {
+                    Invoke-Doc -Id "V23-$sh-terminal-exec-stream" -File 'docs/webconsole-terminal.md' -Anchor $tAuth -Count 8 -Shell $sh -Expect '(?s)no token: 403.*with token: 202.*data: osgi> ss.*event: done' -TimeoutSec 120 | Out-Null
+                }
+                # Terminal plugin: echo of non-ASCII text through the shell output path (step 5).
+                # The anchors are the first four lines of step 3 and the four lines of step 5.
+                $tUmlauts = $tToken + @(
+                    '$umlauts = [string][char]0xE4 + [char]0xF6 + [char]0xFC',
+                    '$u = Invoke-WebRequest -UseBasicParsing -Method Post -Uri $exec -Headers ($auth + @{ ''X-Terminal-Token'' = $token }) -ContentType ''text/plain; charset=utf-8'' -Body ([Text.Encoding]::UTF8.GetBytes("echo $umlauts"))',
+                    'curl.exe -s -N --max-time 15 -u admin:admin -o "$env:TEMP\terminal-stream.txt" http://localhost:8080/system/console/terminal/stream',
+                    '"echo status: $($u.StatusCode), umlauts on the stream: $((Get-Content -Encoding UTF8 "$env:TEMP\terminal-stream.txt") -ccontains "data: $umlauts")"')
+                foreach ($sh in 'powershell', 'pwsh') {
+                    Invoke-Doc -Id "V24-$sh-terminal-utf8" -File 'docs/webconsole-terminal.md' -Anchor $tUmlauts -Shell $sh -Expect 'echo status: 202, umlauts on the stream: True' -TimeoutSec 120 | Out-Null
+                }
             }
         }
         Stop-AllJava
