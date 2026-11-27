@@ -355,10 +355,11 @@ After two fixes, rows 1, 5 and 10 ran again and passed.
 Start the product with `./distribution/scripts/run.sh`. Row 14 needs
 `-Dterminal.shell.enabled=false`.
 
-Rows 15 to 24 ran on 2026-11-27 in headless Google Chrome 158 (macOS), driven over the DevTools
-protocol, and with `curl`. All rows passed. The checks read the state of xterm.js, the computed
-colors at the edges of the terminal, and screenshots. A headed browser, Firefox and Safari are
-not tested. A run on Windows is not tested.
+Rows 15 to 24 ran on 2026-11-27 in Google Chrome 158 on macOS, driven over the DevTools
+protocol, and with `curl`. The rows ran two times: one time headless, and one time in a Chrome
+window (1200 x 800). All rows passed in the two runs. The checks read the state of xterm.js, the
+computed colors at the edges of the terminal, and screenshots. Firefox and Safari are not tested.
+A run on Windows is not tested.
 
 | # | Action | Expected result |
 |---|--------|-----------------|
