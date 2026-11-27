@@ -177,7 +177,7 @@ public class TerminalPlugin extends AbstractWebConsolePlugin {
         pw.println("    <option value=\"courier\">Courier New</option>");
         pw.println("  </select></label>");
         pw.println("  <button type=\"button\" id=\"terminal-font-smaller\" title=\"Smaller font\">-</button>");
-        pw.println("  <span id=\"terminal-font-size\">13</span>");
+        pw.println("  <span id=\"terminal-font-size\">15</span>");
         pw.println("  <button type=\"button\" id=\"terminal-font-larger\" title=\"Larger font\">+</button>");
         pw.println("</div>");
         // Without a bound processor the page is read-only. A later bind needs a reload.

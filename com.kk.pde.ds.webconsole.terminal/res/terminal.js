@@ -3,7 +3,10 @@
  *
  * Contract (TerminalPlugin.renderContent): the element #terminal has data-token, data-shell,
  * data-prompt and data-scrollback. The toolbar has #terminal-search, #terminal-prev,
- * #terminal-next, #terminal-clear and #terminal-follow. xterm.js, addon-search.js and
+ * #terminal-next, #terminal-clear, #terminal-follow, #terminal-export (a plain download link),
+ * #terminal-theme, #terminal-font, #terminal-font-smaller, #terminal-font-size and
+ * #terminal-font-larger. The option values of the two selects are the keys of THEMES and FONTS
+ * below. Theme and font stay in localStorage. xterm.js, addon-search.js and
  * addon-fit.js load before this file and give the globals Terminal, SearchAddon and FitAddon.
  *
  * The server cleans each output line (only color sequences stay), so this file writes the
@@ -35,6 +38,7 @@
     term.loadAddon(fitAddon);
     term.loadAddon(searchAddon);
     term.open(el);
+    var defaultFontFamily = term.options.fontFamily;
 
     // ---- Layout ----------------------------------------------------------------------------
 
@@ -64,6 +68,104 @@
         }
     } catch (e) {
         // No observer and no animation frame: the resize handler still fits.
+    }
+
+    // ---- Settings: theme and font ----------------------------------------------------------
+
+    var SETTINGS_KEY = 'terminal.settings';
+    var FONT_MIN = 10;
+    var FONT_MAX = 24;
+    var FONT_DEFAULT = 15; // the xterm.js default, so the first look does not change
+    var MONO = ', monospace';
+    var FONTS = {
+        'default': null, // the xterm.js default (defaultFontFamily)
+        menlo: 'Menlo, Monaco' + MONO,
+        consolas: 'Consolas, "Lucida Console"' + MONO,
+        dejavu: '"DejaVu Sans Mono", "Liberation Mono"' + MONO,
+        courier: '"Courier New", Courier' + MONO
+    };
+    // Each theme other than Dark sets all 16 ANSI colors, so the red of an error line stays
+    // readable on its background. Dark is the xterm.js default: the look before themes existed.
+    var THEMES = {
+        dark: { background: '#000000', foreground: '#ffffff' },
+        light: {
+            background: '#ffffff', foreground: '#1f2328', cursor: '#1f2328', cursorAccent: '#ffffff',
+            selectionBackground: '#b6d7ff',
+            black: '#24292f', red: '#cf222e', green: '#116329', yellow: '#7d4e00',
+            blue: '#0969da', magenta: '#8250df', cyan: '#1b7c83', white: '#6e7781',
+            brightBlack: '#57606a', brightRed: '#a40e26', brightGreen: '#1a7f37', brightYellow: '#633c01',
+            brightBlue: '#218bff', brightMagenta: '#a475f9', brightCyan: '#3192aa', brightWhite: '#8c959f'
+        },
+        contrast: {
+            background: '#000000', foreground: '#ffffff', cursor: '#ffff00', cursorAccent: '#000000',
+            selectionBackground: '#ffffff', selectionForeground: '#000000',
+            black: '#000000', red: '#ff5555', green: '#55ff55', yellow: '#ffff55',
+            blue: '#6ca8ff', magenta: '#ff77ff', cyan: '#55ffff', white: '#ffffff',
+            brightBlack: '#b0b0b0', brightRed: '#ff8080', brightGreen: '#80ff80', brightYellow: '#ffff80',
+            brightBlue: '#99c2ff', brightMagenta: '#ff99ff', brightCyan: '#80ffff', brightWhite: '#ffffff'
+        },
+        solarized: {
+            background: '#002b36', foreground: '#93a1a1', cursor: '#93a1a1', cursorAccent: '#002b36',
+            selectionBackground: '#274642',
+            black: '#073642', red: '#dc322f', green: '#859900', yellow: '#b58900',
+            blue: '#268bd2', magenta: '#d33682', cyan: '#2aa198', white: '#eee8d5',
+            brightBlack: '#657b83', brightRed: '#cb4b16', brightGreen: '#859900', brightYellow: '#b58900',
+            brightBlue: '#268bd2', brightMagenta: '#6c71c4', brightCyan: '#2aa198', brightWhite: '#fdf6e3'
+        }
+    };
+
+    function own(map, key) {
+        return typeof key === 'string' && Object.prototype.hasOwnProperty.call(map, key);
+    }
+
+    // Each field falls back alone, so one bad value does not reset the others.
+    function loadSettings() {
+        var value = {};
+        try {
+            value = JSON.parse(window.localStorage.getItem(SETTINGS_KEY) || '{}') || {};
+        } catch (e) {
+            value = {};
+        }
+        var size = value.fontSize;
+        return {
+            theme: own(THEMES, value.theme) ? value.theme : 'dark',
+            fontFamily: own(FONTS, value.fontFamily) ? value.fontFamily : 'default',
+            fontSize: typeof size === 'number' && size % 1 === 0 && size >= FONT_MIN && size <= FONT_MAX
+                ? size : FONT_DEFAULT
+        };
+    }
+
+    var settings = loadSettings();
+
+    function saveSettings() {
+        try {
+            window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+        } catch (e) {
+            // No storage: the settings last for this page only.
+        }
+    }
+
+    function applyTheme() {
+        var theme = THEMES[settings.theme];
+        term.options.theme = theme;
+        el.style.background = theme.background; // the padding around the terminal
+    }
+
+    // A font change keeps the height of #terminal, so fit() would return early: call the addon.
+    // The column count changes, so the input line is drawn again.
+    function applyFont() {
+        term.options.fontSize = settings.fontSize;
+        term.options.fontFamily = FONTS[settings.fontFamily] || defaultFontFamily;
+        try {
+            fitAddon.fit();
+        } catch (e) {
+            // The element is not visible yet. The next resize fits again.
+        }
+        var label = document.getElementById('terminal-font-size');
+        if (label) {
+            label.textContent = String(settings.fontSize);
+        }
+        redraw();
     }
 
     // ---- Input line state ------------------------------------------------------------------
@@ -492,6 +594,49 @@
             term.focus();
         });
     }
+    var themeSelect = document.getElementById('terminal-theme');
+    var fontSelect = document.getElementById('terminal-font');
+    var smaller = document.getElementById('terminal-font-smaller');
+    var larger = document.getElementById('terminal-font-larger');
+
+    function changed(apply) {
+        apply();
+        saveSettings();
+        term.focus();
+    }
+
+    function resize(step) {
+        var size = settings.fontSize + step;
+        if (size >= FONT_MIN && size <= FONT_MAX) {
+            settings.fontSize = size;
+            changed(applyFont);
+        }
+    }
+
+    if (themeSelect) {
+        themeSelect.value = settings.theme;
+        themeSelect.addEventListener('change', function () {
+            if (own(THEMES, themeSelect.value)) {
+                settings.theme = themeSelect.value;
+                changed(applyTheme);
+            }
+        });
+    }
+    if (fontSelect) {
+        fontSelect.value = settings.fontFamily;
+        fontSelect.addEventListener('change', function () {
+            if (own(FONTS, fontSelect.value)) {
+                settings.fontFamily = fontSelect.value;
+                changed(applyFont);
+            }
+        });
+    }
+    if (smaller) {
+        smaller.addEventListener('click', function () { resize(-1); });
+    }
+    if (larger) {
+        larger.addEventListener('click', function () { resize(1); });
+    }
     if (followBox) {
         follow = followBox.checked;
         followBox.addEventListener('change', function () {
@@ -502,6 +647,7 @@
         });
     }
 
-    redraw();
+    applyTheme();
+    applyFont(); // also draws the input line
     term.focus();
 })();
