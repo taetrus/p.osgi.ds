@@ -359,7 +359,10 @@ class TerminalPluginTest {
         when(res.getWriter()).thenReturn(new PrintWriter(page));
         plugin().renderContent(req, res);
         String html = page.toString();
-        assertTrue(html.contains("id=\"terminal-export\" href=\"terminal/export\" download"), html);
+        // A button, so it looks the same as the other toolbar buttons in each browser.
+        assertTrue(html.contains("<button type=\"button\" id=\"terminal-export\""), html);
+        // A screen reader announces the new size.
+        assertTrue(html.contains("<span id=\"terminal-font-size\" aria-live=\"polite\">"), html);
         for (String id : new String[] { "terminal-theme", "terminal-font", "terminal-font-smaller",
                 "terminal-font-size", "terminal-font-larger" }) {
             assertTrue(html.contains("id=\"" + id + "\""), id);

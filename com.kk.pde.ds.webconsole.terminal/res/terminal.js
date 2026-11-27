@@ -3,7 +3,7 @@
  *
  * Contract (TerminalPlugin.renderContent): the element #terminal has data-token, data-shell,
  * data-prompt and data-scrollback. The toolbar has #terminal-search, #terminal-prev,
- * #terminal-next, #terminal-clear, #terminal-follow, #terminal-export (a plain download link),
+ * #terminal-next, #terminal-clear, #terminal-follow, #terminal-export,
  * #terminal-theme, #terminal-font, #terminal-font-smaller, #terminal-font-size and
  * #terminal-font-larger. The option values of the two selects are the keys of THEMES and FONTS
  * below. Theme and font stay in localStorage. xterm.js, addon-search.js and
@@ -594,6 +594,15 @@
             term.focus();
         });
     }
+    // The server answers with Content-Disposition: attachment, so the page stays open.
+    var exportButton = document.getElementById('terminal-export');
+    if (exportButton) {
+        exportButton.addEventListener('click', function () {
+            window.location.href = 'terminal/export';
+            term.focus();
+        });
+    }
+
     var themeSelect = document.getElementById('terminal-theme');
     var fontSelect = document.getElementById('terminal-font');
     var smaller = document.getElementById('terminal-font-smaller');
