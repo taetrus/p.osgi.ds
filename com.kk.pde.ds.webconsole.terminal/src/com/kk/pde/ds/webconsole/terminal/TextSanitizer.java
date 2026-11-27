@@ -1,13 +1,18 @@
 package com.kk.pde.ds.webconsole.terminal;
 
+import java.util.regex.Pattern;
+
 /**
  * Cleans one line of console output. It keeps color sequences (SGR) and tabs and
- * removes every other escape sequence and control character.
+ * removes every other escape sequence and control character. {@link #plain} also removes the
+ * color sequences, for a text file.
  */
 public final class TextSanitizer {
 
     private static final char ESC = '\u001b';
     private static final String RESET = "\u001b[0m";
+    // After clean(), each remaining ESC starts an SGR sequence of digits and ';' (onlySgrParams).
+    private static final Pattern SGR = Pattern.compile("\u001b\\[[0-9;]*m");
 
     private TextSanitizer() {
     }
@@ -28,6 +33,11 @@ public final class TextSanitizer {
             }
         }
         return out.toString();
+    }
+
+    /** As {@link #clean}, but without the color sequences: the result has no escape character. */
+    public static String plain(String text) {
+        return SGR.matcher(clean(text)).replaceAll("");
     }
 
     // Handles the escape at index i. Appends it to out only when it is an SGR sequence.
