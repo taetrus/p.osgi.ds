@@ -25,6 +25,22 @@ class TextSanitizerTest {
     private static final String RESET = "\u001b[0m";
 
     @Test
+    void plainRemovesColorSequences() {
+        assertEquals("ERROR boom", TextSanitizer.plain("\u001b[31mERROR\u001b[0m boom"));
+        assertEquals("x", TextSanitizer.plain("\u001b[1;38;5;196mx\u001b[m"));
+    }
+
+    @Test
+    void plainRemovesWhatCleanRemoves() {
+        assertEquals("ab\tc", TextSanitizer.plain("a\u001b[2Jb\tc\u0007\u001b"));
+    }
+
+    @Test
+    void plainKeepsTextWithoutEscapes() {
+        assertEquals("\u0130stanbul [31m ok", TextSanitizer.plain("\u0130stanbul [31m ok"));
+    }
+
+    @Test
     void keepsPlainTextAndTab() {
         assertEquals("a\tb", TextSanitizer.clean("a\tb"));
     }

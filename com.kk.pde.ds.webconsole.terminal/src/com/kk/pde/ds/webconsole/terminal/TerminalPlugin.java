@@ -8,8 +8,10 @@ import java.io.PrintWriter;
 import java.io.Reader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -23,8 +25,8 @@ import org.osgi.framework.BundleContext;
 /**
  * The WebConsole plugin with the label {@code terminal}. It renders the page, serves the files
  * in the bundle folder {@code res/}, streams the {@link OutputHub} as Server-Sent Events
- * ({@code GET terminal/stream}) and gives one command line to the {@link Shell}
- * ({@code POST terminal/exec}).
+ * ({@code GET terminal/stream}), gives the hub as a text file ({@code GET terminal/export}) and
+ * gives one command line to the {@link Shell} ({@code POST terminal/exec}).
  *
  * <p>
  * SCR reads {@code OSGI-INF/com.kk.pde.ds.webconsole.terminal.TerminalPlugin.xml}. That file
@@ -52,6 +54,7 @@ public class TerminalPlugin extends AbstractWebConsolePlugin {
     private static final String DEFAULT_PROMPT = "osgi> ";
     private static final String STREAM_PATH = "/" + LABEL + "/stream";
     private static final String EXEC_PATH = "/" + LABEL + "/exec";
+    private static final String EXPORT_PATH = "/" + LABEL + "/export";
     private static final String RES_PREFIX = "/" + LABEL + "/res/";
     private static final Set<String> FILES = Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(
             "xterm.js", "xterm.css", "addon-search.js", "addon-fit.js", "terminal.js", "terminal.css")));
@@ -159,6 +162,23 @@ public class TerminalPlugin extends AbstractWebConsolePlugin {
         pw.println("  <button type=\"button\" id=\"terminal-next\" title=\"Next match\">&gt;</button>");
         pw.println("  <button type=\"button\" id=\"terminal-clear\">Clear</button>");
         pw.println("  <label><input type=\"checkbox\" id=\"terminal-follow\" checked> Follow</label>");
+        pw.println("  <a id=\"terminal-export\" href=\"terminal/export\" download title=\"Download the output as a text file\">Export</a>");
+        pw.println("  <label>Theme <select id=\"terminal-theme\">");
+        pw.println("    <option value=\"dark\">Dark</option>");
+        pw.println("    <option value=\"light\">Light</option>");
+        pw.println("    <option value=\"contrast\">High contrast</option>");
+        pw.println("    <option value=\"solarized\">Solarized Dark</option>");
+        pw.println("  </select></label>");
+        pw.println("  <label>Font <select id=\"terminal-font\">");
+        pw.println("    <option value=\"default\">Default</option>");
+        pw.println("    <option value=\"menlo\">Menlo</option>");
+        pw.println("    <option value=\"consolas\">Consolas</option>");
+        pw.println("    <option value=\"dejavu\">DejaVu Sans Mono</option>");
+        pw.println("    <option value=\"courier\">Courier New</option>");
+        pw.println("  </select></label>");
+        pw.println("  <button type=\"button\" id=\"terminal-font-smaller\" title=\"Smaller font\">-</button>");
+        pw.println("  <span id=\"terminal-font-size\">15</span>");
+        pw.println("  <button type=\"button\" id=\"terminal-font-larger\" title=\"Larger font\">+</button>");
         pw.println("</div>");
         // Without a bound processor the page is read-only. A later bind needs a reload.
         Shell current = shell;
@@ -176,6 +196,10 @@ public class TerminalPlugin extends AbstractWebConsolePlugin {
         String path = req.getPathInfo();
         if (STREAM_PATH.equals(path)) {
             stream(req, res);
+            return;
+        }
+        if (EXPORT_PATH.equals(path)) {
+            export(res);
             return;
         }
         if (path != null && path.startsWith(RES_PREFIX)) {
@@ -276,6 +300,27 @@ public class TerminalPlugin extends AbstractWebConsolePlugin {
             }
             pw.flush();
         }
+    }
+
+    // The lines of the hub as a download. No token: the request only reads, and the stream gives
+    // the same lines. Each line ends with \n, also on Windows, so println is not used.
+    private void export(HttpServletResponse res) throws IOException {
+        OutputHub.Batch batch = hub.since(0);
+        String name = "terminal-" + new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()) + ".log";
+        res.setContentType("text/plain; charset=UTF-8");
+        res.setHeader("Content-Disposition", "attachment; filename=\"" + name + "\"");
+        res.setHeader("Cache-Control", "no-store");
+        PrintWriter pw = res.getWriter();
+        if (batch.dropped > 0) {
+            pw.print("[" + batch.dropped + " earlier lines are gone]\n");
+        }
+        for (OutputHub.Line line : batch.lines) {
+            if (!"done".equals(line.type)) {
+                pw.print(TextSanitizer.plain(line.text));
+                pw.print('\n');
+            }
+        }
+        pw.flush();
     }
 
     // A value ahead of the hub is from before an application restart: start again from 0.

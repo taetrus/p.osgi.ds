@@ -5,7 +5,9 @@ This document describes the bundle `com.kk.pde.ds.webconsole.terminal`. The bund
 and runs Gogo commands. The bundle does not depend on this repository. You can use it in a
 different application (see [Use the plugin in a different application](#use-the-plugin-in-a-different-application)).
 
-The design is in `docs/superpowers/specs/2026-11-25-webconsole-terminal-design.md`.
+The design is in `docs/superpowers/specs/2026-11-25-webconsole-terminal-design.md`. The design of
+the export, the themes and the font settings is in
+`docs/superpowers/specs/2026-11-27-terminal-export-theme-font-design.md`.
 
 ## Contents
 
@@ -62,6 +64,19 @@ The input line works in the browser. The page does not use a server-side line ed
 | Search field, `<`, `>` | Searches the scrollback. Enter in the field finds the next match. Shift+Enter finds the previous match. |
 | **Clear** | Clears the screen. |
 | **Follow** | On: the page scrolls to the last line when output arrives. Off: the page stays where it is. |
+| **Export** | Downloads the captured output as the text file `terminal-<yyyyMMdd-HHmmss>.log` (see [Export](#export)). |
+| **Theme** | Sets the colors: Dark (default), Light, High contrast or Solarized Dark. |
+| **Font** | Sets the font family: Default, Menlo, Consolas, DejaVu Sans Mono or Courier New. |
+| `-`, `+` | Makes the font smaller or larger, from 10 px to 24 px. The default is 15 px, the xterm.js default. |
+
+Theme, font family and font size stay in `localStorage` of the browser, in the key
+`terminal.settings`. Thus they apply to all tabs of the same browser, after a reload too. They
+do not apply to a different browser or a different computer. A stored value that is not valid
+gives the default value for that setting.
+
+A font family shows only when the computer of the viewer has the font. Otherwise the browser uses
+its `monospace` font. Each theme other than Dark sets all 16 ANSI colors, so a red error line stays
+readable on its background.
 
 Paste:
 
@@ -101,6 +116,7 @@ Example:
    |  GET  /system/console/terminal                 page (contains the token)
    |  GET  /system/console/terminal/res/...         static files
    |  GET  /system/console/terminal/stream          Server-Sent Events (output)
+   |  GET  /system/console/terminal/export          the output as a text file
    |  POST /system/console/terminal/exec            one command line (input)
    v
  TerminalPlugin (AbstractWebConsolePlugin, service javax.servlet.Servlet)
@@ -115,9 +131,9 @@ Example:
 | `StdCapture` | Replaces `System.out` and `System.err` with streams that write to the original stream and to the hub. At bundle stop, it puts the original streams back, but only if `System.out` is still its own stream. |
 | `OutputHub` | A ring buffer of the last `terminal.scrollback.lines` lines. Each line has a sequence number. |
 | `Shell` | One Gogo `CommandSession`. One worker thread runs the commands one at a time, in the order of arrival. |
-| `TextSanitizer` | Strips dangerous control characters from the output. |
-| `TerminalPlugin` | The WebConsole plugin. Label `terminal`, title `Terminal`. It renders the page, serves the static files, and handles `stream` and `exec`. |
-| `terminal.js` | The browser part: line editor, history, stream reader, toolbar. |
+| `TextSanitizer` | Strips dangerous control characters from the output. `plain` also strips the color sequences, for the export. |
+| `TerminalPlugin` | The WebConsole plugin. Label `terminal`, title `Terminal`. It renders the page, serves the static files, and handles `stream`, `export` and `exec`. |
+| `terminal.js` | The browser part: line editor, history, stream reader, toolbar, theme and font settings. |
 
 URLs and answers:
 
@@ -125,6 +141,7 @@ URLs and answers:
 |-----|--------|
 | `GET /system/console/terminal` | The page. It contains the token. |
 | `GET /system/console/terminal/stream` | Server-Sent Events. Each event has an `id`. After a break, the browser sends `Last-Event-ID` and gets no line two times. The server sends a comment line each 15 seconds. |
+| `GET /system/console/terminal/export` | The output as a text file (see [Export](#export)). No token. |
 | `POST /system/console/terminal/exec` | One command line. The request needs the header `X-Terminal-Token`. |
 
 Status codes of `exec`:
@@ -148,6 +165,28 @@ typed text and in each line of a paste with more than one line (not tested in a 
 Vendored browser files (MIT license, in `res/`): xterm.js 6.0.0, addon-search 0.16.0 and
 addon-fit 0.11.0. `res/VERSIONS.txt` lists the source and the SHA-256 of each file. The plugin
 works offline, because it uses no CDN.
+
+### Export
+
+`GET /system/console/terminal/export` gives all lines of the server buffer as one file:
+
+- Status 200, `Content-Type: text/plain; charset=UTF-8`, `Cache-Control: no-store`.
+- `Content-Disposition: attachment; filename="terminal-<yyyyMMdd-HHmmss>.log"`. The time is the
+  time of the server.
+- One line for each output line and for each command echo (`osgi> ss`), oldest first. Each line
+  ends with `\n`, on Windows too.
+- No color sequences and no other escape sequences.
+- When the buffer already dropped old lines, the first line is `[<n> earlier lines are gone]`.
+- The export adds no time stamp. The log lines of the application have their own time stamps.
+
+The export reads the server buffer, not the screen. Thus **Clear** clears the screen only. The
+export still contains each line. The export also works when the page is read-only (`terminal.shell.enabled=false`, or no Gogo).
+
+Get the file with `curl`:
+
+```bash
+curl -s -u admin:admin -o terminal.log http://localhost:8080/system/console/terminal/export
+```
 
 ### Start order
 
@@ -231,6 +270,7 @@ restart the application. An `update` or a `refresh` of the Gogo runtime is not t
 
 ## Limits
 
+- **The export holds only the last `terminal.scrollback.lines` lines** of the server buffer.
 - **No output from before the bundle start.** The capture starts with the bundle. Earlier output
   is not captured. A writer that kept a reference to the original stream before the start is also
   not captured.
@@ -269,6 +309,9 @@ restart the application. An `update` or a `refresh` of the Gogo runtime is not t
   screen or change the title of the page. The effect in a browser is not tested.
 - **The output can contain secrets** that the application prints, for example keys in log lines.
   Each user who can log in to the WebConsole can read all console output.
+- **Export.** `export` needs no token, because it only reads. `stream` gives the same lines with
+  no token. Without the login, `export` answers 401 and gives no line. A downloaded file stays
+  on the computer of the user after the session.
 - **Switch.** `terminal.shell.enabled=false` makes the page read-only. Use it when you do not want
   commands from the browser. Change the WebConsole password (`felix.webconsole.password`) before
   you use the page outside localhost.
@@ -312,6 +355,12 @@ After two fixes, rows 1, 5 and 10 ran again and passed.
 Start the product with `./distribution/scripts/run.sh`. Row 14 needs
 `-Dterminal.shell.enabled=false`.
 
+Rows 15 to 24 ran on 2026-11-27 in Google Chrome 158 on macOS, driven over the DevTools
+protocol, and with `curl`. The rows ran two times: one time headless, and one time in a Chrome
+window (1200 x 800). All rows passed in the two runs. The checks read the state of xterm.js, the
+computed colors at the edges of the terminal, and screenshots. Firefox and Safari are not tested.
+A run on Windows is not tested.
+
 | # | Action | Expected result |
 |---|--------|-----------------|
 | 1 | Open `/system/console/terminal`. | The page shows the start-up output. The last line is the prompt `osgi> `. The terminal fills the window height. |
@@ -328,6 +377,16 @@ Start the product with `./distribution/scripts/run.sh`. Row 14 needs
 | 12 | Open a second tab. Run `lb` in it. | Both tabs show the same echo and the same output. |
 | 13 | Stop the product, start it again. Run `ss` in the old page. | One of two results (see below the table). After a reload, `ss` works. |
 | 14 | Start with `-Dterminal.shell.enabled=false`. Open the page. | The page shows output and no prompt. Typing runs nothing. `exec` answers 403. |
+| 15 | Run `xyz`. Select each theme. | Each theme changes the background and the text at once. The red `CommandNotFoundException` line is readable in each theme. The edges of the terminal have the background of the theme. |
+| 16 | Press `+` until 24. Press `-` until 10. | The size label follows. It stops at 24 and at 10. The terminal fills its box at each size. |
+| 17 | Type a line longer than the width. Change the font size. | The input line stays intact. The cursor stays at its end. |
+| 18 | Select each font family. | The font changes, or the browser uses its `monospace` font. The `ss` columns stay aligned. |
+| 19 | Reload. Open a second tab. | Theme, font family and font size stay the same. The two lists show them. |
+| 20 | In the browser console, set `localStorage` key `terminal.settings` to `{bad`. Reload. Then set it to `{"theme":"x","fontSize":999,"fontFamily":"constructor"}`. Reload. | Each time: Dark, 15 px, Default. The terminal works. The console shows no error. |
+| 21 | Click **Export**. | The file `terminal-<yyyyMMdd-HHmmss>.log` downloads. It has no escape character. It contains the line `osgi> xyz`. |
+| 22 | Click **Clear**. Click **Export**. | The file still contains the earlier lines. |
+| 23 | Run `curl -s -u admin:admin -D - http://localhost:8080/system/console/terminal/export`. | Status 200. The headers `Content-Type: text/plain;charset=utf-8`, `Content-Disposition` and `Cache-Control: no-store`. Then the log lines. |
+| 24 | Run the `curl` of row 23 without `-u admin:admin`. | Status 401. No log line. |
 
 Row 13 has two results. The timing of the restart selects one of them:
 

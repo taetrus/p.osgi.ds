@@ -3,8 +3,12 @@ package com.kk.pde.ds.webconsole.terminal;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.matches;
 import static org.mockito.ArgumentMatchers.startsWith;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -33,6 +37,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.mockito.InOrder;
 
 /**
  * <h2>Tier 1: the HTTP contract of the terminal plugin, with a mock request and response</h2>
@@ -256,6 +261,55 @@ class TerminalPluginTest {
         assertTrue(text.contains("data: line4\n"), text);
     }
 
+    private String export() throws Exception {
+        StringWriter body = new StringWriter();
+        when(res.getWriter()).thenReturn(new PrintWriter(body));
+        when(req.getPathInfo()).thenReturn("/terminal/export");
+        plugin().doGet(req, res);
+        return body.toString();
+    }
+
+    /** The file has the text of each line with no color code, the commands, and no done marker. */
+    @Test
+    void exportGivesPlainLinesWithoutDoneMarkers() throws Exception {
+        hub.append("out", "\u001b[31mERROR\u001b[0m boom");
+        hub.append("cmd", "osgi> ss");
+        hub.append("err", "\u0130stanbul");
+        hub.append("done", "");
+        assertEquals("ERROR boom\nosgi> ss\n\u0130stanbul\n", export());
+    }
+
+    /** The charset must be set before getWriter(), or the container writes ISO-8859-1. */
+    @Test
+    void exportSetsDownloadHeadersBeforeTheWriter() throws Exception {
+        export();
+        InOrder order = inOrder(res);
+        order.verify(res).setContentType("text/plain; charset=UTF-8");
+        order.verify(res).getWriter();
+        verify(res).setHeader("Cache-Control", "no-store");
+        verify(res).setHeader(eq("Content-Disposition"),
+                matches("attachment; filename=\"terminal-\\d{8}-\\d{6}\\.log\""));
+        verify(res, never()).sendError(anyInt());
+    }
+
+    @Test
+    void exportOfAnEmptyHubIsEmpty() throws Exception {
+        assertEquals("", export());
+    }
+
+    /** A full buffer: the file says that its start is missing. The export needs no shell. */
+    @Test
+    void exportReportsGoneLinesAndWorksReadOnly() throws Exception {
+        props.put("terminal.shell.enabled", "false");
+        when(shell.available()).thenReturn(false);
+        for (int i = 1; i <= 103; i++) { // the hub of setUp holds 100 lines
+            hub.append("out", "line " + i);
+        }
+        String text = export();
+        assertTrue(text.startsWith("[3 earlier lines are gone]\nline 4\n"), text);
+        assertTrue(text.endsWith("line 103\n"), text);
+    }
+
     @Test
     void pageContainsTokenAndFlags() throws Exception {
         props.put("terminal.prompt", "<p> ");
@@ -269,6 +323,24 @@ class TerminalPluginTest {
         assertTrue(html.contains("data-scrollback=\"100\""), html);
         assertTrue(html.contains("terminal/res/terminal.js"), html);
         assertEquals(-1, html.indexOf("<p> "), html);
+    }
+
+    /** terminal.js finds the controls by these ids and option values. */
+    @Test
+    void pageContainsExportThemeAndFontControls() throws Exception {
+        StringWriter page = new StringWriter();
+        when(res.getWriter()).thenReturn(new PrintWriter(page));
+        plugin().renderContent(req, res);
+        String html = page.toString();
+        assertTrue(html.contains("id=\"terminal-export\" href=\"terminal/export\" download"), html);
+        for (String id : new String[] { "terminal-theme", "terminal-font", "terminal-font-smaller",
+                "terminal-font-size", "terminal-font-larger" }) {
+            assertTrue(html.contains("id=\"" + id + "\""), id);
+        }
+        for (String value : new String[] { "dark", "light", "contrast", "solarized",
+                "default", "menlo", "consolas", "dejavu", "courier" }) {
+            assertTrue(html.contains("<option value=\"" + value + "\">"), value);
+        }
     }
 
     /**
