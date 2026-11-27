@@ -89,7 +89,7 @@ name selects the tier:
 - `*Test` is tier 1. A plain JVM runs it through maven-surefire (phase `test`).
 - `*IT` is tier 2. A live Equinox runs it through `tycho-surefire:plugin-test` (phase `integration-test`).
 
-There are 124 tier-1 tests and 13 tier-2 tests. The Javadoc of each test class is a short tutorial.
+There are 132 tier-1 tests and 13 tier-2 tests. The Javadoc of each test class is a short tutorial.
 This layout is the reference for a larger Tycho project. Keep it clean and easy to copy.
 
 ```bash
@@ -236,6 +236,8 @@ The bundle `com.kk.pde.ds.webconsole.terminal` adds the page http://localhost:80
 The page shows the console output of the application (`System.out` and `System.err`) and runs Gogo
 commands. The same WebConsole login protects it. The bundle must start before the Gogo runtime
 (start level 1 here, Gogo at level 3), or printed output stops showing after the first command.
+The toolbar downloads the output as a text file (`GET /system/console/terminal/export`, no color codes)
+and sets the theme, the font family and the font size (kept in `localStorage`).
 Properties: `terminal.scrollback.lines`, `terminal.shell.enabled`, `terminal.prompt`.
 Details: `docs/webconsole-terminal.md`.
 

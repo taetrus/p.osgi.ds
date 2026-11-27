@@ -1,6 +1,6 @@
 # WebConsole Terminal: log export, themes and font settings
 
-Date: 2026-11-27. Status: design, not implemented. Bundle: `com.kk.pde.ds.webconsole.terminal`.
+Date: 2026-11-27. Status: implemented on 2026-11-27 (branch `feat/terminal-export-theme-font`). Bundle: `com.kk.pde.ds.webconsole.terminal`.
 Base design: [2026-11-25-webconsole-terminal-design.md](2026-11-25-webconsole-terminal-design.md).
 
 ## Intent
@@ -84,7 +84,8 @@ Preset 1 was selected.
   an xterm.js `ITheme` object with background, foreground, cursor, selection and the 16 ANSI colors.
 - A theme change sets `term.options.theme` and the background of `#terminal` (the padding area).
   `terminal.css` no longer fixes `#000`.
-- Font size: 10 to 24 px, step 1, default 13.
+- Font size: 10 to 24 px, step 1, default 15. (The design first said 13. The implementation uses
+  15, the xterm.js 6 default, so the first look of the page does not change.)
 - Font family: `Default` (the xterm.js default), `Menlo`, `Consolas`, `DejaVu Sans Mono`,
   `Courier New`. Each stack ends with `monospace`. A font that the machine does not have falls back.
 - A font change sets `term.options.fontSize` or `term.options.fontFamily`, then fits the

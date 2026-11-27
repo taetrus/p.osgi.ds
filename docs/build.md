@@ -622,7 +622,7 @@ The tables below give the purpose of the important files. The tree in [Project s
 |--------|-------|
 | Maven modules | 20 in the root pom. The reactor has 21 projects with the parent. `fatjar` and `tools/pde2tycho` build separately. |
 | Application bundles | 17 (api, imp, app, rest, webconsole.terminal, mcp.api/server/client/llm, chatbot, rag, ecf.api/host/consumer, spike.api/master/detail) |
-| Tests | 137 in 22 classes across 5 bundles: 124 plain-JVM (`*Test`) and 13 in-framework (`*IT`). JUnit 5 and Mockito. |
+| Tests | 145 in 22 classes across 5 bundles: 132 plain-JVM (`*Test`) and 13 in-framework (`*IT`). JUnit 5 and Mockito. |
 | DS components | 32 (`OSGI-INF/*.xml` descriptors) |
 | MCP tools | 9 (echo, greet, system_info, calculator, date_time, bundle_list, http_fetch, document_search, ingest_documents) |
 | Health checks | 7 (1 custom and 6 file-based) |
