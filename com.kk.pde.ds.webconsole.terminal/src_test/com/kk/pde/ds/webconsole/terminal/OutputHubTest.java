@@ -68,6 +68,24 @@ class OutputHubTest {
         assertEquals(10, batch.lines.get(2).seq);
     }
 
+    /**
+     * The end marker of a command ("done") is not an output line. For a reader from the start,
+     * droppedLines does not count it. dropped still counts sequence numbers, for Last-Event-ID.
+     */
+    @Test
+    void droppedLinesFromTheStartLeavesOutEndMarkers() {
+        OutputHub hub = new OutputHub(2);
+        hub.append("cmd", "osgi> a");
+        hub.append("out", "x");
+        hub.append("done", "");
+        hub.append("cmd", "osgi> b");
+        hub.append("out", "y");
+        hub.append("done", "");
+        OutputHub.Batch batch = hub.since(0);
+        assertEquals(4, batch.dropped);
+        assertEquals(3, batch.droppedLines);
+    }
+
     /** A reader near the end of a full buffer gets only its new lines. */
     @Test
     void sinceReturnsOnlyNewLinesFromFullBuffer() {

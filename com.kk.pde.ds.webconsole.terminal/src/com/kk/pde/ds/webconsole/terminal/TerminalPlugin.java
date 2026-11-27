@@ -290,8 +290,8 @@ public class TerminalPlugin extends AbstractWebConsolePlugin {
                 pw.print(SseEncoder.comment("ping"));
             } else {
                 if (batch.dropped > 0) {
-                    last += batch.dropped;
-                    pw.print(SseEncoder.event(last, "gone", String.valueOf(batch.dropped)));
+                    last += batch.dropped; // the id counts sequence numbers, the data counts lines
+                    pw.print(SseEncoder.event(last, "gone", String.valueOf(batch.droppedLines)));
                 }
                 for (OutputHub.Line line : batch.lines) {
                     pw.print(SseEncoder.event(line.seq, line.type, line.text));
@@ -311,11 +311,11 @@ public class TerminalPlugin extends AbstractWebConsolePlugin {
         res.setHeader("Content-Disposition", "attachment; filename=\"" + name + "\"");
         res.setHeader("Cache-Control", "no-store");
         PrintWriter pw = res.getWriter();
-        if (batch.dropped > 0) {
-            pw.print("[" + batch.dropped + " earlier lines are gone]\n");
+        if (batch.droppedLines > 0) {
+            pw.print("[" + batch.droppedLines + " earlier lines are gone]\n");
         }
         for (OutputHub.Line line : batch.lines) {
-            if (!"done".equals(line.type)) {
+            if (!OutputHub.DONE.equals(line.type)) {
                 pw.print(TextSanitizer.plain(line.text));
                 pw.print('\n');
             }

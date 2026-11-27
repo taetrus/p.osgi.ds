@@ -11,6 +11,9 @@ import java.util.List;
  */
 public final class OutputHub {
 
+    /** The type of the end marker of a command. It is not an output line. */
+    static final String DONE = "done";
+
     /** One numbered line. The type is "out", "err", "cmd" or "done". */
     public static final class Line {
         public final long seq;
@@ -26,11 +29,19 @@ public final class OutputHub {
 
     /** Lines after a sequence number, and the count of lines that are no longer in the buffer. */
     public static final class Batch {
+        /** Sequence numbers that are no longer in the buffer. A reader adds it to its position. */
         public final long dropped;
+        /**
+         * The same count without the end markers, for a message to a person. It is exact for a
+         * reader from the start ({@code since(0)}). For a later position it equals {@code dropped},
+         * because the buffer does not know the markers before that position.
+         */
+        public final long droppedLines;
         public final List<Line> lines;
 
-        Batch(long dropped, List<Line> lines) {
+        Batch(long dropped, long droppedLines, List<Line> lines) {
             this.dropped = dropped;
+            this.droppedLines = droppedLines;
             this.lines = lines;
         }
     }
@@ -39,6 +50,7 @@ public final class OutputHub {
     private final ArrayDeque<Line> buffer = new ArrayDeque<Line>();
     private final int capacity;
     private long lastSeq;
+    private long droppedMarkers; // end markers that left the buffer, guarded by lock
 
     public OutputHub(int capacity) {
         if (capacity < 1) {
@@ -51,8 +63,8 @@ public final class OutputHub {
     public long append(String type, String text) {
         synchronized (lock) {
             long seq = ++lastSeq;
-            if (buffer.size() == capacity) {
-                buffer.removeFirst();
+            if (buffer.size() == capacity && DONE.equals(buffer.removeFirst().type)) {
+                droppedMarkers++;
             }
             buffer.addLast(new Line(seq, type, text));
             lock.notifyAll();
@@ -111,6 +123,6 @@ public final class OutputHub {
             long oldest = buffer.peekFirst().seq;
             dropped = Math.max(0, oldest - 1 - afterSeq);
         }
-        return new Batch(dropped, lines);
+        return new Batch(dropped, afterSeq == 0 ? dropped - droppedMarkers : dropped, lines);
     }
 }
