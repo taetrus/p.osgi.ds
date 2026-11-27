@@ -325,6 +325,24 @@ class TerminalPluginTest {
         assertEquals(-1, html.indexOf("<p> "), html);
     }
 
+    /** terminal.js finds the controls by these ids and option values. */
+    @Test
+    void pageContainsExportThemeAndFontControls() throws Exception {
+        StringWriter page = new StringWriter();
+        when(res.getWriter()).thenReturn(new PrintWriter(page));
+        plugin().renderContent(req, res);
+        String html = page.toString();
+        assertTrue(html.contains("id=\"terminal-export\" href=\"terminal/export\" download"), html);
+        for (String id : new String[] { "terminal-theme", "terminal-font", "terminal-font-smaller",
+                "terminal-font-size", "terminal-font-larger" }) {
+            assertTrue(html.contains("id=\"" + id + "\""), id);
+        }
+        for (String value : new String[] { "dark", "light", "contrast", "solarized",
+                "default", "menlo", "consolas", "dejavu", "courier" }) {
+            assertTrue(html.contains("<option value=\"" + value + "\">"), value);
+        }
+    }
+
     /**
      * With no bound command processor at render time, the page is read-only: it shows output and
      * no prompt. A page that loaded before Gogo was available stays read-only until a reload.

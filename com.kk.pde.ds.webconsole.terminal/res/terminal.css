@@ -1,9 +1,11 @@
 /* Layout of the WebConsole terminal page. terminal.js sets the height of #terminal to the
-   rest of the window and then fits the terminal into it. */
+   rest of the window and then fits the terminal into it. It also sets the background of
+   #terminal from the selected theme. */
 
 #terminal-toolbar {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 6px;
     padding: 4px 0;
 }
@@ -18,11 +20,31 @@
     width: 16em;
 }
 
+/* A link that looks like the buttons of the toolbar. */
+#terminal-export {
+    padding: 1px 6px;
+    border: 1px solid #767676;
+    border-radius: 3px;
+    background: #efefef;
+    color: #000;
+    text-decoration: none;
+}
+
+#terminal-export:hover {
+    background: #e5e5e5;
+}
+
+#terminal-font-size {
+    display: inline-block;
+    width: 2em;
+    text-align: center;
+}
+
 #terminal {
     height: 70vh; /* until terminal.js sets the height */
     min-height: 200px;
     padding: 4px;
-    background: #000; /* the default background of xterm.js */
+    background: #000; /* the Dark theme, until terminal.js applies the selected theme */
     box-sizing: border-box;
     overflow: hidden;
 }
