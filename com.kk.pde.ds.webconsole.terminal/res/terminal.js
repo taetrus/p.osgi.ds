@@ -3,7 +3,7 @@
  *
  * Contract (TerminalPlugin.renderContent): the element #terminal has data-token, data-shell,
  * data-prompt and data-scrollback. The toolbar has #terminal-search, #terminal-prev,
- * #terminal-next, #terminal-clear, #terminal-follow, #terminal-export (a plain download link),
+ * #terminal-next, #terminal-clear, #terminal-follow, #terminal-export,
  * #terminal-theme, #terminal-font, #terminal-font-smaller, #terminal-font-size and
  * #terminal-font-larger. The option values of the two selects are the keys of THEMES and FONTS
  * below. Theme and font stay in localStorage. xterm.js, addon-search.js and
@@ -107,7 +107,8 @@
         solarized: {
             background: '#002b36', foreground: '#93a1a1', cursor: '#93a1a1', cursorAccent: '#002b36',
             selectionBackground: '#274642',
-            black: '#073642', red: '#dc322f', green: '#859900', yellow: '#b58900',
+            // red: brighter than the Solarized #dc322f (3.3:1), for 5.0:1 on the background
+            black: '#073642', red: '#ff5f56', green: '#859900', yellow: '#b58900',
             blue: '#268bd2', magenta: '#d33682', cyan: '#2aa198', white: '#eee8d5',
             brightBlack: '#657b83', brightRed: '#cb4b16', brightGreen: '#859900', brightYellow: '#b58900',
             brightBlue: '#268bd2', brightMagenta: '#6c71c4', brightCyan: '#2aa198', brightWhite: '#fdf6e3'
@@ -594,6 +595,15 @@
             term.focus();
         });
     }
+    // The server answers with Content-Disposition: attachment, so the page stays open.
+    var exportButton = document.getElementById('terminal-export');
+    if (exportButton) {
+        exportButton.addEventListener('click', function () {
+            window.location.href = 'terminal/export';
+            term.focus();
+        });
+    }
+
     var themeSelect = document.getElementById('terminal-theme');
     var fontSelect = document.getElementById('terminal-font');
     var smaller = document.getElementById('terminal-font-smaller');

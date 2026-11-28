@@ -71,11 +71,12 @@ Preset 1 was selected.
 ### Toolbar
 
 ```
-[Search____] [<] [>] [Clear] [x] Follow  [Export]  Theme [Dark v]  Font [Default v] [-] 13 [+]
+[Search____] [<] [>] [Clear] [x] Follow  [Export]  Theme [Dark v]  Font [Default v] [-] 15 [+]
 ```
 
-`TerminalPlugin.renderContent` prints the new controls: `#terminal-export` (a link to
-`terminal/export` with the `download` attribute, styled as a button), `#terminal-theme`,
+`TerminalPlugin.renderContent` prints the new controls: `#terminal-export` (a button that
+opens `terminal/export`. The first version was a link with the `download` attribute, styled
+with the Chrome button colors), `#terminal-theme`,
 `#terminal-font`, `#terminal-font-smaller`, `#terminal-font-size`, `#terminal-font-larger`.
 
 ### Theme and font (browser, `terminal.js`)

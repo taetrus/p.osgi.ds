@@ -532,7 +532,7 @@ log. The file is in `src_test/`, thus it is not in the bundle jar.
 
 ### D.1 Test classes
 
-The project contains eighteen tier 1 classes with **132 tests** and four tier 2 classes with
+The project contains eighteen tier 1 classes with **135 tests** and four tier 2 classes with
 **13 tests**. The Javadoc of each class is a short lesson about one test idea.
 
 | Bundle | Class | Tier | Tests | What the class teaches |
@@ -545,7 +545,7 @@ The project contains eighteen tier 1 classes with **132 tests** and four tier 2 
 | `com.kk.pde.ds.spike.master` | `CatalogServiceImplTest` | 1 | 10 | The state of a DS component. The test calls the `@Activate` method directly from `@BeforeEach`. |
 | `com.kk.pde.ds.imp` | `GreetHealthCheckTest` | 1 | 6 | **Mockito, part 1.** Why a test needs a test double. A hand-written double and `mock()`. `doThrow(...).when(mock).greet()` for a `void` method. `verify`, `times(1)` and `verifyNoMoreInteractions`. `@ExtendWith(MockitoExtension.class)`, `@Mock`, and `@InjectMocks` into a private `@Reference` field. |
 | `com.kk.pde.ds.spike.master` | `MasterAppTest` | 1 | 6 | **Mockito, part 2.** `when(...).thenReturn(...)`, `ArgumentCaptor`, `InOrder`, `spy()` and its two problems. Swing code without a screen, with `SwingUtilities.invokeAndWait`. |
-| `com.kk.pde.ds.webconsole.terminal` | `OutputHubTest` | 1 | 8 | A bounded ring buffer: sequence numbers, continue after a number, lines that are gone, only the new lines from a full buffer. |
+| `com.kk.pde.ds.webconsole.terminal` | `OutputHubTest` | 1 | 9 | A bounded ring buffer: sequence numbers, continue after a number, lines that are gone, only the new lines from a full buffer. The count of lines that are gone does not count the end markers of commands. |
 | `com.kk.pde.ds.webconsole.terminal` | `LineAssemblerTest` | 1 | 6 | Bytes to lines: decoding, line ends and a partial line. |
 | `com.kk.pde.ds.webconsole.terminal` | `StdCaptureTest` | 1 | 7 | A tee on `System.out` and `System.err`: write to both targets, put the streams back, and do not replace a foreign stream. |
 | `com.kk.pde.ds.webconsole.terminal` | `TextSanitizerTest` | 1 | 15 | Control characters and escape sequences in output: keep the colors, remove the rest. `plain` also removes the colors, for the export file. |
@@ -553,7 +553,7 @@ The project contains eighteen tier 1 classes with **132 tests** and four tier 2 
 | `com.kk.pde.ds.webconsole.terminal` | `TokenTest` | 1 | 4 | The random request token and its check. |
 | `com.kk.pde.ds.webconsole.terminal` | `ShellTest` | 1 | 12 | The Gogo worker with a mock `CommandSession`: order of commands, echo, the filter on the echo, errors, a result that ends with a line break. |
 | `com.kk.pde.ds.webconsole.terminal` | `ActivatorTest` | 1 | 2 | The warning when the bundle starts after the Gogo runtime. |
-| `com.kk.pde.ds.webconsole.terminal` | `TerminalPluginTest` | 1 | 20 | The HTTP contract with a mock request and response: the status codes of `exec`, the stream, the export and the static files. `InOrder` shows that the export sets the charset before `getWriter()`. A control character gives 400, and a tab gives 202. A page with no processor is read-only. |
+| `com.kk.pde.ds.webconsole.terminal` | `TerminalPluginTest` | 1 | 22 | The HTTP contract with a mock request and response: the status codes of `exec`, the stream, the export and the static files. `InOrder` shows that the export sets the charset before `getWriter()`. A control character gives 400, and a tab gives 202. A page with no processor is read-only. |
 | `com.kk.pde.ds.webconsole.terminal` | `NoGogoTest` | 1 | 1 | An optional import in practice: a child-first class loader refuses the Gogo package, and the plugin still loads, activates, renders the page and answers 503. The page is read-only. |
 | `com.kk.pde.ds.webconsole.terminal` | `ShellIT` | 2 | 5 | A real Gogo command in a running framework. The result arrives in the hub. A command that closes the shell or unbinds the processor is not interrupted. A command that blocks after the close is interrupted after the limit. A close from outside ends a waiting close at once. |
 | `com.kk.pde.ds.webconsole.terminal` | `TerminalPluginIT` | 2 | 2 | The plugin registers as a servlet service. A `System.out.println` of a different bundle arrives in the hub. The bundle must start before Gogo. |

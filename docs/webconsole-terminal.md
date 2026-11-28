@@ -177,6 +177,8 @@ works offline, because it uses no CDN.
   ends with `\n`, on Windows too.
 - No color sequences and no other escape sequences.
 - When the buffer already dropped old lines, the first line is `[<n> earlier lines are gone]`.
+  `<n>` counts output lines and command echoes. It does not count the internal end marker of
+  each command.
 - The export adds no time stamp. The log lines of the application have their own time stamps.
 
 The export reads the server buffer, not the screen. Thus **Clear** clears the screen only. The
@@ -357,7 +359,10 @@ Start the product with `./distribution/scripts/run.sh`. Row 14 needs
 
 Rows 15 to 24 ran on 2026-11-27 in Google Chrome 158 on macOS, driven over the DevTools
 protocol, and with `curl`. The rows ran two times: one time headless, and one time in a Chrome
-window (1200 x 800). All rows passed in the two runs. The checks read the state of xterm.js, the
+window (1200 x 800). All rows passed in the two runs. After the review fixes (Export is a
+button, Solarized Dark red `#ff5f56`, `aria-live` on the size label), the two runs passed again
+on the same day. Red has a contrast of at least 4.5:1 in each theme except Dark. Dark keeps the
+xterm.js default red (4.1:1). The checks read the state of xterm.js, the
 computed colors at the edges of the terminal, and screenshots. Firefox and Safari are not tested.
 A run on Windows is not tested.
 

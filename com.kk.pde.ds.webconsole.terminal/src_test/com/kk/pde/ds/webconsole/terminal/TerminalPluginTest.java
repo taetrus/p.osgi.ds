@@ -261,6 +261,20 @@ class TerminalPluginTest {
         assertTrue(text.contains("data: line4\n"), text);
     }
 
+    /** The gone count of the stream leaves out end markers. The event id still counts them. */
+    @Test
+    @Timeout(10)
+    void streamGoneCountLeavesOutEndMarkers() throws Exception {
+        hub = new OutputHub(2);
+        hub.append("out", "x");
+        hub.append("done", "");
+        hub.append("out", "y");
+        hub.append("out", "z");
+        hub.append("out", "w");
+        String text = stream(null);
+        assertTrue(text.startsWith("id: 3\nevent: gone\ndata: 2\n"), text);
+    }
+
     private String export() throws Exception {
         StringWriter body = new StringWriter();
         when(res.getWriter()).thenReturn(new PrintWriter(body));
@@ -290,6 +304,19 @@ class TerminalPluginTest {
         verify(res).setHeader(eq("Content-Disposition"),
                 matches("attachment; filename=\"terminal-\\d{8}-\\d{6}\\.log\""));
         verify(res, never()).sendError(anyInt());
+    }
+
+    /** The first line counts lost output lines, not the end markers of commands. */
+    @Test
+    void exportGoneCountLeavesOutEndMarkers() throws Exception {
+        hub = new OutputHub(3);
+        hub.append("cmd", "osgi> a");
+        hub.append("out", "x");
+        hub.append("done", "");
+        hub.append("cmd", "osgi> b");
+        hub.append("out", "y");
+        hub.append("done", "");
+        assertEquals("[2 earlier lines are gone]\nosgi> b\ny\n", export());
     }
 
     @Test
@@ -332,7 +359,10 @@ class TerminalPluginTest {
         when(res.getWriter()).thenReturn(new PrintWriter(page));
         plugin().renderContent(req, res);
         String html = page.toString();
-        assertTrue(html.contains("id=\"terminal-export\" href=\"terminal/export\" download"), html);
+        // A button, so it looks the same as the other toolbar buttons in each browser.
+        assertTrue(html.contains("<button type=\"button\" id=\"terminal-export\""), html);
+        // A screen reader announces the new size.
+        assertTrue(html.contains("<span id=\"terminal-font-size\" aria-live=\"polite\">"), html);
         for (String id : new String[] { "terminal-theme", "terminal-font", "terminal-font-smaller",
                 "terminal-font-size", "terminal-font-larger" }) {
             assertTrue(html.contains("id=\"" + id + "\""), id);

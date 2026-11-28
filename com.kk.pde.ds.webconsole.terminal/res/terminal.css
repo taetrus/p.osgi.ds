@@ -20,20 +20,6 @@
     width: 16em;
 }
 
-/* A link that looks like the buttons of the toolbar. */
-#terminal-export {
-    padding: 1px 6px;
-    border: 1px solid #767676;
-    border-radius: 3px;
-    background: #efefef;
-    color: #000;
-    text-decoration: none;
-}
-
-#terminal-export:hover {
-    background: #e5e5e5;
-}
-
 #terminal-font-size {
     display: inline-block;
     width: 2em;

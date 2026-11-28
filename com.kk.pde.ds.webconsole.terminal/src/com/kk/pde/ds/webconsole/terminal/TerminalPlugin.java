@@ -162,7 +162,7 @@ public class TerminalPlugin extends AbstractWebConsolePlugin {
         pw.println("  <button type=\"button\" id=\"terminal-next\" title=\"Next match\">&gt;</button>");
         pw.println("  <button type=\"button\" id=\"terminal-clear\">Clear</button>");
         pw.println("  <label><input type=\"checkbox\" id=\"terminal-follow\" checked> Follow</label>");
-        pw.println("  <a id=\"terminal-export\" href=\"terminal/export\" download title=\"Download the output as a text file\">Export</a>");
+        pw.println("  <button type=\"button\" id=\"terminal-export\" title=\"Download the output as a text file\">Export</button>");
         pw.println("  <label>Theme <select id=\"terminal-theme\">");
         pw.println("    <option value=\"dark\">Dark</option>");
         pw.println("    <option value=\"light\">Light</option>");
@@ -177,7 +177,7 @@ public class TerminalPlugin extends AbstractWebConsolePlugin {
         pw.println("    <option value=\"courier\">Courier New</option>");
         pw.println("  </select></label>");
         pw.println("  <button type=\"button\" id=\"terminal-font-smaller\" title=\"Smaller font\">-</button>");
-        pw.println("  <span id=\"terminal-font-size\">15</span>");
+        pw.println("  <span id=\"terminal-font-size\" aria-live=\"polite\">15</span>");
         pw.println("  <button type=\"button\" id=\"terminal-font-larger\" title=\"Larger font\">+</button>");
         pw.println("</div>");
         // Without a bound processor the page is read-only. A later bind needs a reload.
@@ -290,8 +290,8 @@ public class TerminalPlugin extends AbstractWebConsolePlugin {
                 pw.print(SseEncoder.comment("ping"));
             } else {
                 if (batch.dropped > 0) {
-                    last += batch.dropped;
-                    pw.print(SseEncoder.event(last, "gone", String.valueOf(batch.dropped)));
+                    last += batch.dropped; // the id counts sequence numbers, the data counts lines
+                    pw.print(SseEncoder.event(last, "gone", String.valueOf(batch.droppedLines)));
                 }
                 for (OutputHub.Line line : batch.lines) {
                     pw.print(SseEncoder.event(line.seq, line.type, line.text));
@@ -311,11 +311,11 @@ public class TerminalPlugin extends AbstractWebConsolePlugin {
         res.setHeader("Content-Disposition", "attachment; filename=\"" + name + "\"");
         res.setHeader("Cache-Control", "no-store");
         PrintWriter pw = res.getWriter();
-        if (batch.dropped > 0) {
-            pw.print("[" + batch.dropped + " earlier lines are gone]\n");
+        if (batch.droppedLines > 0) {
+            pw.print("[" + batch.droppedLines + " earlier lines are gone]\n");
         }
         for (OutputHub.Line line : batch.lines) {
-            if (!"done".equals(line.type)) {
+            if (!OutputHub.DONE.equals(line.type)) {
                 pw.print(TextSanitizer.plain(line.text));
                 pw.print('\n');
             }
